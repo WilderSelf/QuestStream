@@ -1,0 +1,57 @@
+# Flatpak packaging for QuestStream. Build on a host with flatpak + flatpak-builder.
+# See PACKAGING.md for the full procedure.
+appId: io.github.WilderSelf.QuestStream
+productName: QuestStream
+copyright: © 2026 WilderSelf
+
+# No native modules to compile (@snazzah/davey ships a prebuilt N-API binary; ffmpeg/
+# yt-dlp/deno are bundled external binaries) — never invoke node-gyp, which would fail
+# without a compiler.
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+
+directories:
+  output: dist-flatpak
+  buildResources: build
+
+# The app payload: electron-vite's bundled output + package.json. Production
+# dependencies (discord.js, prism-media, …) are included automatically.
+files:
+  - out/**/*
+  - package.json
+
+# Bundle the external tools INSIDE the Flatpak so nothing depends on the host.
+# At runtime these land in process.resourcesPath/bin (see src/main/bot/binaries.ts).
+extraResources:
+  - from: bin
+    to: bin
+    filter:
+      - '**/*'
+
+linux:
+  category: AudioVideo
+  icon: build/icon.png
+  description: Bring-your-own-audio mixer for tabletop GMs — local files & links, ambience, scenes, Discord
+  target:
+    - flatpak
+
+flatpak:
+  runtimeVersion: '24.08'
+  baseVersion: '24.08'
+  # Minimal permissions = maximal containment. NO --filesystem grant, so the app can
+  # only write inside ~/.var/app/<appId>/ (config + cache + imported media). Local-file
+  # import goes through the XDG Document portal (Electron's file dialog), which grants
+  # just the picked files without a broad filesystem hole — they're copied into the
+  # sandbox immediately. Uninstalling with --delete-data removes everything, media too.
+  finishArgs:
+    - --share=ipc # X11 / Chromium shared memory
+    # Outbound: yt-dlp, Discord gateway, MusicBrainz. Inbound: the token-gated LAN
+    # remote server (off by default) — --share=network covers both; no extra grant.
+    - --share=network
+    - --socket=pulseaudio # audio out (works with PipeWire's pulse shim)
+    # Always share X11: Electron defaults to X11 and XWayland covers Wayland sessions.
+    # (fallback-x11 withholds X11 on Wayland → Electron finds no display → it exits.)
+    - --socket=x11
+    - --socket=wayland # also allow native Wayland if Electron is told to use Ozone
+    - --device=dri # GPU acceleration for Electron

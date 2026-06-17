@@ -1,0 +1,13 @@
+node_modules/
+out/
+dist/
+dist-flatpak/
+bin/
+*.tsbuildinfo
+*.log
+.DS_Store
+.env
+
+# Internal/agent-local notes — kept locally, never published
+.claude/
+HANDOFF.md

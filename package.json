@@ -1,0 +1,53 @@
+{
+  "name": "queststream",
+  "productName": "QuestStream",
+  "version": "0.1.0",
+  "description": "A bring-your-own-audio mixer for tabletop game masters — local files & links, ambience, scenes, and Discord voice.",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "author": "WilderSelf <214067827+WilderSelf@users.noreply.github.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/WilderSelf/QuestStream",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WilderSelf/QuestStream.git"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "node --import ./tests/register.mjs --disable-warning=ExperimentalWarning --experimental-transform-types --test tests/*.test.ts",
+    "pack:icon": "node scripts/gen-icon.mjs",
+    "pack:binaries": "bash scripts/fetch-binaries.sh",
+    "pack:flatpak": "npm run build && electron-builder --linux flatpak"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "@snazzah/davey": "^0.1.11",
+    "@types/qrcode": "^1.5.6",
+    "discord.js": "^14.16.3",
+    "libsodium-wrappers": "^0.7.15",
+    "opusscript": "^0.0.8",
+    "prism-media": "^1.3.5",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/sortable": "^8.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@types/libsodium-wrappers": "^0.7.14",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "zustand": "^5.0.2"
+  }
+}
