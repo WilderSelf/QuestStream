@@ -9,6 +9,31 @@ theme, Electron + React + TypeScript.
 > You don’t need Discord to start — the **local jukebox** plays on your machine
 > right away. Add a bot token only when you want to stream into a voice channel.
 
+<!-- Screenshot: drop an image at docs/screenshot.png and uncomment the next line -->
+<!-- ![QuestStream](docs/screenshot.png) -->
+
+## Install (Linux · Flatpak)
+
+Download the latest `.flatpak` from the
+[**Releases**](https://github.com/WilderSelf/QuestStream/releases/latest) page, then:
+
+```bash
+# one-time: the Flathub remote provides the shared runtime the bundle references
+flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+
+flatpak install --user ./QuestStream-*.flatpak
+flatpak run io.github.WilderSelf.QuestStream
+```
+
+To uninstall and wipe all of its data:
+
+```bash
+flatpak uninstall --delete-data io.github.WilderSelf.QuestStream
+```
+
+> x86_64 Linux. The bundle has **no host-filesystem access** — everything it writes lives
+> under `~/.var/app/io.github.WilderSelf.QuestStream/`.
+
 ## Features
 
 - **Bring your own audio** — import **local files** (MP3/FLAC/WAV/OGG/…) or paste a
@@ -44,7 +69,7 @@ On another machine put these on `PATH` (or set `QUESTSTREAM_YTDLP_PATH` /
 `QUESTSTREAM_FFMPEG_PATH` / `QUESTSTREAM_FFPROBE_PATH`). When packaged as a Flatpak they’re
 bundled (see [PACKAGING.md](PACKAGING.md)).
 
-## Running
+## Run from source (development)
 
 ```bash
 npm install        # one time
