@@ -1,4 +1,5 @@
 import { useStore } from '../store'
+import { Icon } from './Icon'
 
 interface Alert {
   key: string
@@ -74,7 +75,7 @@ export function AlertBanner(): JSX.Element | null {
       {alerts.map((a) => (
         <div key={a.key} className="alert-banner" role="alert" aria-live="assertive">
           <span className="alert-icon" aria-hidden="true">
-            ⚠
+            <Icon name="warning" size={16} />
           </span>
           <span className="alert-text">{a.text}</span>
           {a.action && (
@@ -83,7 +84,7 @@ export function AlertBanner(): JSX.Element | null {
             </button>
           )}
           <button className="alert-close" title="Dismiss" aria-label="Dismiss" onClick={a.dismiss}>
-            ✕
+            <Icon name="x" size={14} />
           </button>
         </div>
       ))}

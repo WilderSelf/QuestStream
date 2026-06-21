@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import { Icon } from './Icon'
 
 export function TopBar(): JSX.Element {
   const [url, setUrl] = useState('')
@@ -61,13 +62,16 @@ export function TopBar(): JSX.Element {
     <div className="topbar">
       <span className="brand">♪ QUESTSTREAM</span>
 
-      <input
-        className="search-box"
-        placeholder="🔍 Filter library…"
-        aria-label="Filter library"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="search-wrap">
+        <Icon name="search" size={14} className="search-icon" />
+        <input
+          className="search-box"
+          placeholder="Filter library…"
+          aria-label="Filter library"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       <div className="add-url">
         <input
@@ -87,7 +91,7 @@ export function TopBar(): JSX.Element {
           disabled={busy}
           onClick={() => void addFiles()}
         >
-          📁
+          <Icon name="folder" size={16} />
         </button>
       </div>
 
@@ -137,7 +141,7 @@ export function TopBar(): JSX.Element {
       )}
 
       <button className="icon" title="Settings" aria-label="Settings" onClick={() => setSettingsOpen(true)}>
-        ⚙
+        <Icon name="settings" size={16} />
       </button>
     </div>
   )

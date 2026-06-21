@@ -119,6 +119,46 @@ button.icon.toggled {
   color: var(--active);
 }
 
+/* ---- SVG icons ----
+   Render as block to kill the inline-baseline gap, and flex-center within icon-only controls.
+   Icons inherit currentColor, so the existing hover/.toggled/.active colour rules tint them. */
+button svg,
+.grip svg,
+.vol-icon svg,
+.section-label svg,
+.accordion-caret svg,
+.toast-icon svg,
+.alert-icon svg,
+.update-icon svg {
+  display: block;
+}
+button.icon,
+.remove-btn,
+.play-btn,
+.amb-play,
+.sfx-key,
+.sfx-duck,
+.alert-close,
+.toast-close,
+.icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-text {
+  gap: 4px;
+}
+.grip,
+.vol-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.tag-removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 input,
 select {
   font-family: inherit;
@@ -213,10 +253,24 @@ textarea {
 .add-url button {
   flex-shrink: 0;
 }
-.search-box {
+.search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex: 1 1 110px;
   min-width: 0;
   max-width: 190px;
+}
+.search-wrap .search-icon {
+  position: absolute;
+  left: 8px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+.search-box {
+  width: 100%;
+  min-width: 0;
+  padding-left: 28px;
 }
 
 .status-pill {
@@ -661,6 +715,9 @@ textarea {
   box-shadow: inset 3px 0 0 var(--nord15);
 }
 .section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 10px 3px;
   font-size: 10px;
   text-transform: uppercase;
@@ -767,9 +824,9 @@ textarea {
   background: var(--hover);
 }
 .accordion-caret {
+  display: inline-flex;
+  align-items: center;
   color: var(--text-dim);
-  font-size: 10px;
-  width: 10px;
 }
 .accordion-title {
   flex: 1;
@@ -922,11 +979,6 @@ textarea {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--nord0);
-}
-/* Optically center the play triangle (its visual mass sits left of the glyph box,
-   so a small nudge makes it look centered in the circle). Pause needs no nudge. */
-.control-buttons .play .play-tri {
-  margin-left: 3px;
 }
 /* Repeat-mode clarity: orange = on, "1" badge = repeat-one. */
 .control-buttons .repeat .rep-badge {

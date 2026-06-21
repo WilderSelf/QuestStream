@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
+import { Icon } from './Icon'
 
 const DISMISS_KEY = 'qs.desktopPromptDismissed'
 
@@ -48,7 +49,7 @@ export function DesktopPrompt(): JSX.Element | null {
         {busy ? 'Adding…' : 'Add to menu'}
       </button>
       <button className="alert-close" title="Not now" aria-label="Not now" onClick={dismiss}>
-        ✕
+        <Icon name="x" size={14} />
       </button>
     </div>
   )

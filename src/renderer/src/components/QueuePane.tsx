@@ -8,6 +8,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import type { SoundboardItem } from '@shared/types'
 import { useStore, fmtTime, type QueueItem, type AmbienceSlot } from '../store'
+import { Icon } from './Icon'
 
 function QueueRow({ item }: { item: QueueItem }): JSX.Element {
   const currentUid = useStore((s) => s.currentUid)
@@ -49,10 +50,10 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
           void togglePlayUid(item.uid)
         }}
       >
-        {isActive ? '⏸' : '▶'}
+        <Icon name={isActive ? 'pause' : 'play'} size={14} />
       </button>
       <span className="grip" {...attributes} {...listeners} title="Drag to reorder" aria-label="Drag to reorder">
-        <span aria-hidden="true">⋮⋮</span>
+        <Icon name="grip" size={16} />
       </span>
       {isActive ? (
         <span className="now-bars" aria-hidden="true">
@@ -71,7 +72,7 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
         aria-label={`Remove ${item.song.title} from queue`}
         onClick={() => removeFromQueue(item.uid)}
       >
-        ✕
+        <Icon name="x" size={15} />
       </button>
     </div>
   )
@@ -100,7 +101,7 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
         aria-pressed={slot.playing}
         onClick={() => toggleAmbience(slot.id)}
       >
-        {slot.playing ? '⏸' : '▶'}
+        <Icon name={slot.playing ? 'pause' : 'play'} size={14} />
       </button>
       <button
         className="icon"
@@ -108,7 +109,7 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
         aria-label={random ? 'Mode: random one-shots' : 'Mode: looping'}
         onClick={() => setAmbienceMode(slot.id, random ? 'loop' : 'random')}
       >
-        {random ? '🎲' : '🔁'}
+        <Icon name={random ? 'dice' : 'repeat'} size={16} />
       </button>
       <span className="amb-title">
         {random ? `${slot.pool.length} sound${slot.pool.length > 1 ? 's' : ''}` : slot.song.title}
@@ -149,7 +150,7 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
         aria-label="Remove ambience layer"
         onClick={() => removeAmbience(slot.id)}
       >
-        ✕
+        <Icon name="x" size={15} />
       </button>
     </div>
   )
@@ -166,8 +167,8 @@ function AmbienceSection(): JSX.Element {
       <div className={`ambience-list ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
         {ambience.length === 0 && (
           <div className="muted small">
-            Drag a track here to loop it under your music (rain, crowd, wind…). Toggle 🔁→🎲 to
-            make a layer fire random one-shots at intervals (a wolf howl, a creaking timber);
+            Drag a track here to loop it under your music (rain, crowd, wind…). Switch a layer
+            from loop to random to fire one-shots at intervals (a wolf howl, a creaking timber);
             drag more tracks onto it to grow its pool.
           </div>
         )}
@@ -219,7 +220,7 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
         aria-pressed={binding}
         onClick={() => setBinding(true)}
       >
-        {binding ? '…' : item.hotkey || '⌨'}
+        {binding ? '…' : item.hotkey || <Icon name="keyboard" size={16} />}
       </button>
       <button
         className={`icon sfx-duck ${item.duckUnderMusic ? 'on' : ''}`}
@@ -228,7 +229,7 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
         aria-pressed={item.duckUnderMusic}
         onClick={() => void window.api.soundboard.update(item.id, { duckUnderMusic: !item.duckUnderMusic })}
       >
-        🔉
+        <Icon name="volume-low" size={16} />
       </button>
       <button
         className="remove-btn"
@@ -236,7 +237,7 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
         aria-label={`Remove ${song?.title ?? 'sound'} from soundboard`}
         onClick={() => void window.api.soundboard.remove(item.id)}
       >
-        ✕
+        <Icon name="x" size={15} />
       </button>
     </div>
   )
@@ -253,8 +254,8 @@ function SoundboardSection(): JSX.Element {
       <div className={`sfx-grid ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
         {soundboard.length === 0 && (
           <div className="muted small">
-            Drag a track here to make a one-shot effect (door knock, sword clash). Bind a key
-            (⌨) to fire it instantly; 🔉 ducks the music while it plays.
+            Drag a track here to make a one-shot effect (door knock, sword clash). Bind a key to
+            fire it instantly; the speaker toggle ducks the music while it plays.
           </div>
         )}
         {soundboard.map((item) => (
@@ -293,7 +294,7 @@ export function QueuePane(): JSX.Element {
             aria-label="Save as scene"
             onClick={() => setSaveScenePromptOpen(true)}
           >
-            🎬
+            <Icon name="film" size={16} />
           </button>
           <button
             className="icon"
@@ -302,7 +303,7 @@ export function QueuePane(): JSX.Element {
             aria-label="Save queue as playlist"
             onClick={() => setSavePromptOpen(true)}
           >
-            💾
+            <Icon name="save" size={16} />
           </button>
           <button
             className="icon"
@@ -311,13 +312,15 @@ export function QueuePane(): JSX.Element {
             aria-label="Clear queue"
             onClick={clearQueueConfirmed}
           >
-            🗑
+            <Icon name="trash" size={16} />
           </button>
         </span>
       </div>
 
       <div className="deck-row" title="Music layer volume (relative to ambience)">
-        <span aria-hidden="true">🎵</span>
+        <span className="vol-icon" aria-hidden="true">
+          <Icon name="music" size={16} />
+        </span>
         <input
           type="range"
           min={0}
@@ -332,7 +335,7 @@ export function QueuePane(): JSX.Element {
       <div className="pane-body" ref={setNodeRef}>
         {queue.length === 0 && (
           <div className="muted">
-            Drag songs here (or double-click them) to build a queue. Reorder by dragging the ⋮⋮
+            Drag songs here (or double-click them) to build a queue. Reorder by dragging the grip
             handle, then save it as a playlist.
           </div>
         )}

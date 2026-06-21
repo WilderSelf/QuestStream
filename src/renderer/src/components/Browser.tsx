@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { useStore, fmtTime } from '../store'
 import type { Song } from '@shared/types'
 import { parseTag, labelForValue } from '@shared/taxonomy'
+import { Icon } from './Icon'
 
 /** Spread onto a clickable non-button row so keyboard users can activate it (Enter/Space). */
 function rowActivation(onActivate: () => void): {
@@ -109,7 +110,7 @@ export function PlaylistsPane(): JSX.Element {
             aria-label="Import a shared pack"
             onClick={() => void importPack()}
           >
-            📥
+            <Icon name="download" size={16} />
           </button>
           <button
             className="icon"
@@ -117,12 +118,14 @@ export function PlaylistsPane(): JSX.Element {
             aria-label="Start a new queue"
             onClick={newQueue}
           >
-            ✚
+            <Icon name="plus" size={16} />
           </button>
         </span>
       </div>
       <div className="pane-body">
-        <div className="section-label">🎬 Scenes</div>
+        <div className="section-label">
+          <Icon name="film" size={13} /> Scenes
+        </div>
         {scenes.length === 0 && (
           <div className="muted small">
             Save a full mix (music + ambience + volumes) as a scene, then recall it in one click.
@@ -136,8 +139,8 @@ export function PlaylistsPane(): JSX.Element {
             {...rowActivation(() => recallSceneConfirmed(sc.id))}
           >
             <div className="title">
-              <div className="title">
-                <span aria-hidden="true">🎬</span> {sc.name}
+              <div className="title scene-name">
+                <Icon name="film" size={14} /> {sc.name}
               </div>
               <div className="sub">
                 {sc.songIds.length} tracks · {sc.ambience.length} layers
@@ -149,7 +152,7 @@ export function PlaylistsPane(): JSX.Element {
               aria-label={`Export scene ${sc.name}`}
               onClick={(e) => void exportScene(sc.id, e)}
             >
-              📤
+              <Icon name="upload" size={15} />
             </button>
             <button
               className="remove-btn"
@@ -157,12 +160,14 @@ export function PlaylistsPane(): JSX.Element {
               aria-label={`Delete scene ${sc.name}`}
               onClick={(e) => void removeScene(sc.id, e)}
             >
-              🗑
+              <Icon name="trash" size={15} />
             </button>
           </div>
         ))}
 
-        <div className="section-label">♪ Playlists</div>
+        <div className="section-label">
+          <Icon name="music" size={13} /> Playlists
+        </div>
         {playlists.length === 0 && (
           <div className="muted small">Build a queue, then “Save as playlist”.</div>
         )}
@@ -182,7 +187,7 @@ export function PlaylistsPane(): JSX.Element {
               aria-label={`Export playlist ${p.name}`}
               onClick={(e) => void exportPlaylist(p.id, e)}
             >
-              📤
+              <Icon name="upload" size={15} />
             </button>
             <button
               className="remove-btn"
@@ -190,7 +195,7 @@ export function PlaylistsPane(): JSX.Element {
               aria-label={`Delete playlist ${p.name}`}
               onClick={(e) => void removePlaylist(p.id, e)}
             >
-              🗑
+              <Icon name="trash" size={15} />
             </button>
           </div>
         ))}
@@ -352,7 +357,7 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
         aria-label={`Edit ${song.title}`}
         onClick={edit}
       >
-        ✎
+        <Icon name="edit" size={15} />
       </button>
       <button
         className="remove-btn"
@@ -360,7 +365,7 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
         aria-label={`Delete ${song.title} from library`}
         onClick={(e) => void del(e)}
       >
-        🗑
+        <Icon name="trash" size={15} />
       </button>
     </div>
   )
@@ -382,8 +387,13 @@ export function SongsPane(): JSX.Element {
       <div className="pane-header">
         <span>Songs</span>
         {list.length > 0 && (
-          <button className="icon" title="Add all to queue" aria-label="Add all to queue" onClick={() => enqueueSongs(list)}>
-            ＋ all
+          <button
+            className="icon icon-text"
+            title="Add all to queue"
+            aria-label="Add all to queue"
+            onClick={() => enqueueSongs(list)}
+          >
+            <Icon name="plus" size={14} /> all
           </button>
         )}
       </div>

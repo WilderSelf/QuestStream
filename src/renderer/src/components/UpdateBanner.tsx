@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { UpdateState } from '@shared/types'
+import { Icon } from './Icon'
 
 /**
  * Surfaces electron-updater state. Updates download in the background; the only action
@@ -14,7 +15,7 @@ export function UpdateBanner(): JSX.Element | null {
     return (
       <div className="update-banner ready" role="status" aria-live="polite">
         <span className="update-icon" aria-hidden="true">
-          ⬆
+          <Icon name="arrow-up" size={16} />
         </span>
         <span className="update-text">
           QuestStream {state.version ? `${state.version} ` : ''}is ready to install.
@@ -30,7 +31,7 @@ export function UpdateBanner(): JSX.Element | null {
     return (
       <div className="update-banner" role="status" aria-live="polite">
         <span className="update-icon" aria-hidden="true">
-          ⬇
+          <Icon name="download" size={16} />
         </span>
         <span className="update-text">
           Downloading update{typeof state.percent === 'number' ? ` — ${state.percent}%` : '…'}

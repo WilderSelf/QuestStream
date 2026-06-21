@@ -17,6 +17,7 @@ import {
   AlbumsPane,
   SongsPane
 } from './Browser'
+import { Icon } from './Icon'
 
 const UNTAGGED = '__untagged__'
 
@@ -130,7 +131,7 @@ export function LibraryPane(): JSX.Element {
             aria-pressed={showArtistView}
             onClick={toggleArtistView}
           >
-            🗂
+            <Icon name="layers" size={16} />
           </button>
           <button
             className="icon"
@@ -138,7 +139,7 @@ export function LibraryPane(): JSX.Element {
             aria-label="Import audio"
             onClick={() => setImportWizardOpen(true)}
           >
-            ＋
+            <Icon name="plus" size={16} />
           </button>
         </span>
       </div>
@@ -204,7 +205,7 @@ export function LibraryPane(): JSX.Element {
                     onClick={() => toggleSection(key)}
                   >
                     <span className="accordion-caret" aria-hidden="true">
-                      {isOpen ? '▾' : '▸'}
+                      <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={14} />
                     </span>
                     <span className="accordion-title">{title}</span>
                     <span className="tag-count">{items.length}</span>

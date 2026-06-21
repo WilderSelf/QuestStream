@@ -1,4 +1,5 @@
 import { useStore, fmtTime } from '../store'
+import { Icon } from './Icon'
 
 export function TransportBar(): JSX.Element {
   const player = useStore((s) => s.player)
@@ -76,10 +77,10 @@ export function TransportBar(): JSX.Element {
             aria-pressed={shuffle}
             onClick={toggleShuffle}
           >
-            🔀
+            <Icon name="shuffle" />
           </button>
           <button className="icon" title="Previous" aria-label="Previous track" onClick={() => void playPrev()}>
-            ⏮
+            <Icon name="prev" />
           </button>
           <button
             className="primary play"
@@ -87,12 +88,10 @@ export function TransportBar(): JSX.Element {
             aria-label={isPlaying ? 'Pause' : 'Play'}
             onClick={() => void togglePlay()}
           >
-            <span className={isPlaying ? '' : 'play-tri'} aria-hidden="true">
-              {isPlaying ? '⏸' : '▶'}
-            </span>
+            <Icon name={isPlaying ? 'pause' : 'play'} size={20} />
           </button>
           <button className="icon" title="Next" aria-label="Next track" onClick={() => void playNext()}>
-            ⏭
+            <Icon name="next" />
           </button>
           <button
             className={`icon repeat ${repeat !== 'off' ? 'toggled' : ''}`}
@@ -113,7 +112,7 @@ export function TransportBar(): JSX.Element {
             aria-pressed={repeat !== 'off'}
             onClick={cycleRepeat}
           >
-            🔁
+            <Icon name="repeat" />
             {repeat === 'one' && <sup className="rep-badge">1</sup>}
           </button>
         </div>
@@ -145,7 +144,7 @@ export function TransportBar(): JSX.Element {
           aria-pressed={ducking}
           onClick={() => setDuck(!ducking)}
         >
-          🎙
+          <Icon name="mic" />
         </button>
         <button
           className={`icon ${monitorEnabled ? 'toggled' : ''}`}
@@ -158,10 +157,10 @@ export function TransportBar(): JSX.Element {
           aria-pressed={monitorEnabled}
           onClick={toggleMonitor}
         >
-          {monitorEnabled ? '🎧' : '🔇'}
+          <Icon name={monitorEnabled ? 'headphones' : 'volume-mute'} />
         </button>
-        <span title="Master volume" aria-hidden="true">
-          🔈
+        <span className="vol-icon" title="Master volume" aria-hidden="true">
+          <Icon name="volume" size={16} />
         </span>
         <input
           type="range"

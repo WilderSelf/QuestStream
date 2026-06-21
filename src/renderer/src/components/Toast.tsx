@@ -1,4 +1,5 @@
 import { useStore } from '../store'
+import { Icon } from './Icon'
 
 export function Toast(): JSX.Element | null {
   const imp = useStore((s) => s.importStatus)
@@ -18,11 +19,11 @@ export function Toast(): JSX.Element | null {
         aria-live={isError ? 'assertive' : 'polite'}
       >
         <span className="toast-icon" aria-hidden="true">
-          {isError ? '⚠' : 'ℹ'}
+          <Icon name={isError ? 'warning' : 'info'} size={16} />
         </span>
         <span className="toast-text">{notice.text}</span>
         <button className="toast-close" title="Dismiss" aria-label="Dismiss" onClick={dismissNotice}>
-          ✕
+          <Icon name="x" size={14} />
         </button>
       </div>
     )

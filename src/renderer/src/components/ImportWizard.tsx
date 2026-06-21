@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { Modal } from './Modal'
+import { Icon } from './Icon'
 import type { ItemKind, Song } from '@shared/types'
 import {
   KIND_ORDER,
@@ -55,8 +56,8 @@ export function TagPicker({
       <div className="filter-row">
         <span className="filter-label">Custom</span>
         {free.map((t) => (
-          <span key={t} className="tag-chip active" onClick={() => toggle(t)}>
-            {t} ✕
+          <span key={t} className="tag-chip active tag-removable" onClick={() => toggle(t)}>
+            {t} <Icon name="x" size={11} />
           </span>
         ))}
         <input
