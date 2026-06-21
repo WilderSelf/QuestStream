@@ -43,6 +43,7 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
       <button
         className="play-btn"
         title={isActive ? 'Pause' : 'Play this track'}
+        aria-label={isActive ? `Pause ${item.song.title}` : `Play ${item.song.title}`}
         onClick={(e) => {
           e.stopPropagation()
           void togglePlayUid(item.uid)
@@ -50,11 +51,11 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
       >
         {isActive ? '⏸' : '▶'}
       </button>
-      <span className="grip" {...attributes} {...listeners} title="Drag to reorder">
-        ⋮⋮
+      <span className="grip" {...attributes} {...listeners} title="Drag to reorder" aria-label="Drag to reorder">
+        <span aria-hidden="true">⋮⋮</span>
       </span>
       {isActive ? (
-        <span className="now-bars">
+        <span className="now-bars" aria-hidden="true">
           <span />
           <span />
           <span />
@@ -64,7 +65,12 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
         <div className="title">{item.song.title}</div>
         <div className="sub">{fmtTime(item.song.duration)}</div>
       </div>
-      <button className="remove-btn" title="Remove" onClick={() => removeFromQueue(item.uid)}>
+      <button
+        className="remove-btn"
+        title="Remove"
+        aria-label={`Remove ${item.song.title} from queue`}
+        onClick={() => removeFromQueue(item.uid)}
+      >
         ✕
       </button>
     </div>
@@ -90,6 +96,8 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
       <button
         className="icon amb-play"
         title={slot.playing ? 'Pause layer' : 'Play layer'}
+        aria-label={slot.playing ? 'Pause layer' : 'Play layer'}
+        aria-pressed={slot.playing}
         onClick={() => toggleAmbience(slot.id)}
       >
         {slot.playing ? '⏸' : '▶'}
@@ -97,6 +105,7 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
       <button
         className="icon"
         title={random ? 'Random one-shots — click for a seamless loop' : 'Looping — click for random one-shots'}
+        aria-label={random ? 'Mode: random one-shots' : 'Mode: looping'}
         onClick={() => setAmbienceMode(slot.id, random ? 'loop' : 'random')}
       >
         {random ? '🎲' : '🔁'}
@@ -109,6 +118,7 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
           <input
             type="number"
             min={1}
+            aria-label="Minimum interval (seconds)"
             value={slot.minSec}
             onChange={(e) => setAmbienceInterval(slot.id, parseInt(e.target.value) || 1, slot.maxSec)}
           />
@@ -116,6 +126,7 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
           <input
             type="number"
             min={1}
+            aria-label="Maximum interval (seconds)"
             value={slot.maxSec}
             onChange={(e) => setAmbienceInterval(slot.id, slot.minSec, parseInt(e.target.value) || slot.minSec)}
           />
@@ -129,9 +140,15 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
         step={0.01}
         value={slot.volume}
         title="Layer volume"
+        aria-label="Layer volume"
         onChange={(e) => setAmbienceVolume(slot.id, parseFloat(e.target.value))}
       />
-      <button className="remove-btn" title="Remove layer" onClick={() => removeAmbience(slot.id)}>
+      <button
+        className="remove-btn"
+        title="Remove layer"
+        aria-label="Remove ambience layer"
+        onClick={() => removeAmbience(slot.id)}
+      >
         ✕
       </button>
     </div>
@@ -192,6 +209,14 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
       <button
         className={`icon sfx-key ${item.hotkey ? 'bound' : ''}`}
         title="Bind a hotkey"
+        aria-label={
+          binding
+            ? 'Press a key to bind, or Escape to clear'
+            : item.hotkey
+              ? `Hotkey ${item.hotkey} — click to rebind`
+              : 'Bind a hotkey'
+        }
+        aria-pressed={binding}
         onClick={() => setBinding(true)}
       >
         {binding ? '…' : item.hotkey || '⌨'}
@@ -199,11 +224,18 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
       <button
         className={`icon sfx-duck ${item.duckUnderMusic ? 'on' : ''}`}
         title="Duck the music while this plays"
+        aria-label="Duck the music while this plays"
+        aria-pressed={item.duckUnderMusic}
         onClick={() => void window.api.soundboard.update(item.id, { duckUnderMusic: !item.duckUnderMusic })}
       >
         🔉
       </button>
-      <button className="remove-btn" title="Remove" onClick={() => void window.api.soundboard.remove(item.id)}>
+      <button
+        className="remove-btn"
+        title="Remove"
+        aria-label={`Remove ${song?.title ?? 'sound'} from soundboard`}
+        onClick={() => void window.api.soundboard.remove(item.id)}
+      >
         ✕
       </button>
     </div>
@@ -243,15 +275,22 @@ export function QueuePane(): JSX.Element {
   const setMusicVolume = useStore((s) => s.setMusicVolume)
   const { setNodeRef, isOver } = useDroppable({ id: 'queue-drop' })
 
+  // Clearing a built queue throws away work — confirm unless it's already empty.
+  function clearQueueConfirmed(): void {
+    if (queue.length === 0 || confirm(`Clear the queue? ${queue.length} track(s) will be removed.`))
+      clearQueue()
+  }
+
   return (
     <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
       <div className="pane-header">
         <span>Now Playing · {queue.length}</span>
-        <span style={{ display: 'flex', gap: 6 }}>
+        <span className="header-actions">
           <button
             className="icon"
             disabled={queue.length === 0 && ambience.length === 0}
             title="Save as scene (music + ambience + volumes)"
+            aria-label="Save as scene"
             onClick={() => setSaveScenePromptOpen(true)}
           >
             🎬
@@ -260,6 +299,7 @@ export function QueuePane(): JSX.Element {
             className="icon"
             disabled={queue.length === 0}
             title="Save queue as playlist"
+            aria-label="Save queue as playlist"
             onClick={() => setSavePromptOpen(true)}
           >
             💾
@@ -268,7 +308,8 @@ export function QueuePane(): JSX.Element {
             className="icon"
             disabled={queue.length === 0}
             title="Clear queue"
-            onClick={clearQueue}
+            aria-label="Clear queue"
+            onClick={clearQueueConfirmed}
           >
             🗑
           </button>
@@ -276,12 +317,13 @@ export function QueuePane(): JSX.Element {
       </div>
 
       <div className="deck-row" title="Music layer volume (relative to ambience)">
-        <span>🎵</span>
+        <span aria-hidden="true">🎵</span>
         <input
           type="range"
           min={0}
           max={1}
           step={0.01}
+          aria-label="Music layer volume"
           value={musicVolume}
           onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
         />

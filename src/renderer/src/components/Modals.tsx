@@ -13,6 +13,7 @@ import type {
 import { COOKIE_BROWSERS } from '@shared/types'
 import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
 import { useStore } from '../store'
+import { Modal } from './Modal'
 import { TagPicker } from './ImportWizard'
 
 function RemoteSettings(): JSX.Element {
@@ -166,14 +167,23 @@ function CookiesSettings(): JSX.Element {
         straight from a browser (only when running unsandboxed).
       </p>
       <div className="kind-tabs">
-        <button className={`seg ${mode === 'none' ? 'active' : ''}`} onClick={() => void setMode('none')}>
+        <button
+          className={`seg ${mode === 'none' ? 'active' : ''}`}
+          aria-pressed={mode === 'none'}
+          onClick={() => void setMode('none')}
+        >
           Off
         </button>
-        <button className={`seg ${mode === 'file' ? 'active' : ''}`} onClick={() => void setMode('file')}>
+        <button
+          className={`seg ${mode === 'file' ? 'active' : ''}`}
+          aria-pressed={mode === 'file'}
+          onClick={() => void setMode('file')}
+        >
           Cookies file
         </button>
         <button
           className={`seg ${mode === 'browser' ? 'active' : ''}`}
+          aria-pressed={mode === 'browser'}
           onClick={() => void setMode('browser', status?.browser ?? 'firefox')}
         >
           From browser
@@ -192,6 +202,7 @@ function CookiesSettings(): JSX.Element {
         <div className="cookies-row">
           <select
             value={status?.browser ?? 'firefox'}
+            aria-label="Browser to read cookies from"
             onChange={(e) => void setMode('browser', e.target.value as CookieBrowser)}
           >
             {COOKIE_BROWSERS.map((b) => (
@@ -286,9 +297,8 @@ export function SettingsModal(): JSX.Element | null {
   }
 
   return (
-    <div className="modal-backdrop" onClick={() => setOpen(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Discord Bot Settings</h2>
+    <Modal onClose={() => setOpen(false)} labelledBy="settings-title">
+        <h2 id="settings-title">Discord Bot Settings</h2>
         <p>
           Paste your bot token from the{' '}
           <a href="https://discord.com/developers/applications" target="_blank" rel="noreferrer">
@@ -329,8 +339,7 @@ export function SettingsModal(): JSX.Element | null {
             {saving ? 'Connecting…' : hasToken && !token.trim() ? 'Connect' : 'Save & Connect'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -347,9 +356,8 @@ export function DisclaimerModal(): JSX.Element | null {
     setOpen(false)
   }
   return (
-    <div className="modal-backdrop">
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Welcome to QuestStream</h2>
+    <Modal onClose={accept} dismissable={false} labelledBy="disclaimer-title">
+        <h2 id="disclaimer-title">Welcome to QuestStream</h2>
         <p>
           A bring-your-own-audio mixer for tabletop game masters: build a soundtrack from your
           own files or links, layer ambience and one-shots, snapshot whole scenes, and play it
@@ -371,8 +379,7 @@ export function DisclaimerModal(): JSX.Element | null {
             Get started
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -414,9 +421,8 @@ export function SongEditModal(): JSX.Element | null {
   }
 
   return (
-    <div className="modal-backdrop" onClick={() => setEditSong(null)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Edit Track</h2>
+    <Modal onClose={() => setEditSong(null)} labelledBy="songedit-title">
+        <h2 id="songedit-title">Edit item</h2>
         <div className="field">
           <label>Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -444,7 +450,12 @@ export function SongEditModal(): JSX.Element | null {
           <label>Type</label>
           <div className="kind-tabs">
             {KIND_ORDER.map((k) => (
-              <button key={k} className={`seg ${kind === k ? 'active' : ''}`} onClick={() => setKind(k)}>
+              <button
+                key={k}
+                className={`seg ${kind === k ? 'active' : ''}`}
+                aria-pressed={kind === k}
+                onClick={() => setKind(k)}
+              >
                 {KIND_LABELS[k]}
               </button>
             ))}
@@ -460,8 +471,7 @@ export function SongEditModal(): JSX.Element | null {
             Save
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -486,9 +496,8 @@ function SaveAsModal(props: {
   useEffect(() => setName(seedName), [seedName]) // re-seed if the loaded entity changes
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>{title}</h2>
+    <Modal onClose={onClose} labelledBy="saveas-title">
+        <h2 id="saveas-title">{title}</h2>
         <p>{description}</p>
         <div className="field">
           <label>{label}</label>
@@ -507,8 +516,7 @@ function SaveAsModal(props: {
             Save new
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 

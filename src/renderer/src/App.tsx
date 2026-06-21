@@ -2,11 +2,13 @@ import { useEffect } from 'react'
 import {
   DndContext,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   pointerWithin,
   type DragEndEvent
 } from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from './store'
 import { TopBar } from './components/TopBar'
 import { PlaylistsPane } from './components/Browser'
@@ -40,7 +42,9 @@ export function App(): JSX.Element {
   }, [init])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // Keyboard alternative to dragging: focus a grip/row, Space to pick up, arrows to move.
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
   function onDragEnd(e: DragEndEvent): void {

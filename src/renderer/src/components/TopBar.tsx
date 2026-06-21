@@ -64,6 +64,7 @@ export function TopBar(): JSX.Element {
       <input
         className="search-box"
         placeholder="🔍 Filter library…"
+        aria-label="Filter library"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -71,6 +72,7 @@ export function TopBar(): JSX.Element {
       <div className="add-url">
         <input
           placeholder="Paste a YouTube / SoundCloud / Bandcamp URL…"
+          aria-label="Add audio from a URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void addUrl()}
@@ -78,7 +80,13 @@ export function TopBar(): JSX.Element {
         <button className="primary" disabled={busy || !url.trim()} onClick={() => void addUrl()}>
           {busy ? 'Adding…' : 'Add'}
         </button>
-        <button className="icon" title="Add local audio files" disabled={busy} onClick={() => void addFiles()}>
+        <button
+          className="icon"
+          title="Add local audio files"
+          aria-label="Add local audio files"
+          disabled={busy}
+          onClick={() => void addFiles()}
+        >
           📁
         </button>
       </div>
@@ -86,7 +94,7 @@ export function TopBar(): JSX.Element {
       <div className="spacer" />
 
       <span className="status-pill" title={bot.error ?? statusLabel}>
-        <span className={`dot ${bot.state}`} />
+        <span className={`dot ${bot.state}`} aria-hidden="true" />
         {statusLabel}
       </span>
 
@@ -96,6 +104,7 @@ export function TopBar(): JSX.Element {
             value={selectedGuildId ?? ''}
             onChange={(e) => void selectGuild(e.target.value)}
             title="Server"
+            aria-label="Discord server"
           >
             {guilds.length === 0 && <option value="">No servers</option>}
             {guilds.map((g) => (
@@ -108,6 +117,7 @@ export function TopBar(): JSX.Element {
             value={selectedChannelId ?? ''}
             onChange={(e) => selectChannel(e.target.value)}
             title="Voice channel"
+            aria-label="Voice channel"
           >
             {channels.length === 0 && <option value="">No voice channels</option>}
             {channels.map((c) => (
@@ -126,7 +136,7 @@ export function TopBar(): JSX.Element {
         </>
       )}
 
-      <button className="icon" title="Settings" onClick={() => setSettingsOpen(true)}>
+      <button className="icon" title="Settings" aria-label="Settings" onClick={() => setSettingsOpen(true)}>
         ⚙
       </button>
     </div>

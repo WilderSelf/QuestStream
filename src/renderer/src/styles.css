@@ -25,8 +25,11 @@
   --panel: var(--nord1);
   --panel-alt: var(--nord2);
   --border: #2b313c;
+  --border-subtle: rgba(43, 49, 60, 0.5);
   --text: var(--nord5);
-  --text-dim: #9aa4b8;
+  /* Dimmed text — kept ≥4.5:1 on --bg for WCAG AA body contrast. */
+  --text-dim: #b4bdd1;
+  --muted: var(--text-dim); /* alias: some rules referenced an undefined --muted */
   --accent: var(--nord8);
   --accent-deep: var(--nord10);
   /* "Active / enabled" emphasis — orange (used for primary actions + toggled buttons) */
@@ -35,6 +38,20 @@
   --active-tint: rgba(208, 135, 112, 0.2);
   --selected: rgba(136, 192, 208, 0.18);
   --hover: rgba(76, 86, 106, 0.4);
+}
+
+/* Inline action-button group in pane headers (was a repeated inline flex style). */
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Smooth the background change on the interactive rows/chips/tabs (buttons already animate). */
+.row,
+.tag-chip,
+.seg,
+.accordion-head {
+  transition: background 0.12s, color 0.12s;
 }
 
 * {
@@ -116,6 +133,38 @@ select {
 input:focus,
 select:focus {
   border-color: var(--accent);
+}
+
+/* Visible keyboard-focus indicator for every interactive surface. Uses :focus-visible so
+   it only shows for keyboard/AT navigation, not mouse clicks. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+[role='slider']:focus-visible,
+[tabindex]:focus-visible,
+.row:focus-visible,
+.seg:focus-visible,
+.tag-chip:focus-visible,
+.accordion-head:focus-visible,
+.bar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Let users copy content/diagnostic text even though the chrome disables selection. */
+.title,
+.sub,
+.meta,
+.muted,
+.remote-url,
+.remote-token,
+.toast-text,
+.alert-text,
+input,
+textarea {
+  user-select: text;
 }
 
 /* ---- App shell ---- */
@@ -945,6 +994,8 @@ select:focus {
   padding: 20px;
   width: 480px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .modal h2 {
@@ -1090,6 +1141,10 @@ select:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .toast {
+    animation: none;
+  }
+  /* Freeze the now-playing equalizer bars rather than looping them forever. */
+  .queue-item .now-bars span {
     animation: none;
   }
 }

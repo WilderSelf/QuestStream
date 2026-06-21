@@ -115,6 +115,7 @@ export function LibraryPane(): JSX.Element {
             <button
               key={k}
               className={`seg ${kind === k ? 'active' : ''}`}
+              aria-pressed={kind === k}
               onClick={() => setKindTab(k)}
             >
               {KIND_LABELS[k]}
@@ -125,11 +126,18 @@ export function LibraryPane(): JSX.Element {
           <button
             className={`icon ${showArtistView ? 'toggled' : ''}`}
             title="Toggle Artist / Album view"
+            aria-label="Artist / Album view"
+            aria-pressed={showArtistView}
             onClick={toggleArtistView}
           >
             🗂
           </button>
-          <button className="icon" title="Import with the tagging wizard" onClick={() => setImportWizardOpen(true)}>
+          <button
+            className="icon"
+            title="Import with the tagging wizard"
+            aria-label="Import audio"
+            onClick={() => setImportWizardOpen(true)}
+          >
             ＋
           </button>
         </span>
@@ -190,8 +198,14 @@ export function LibraryPane(): JSX.Element {
               const title = key === UNTAGGED ? 'Untagged' : labelForValue(groupBy, key)
               return (
                 <div className="accordion" key={key}>
-                  <button className="accordion-head" onClick={() => toggleSection(key)}>
-                    <span className="accordion-caret">{isOpen ? '▾' : '▸'}</span>
+                  <button
+                    className="accordion-head"
+                    aria-expanded={isOpen}
+                    onClick={() => toggleSection(key)}
+                  >
+                    <span className="accordion-caret" aria-hidden="true">
+                      {isOpen ? '▾' : '▸'}
+                    </span>
                     <span className="accordion-title">{title}</span>
                     <span className="tag-count">{items.length}</span>
                   </button>

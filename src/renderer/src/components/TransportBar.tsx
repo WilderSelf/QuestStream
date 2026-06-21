@@ -31,6 +31,22 @@ export function TransportBar(): JSX.Element {
     void seekTo(frac * duration)
   }
 
+  // Keyboard seeking: arrows nudge ±5s, Home/End jump to start/end.
+  function seekKey(e: React.KeyboardEvent<HTMLDivElement>): void {
+    if (!current || duration <= 0) return
+    const step = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -5 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 5 : 0
+    if (step) {
+      e.preventDefault()
+      void seekTo(Math.min(duration, Math.max(0, player.positionSec + step)))
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      void seekTo(0)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      void seekTo(duration)
+    }
+  }
+
   return (
     <div className="transport">
       <div className="np-info">
@@ -56,17 +72,26 @@ export function TransportBar(): JSX.Element {
           <button
             className={`icon ${shuffle ? 'toggled' : ''}`}
             title={shuffle ? 'Shuffle: on' : 'Shuffle: off'}
+            aria-label={shuffle ? 'Shuffle: on' : 'Shuffle: off'}
+            aria-pressed={shuffle}
             onClick={toggleShuffle}
           >
             🔀
           </button>
-          <button className="icon" title="Previous" onClick={() => void playPrev()}>
+          <button className="icon" title="Previous" aria-label="Previous track" onClick={() => void playPrev()}>
             ⏮
           </button>
-          <button className="primary play" title="Play / Pause" onClick={() => void togglePlay()}>
-            <span className={isPlaying ? '' : 'play-tri'}>{isPlaying ? '⏸' : '▶'}</span>
+          <button
+            className="primary play"
+            title="Play / Pause"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            onClick={() => void togglePlay()}
+          >
+            <span className={isPlaying ? '' : 'play-tri'} aria-hidden="true">
+              {isPlaying ? '⏸' : '▶'}
+            </span>
           </button>
-          <button className="icon" title="Next" onClick={() => void playNext()}>
+          <button className="icon" title="Next" aria-label="Next track" onClick={() => void playNext()}>
             ⏭
           </button>
           <button
@@ -78,6 +103,14 @@ export function TransportBar(): JSX.Element {
                   ? 'Repeat: all tracks'
                   : 'Repeat: this track'
             }
+            aria-label={
+              repeat === 'off'
+                ? 'Repeat: off'
+                : repeat === 'all'
+                  ? 'Repeat: all tracks'
+                  : 'Repeat: this track'
+            }
+            aria-pressed={repeat !== 'off'}
             onClick={cycleRepeat}
           >
             🔁
@@ -86,7 +119,18 @@ export function TransportBar(): JSX.Element {
         </div>
         <div className="seek">
           <span className="time">{fmtTime(player.positionSec)}</span>
-          <div className="bar" onClick={seek}>
+          <div
+            className="bar"
+            role="slider"
+            tabIndex={current ? 0 : -1}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(duration)}
+            aria-valuenow={Math.round(player.positionSec)}
+            aria-valuetext={`${fmtTime(player.positionSec)} of ${fmtTime(duration)}`}
+            onClick={seek}
+            onKeyDown={seekKey}
+          >
             <div className="fill" style={{ width: `${pct}%` }} />
           </div>
           <span className="time">{fmtTime(duration)}</span>
@@ -97,6 +141,8 @@ export function TransportBar(): JSX.Element {
         <button
           className={`icon ${ducking ? 'toggled' : ''}`}
           title={ducking ? 'Narration duck ON — music lowered' : 'Duck music for narration'}
+          aria-label={ducking ? 'Narration duck: on' : 'Narration duck: off'}
+          aria-pressed={ducking}
           onClick={() => setDuck(!ducking)}
         >
           🎙
@@ -108,16 +154,21 @@ export function TransportBar(): JSX.Element {
               ? 'Local output ON — you hear the mix on this machine (mute to avoid doubling when in the call)'
               : 'Local output muted — audio only goes to Discord'
           }
+          aria-label={monitorEnabled ? 'Local output: on' : 'Local output: muted'}
+          aria-pressed={monitorEnabled}
           onClick={toggleMonitor}
         >
           {monitorEnabled ? '🎧' : '🔇'}
         </button>
-        <span title="Master volume">🔈</span>
+        <span title="Master volume" aria-hidden="true">
+          🔈
+        </span>
         <input
           type="range"
           min={0}
           max={1}
           step={0.01}
+          aria-label="Master volume"
           value={player.volume}
           onChange={(e) => setMasterVolume(parseFloat(e.target.value))}
         />

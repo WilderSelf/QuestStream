@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
+import { Modal } from './Modal'
 import type { ItemKind, Song } from '@shared/types'
 import {
   KIND_ORDER,
@@ -178,19 +179,31 @@ export function ImportWizardModal(): JSX.Element | null {
     .filter((s): s is Song => !!s)
 
   return (
-    <div className="modal-backdrop" onClick={() => !busy && setOpen(false)}>
-      <div className="modal wizard" onClick={(e) => e.stopPropagation()}>
+    <Modal
+      onClose={() => setOpen(false)}
+      dismissable={!busy}
+      className="wizard"
+      labelledBy="wizard-title"
+    >
         {phase === 'setup' ? (
           <>
-            <h2>Import audio</h2>
+            <h2 id="wizard-title">Import audio</h2>
 
             <div className="field">
               <label>Source</label>
               <div className="kind-tabs">
-                <button className={`seg ${source === 'url' ? 'active' : ''}`} onClick={() => setSource('url')}>
+                <button
+                  className={`seg ${source === 'url' ? 'active' : ''}`}
+                  aria-pressed={source === 'url'}
+                  onClick={() => setSource('url')}
+                >
                   Link (YouTube / SoundCloud / …)
                 </button>
-                <button className={`seg ${source === 'files' ? 'active' : ''}`} onClick={() => setSource('files')}>
+                <button
+                  className={`seg ${source === 'files' ? 'active' : ''}`}
+                  aria-pressed={source === 'files'}
+                  onClick={() => setSource('files')}
+                >
                   Local files
                 </button>
               </div>
@@ -212,7 +225,12 @@ export function ImportWizardModal(): JSX.Element | null {
               <label>Type</label>
               <div className="kind-tabs">
                 {KIND_ORDER.map((k) => (
-                  <button key={k} className={`seg ${kind === k ? 'active' : ''}`} onClick={() => setKind(k)}>
+                  <button
+                    key={k}
+                    className={`seg ${kind === k ? 'active' : ''}`}
+                    aria-pressed={kind === k}
+                    onClick={() => setKind(k)}
+                  >
                     {KIND_LABELS[k]}
                   </button>
                 ))}
@@ -222,10 +240,18 @@ export function ImportWizardModal(): JSX.Element | null {
             <div className="field">
               <label>Tagging</label>
               <div className="kind-tabs">
-                <button className={`seg ${mode === 'batch' ? 'active' : ''}`} onClick={() => setMode('batch')}>
+                <button
+                  className={`seg ${mode === 'batch' ? 'active' : ''}`}
+                  aria-pressed={mode === 'batch'}
+                  onClick={() => setMode('batch')}
+                >
                   All at once
                 </button>
-                <button className={`seg ${mode === 'peritem' ? 'active' : ''}`} onClick={() => setMode('peritem')}>
+                <button
+                  className={`seg ${mode === 'peritem' ? 'active' : ''}`}
+                  aria-pressed={mode === 'peritem'}
+                  onClick={() => setMode('peritem')}
+                >
                   One by one
                 </button>
               </div>
@@ -273,7 +299,7 @@ export function ImportWizardModal(): JSX.Element | null {
           </>
         ) : (
           <>
-            <h2>Tag imported items</h2>
+            <h2 id="wizard-title">Tag imported items</h2>
             {busy ? (
               <p className="muted">
                 Importing…{' '}
@@ -282,7 +308,10 @@ export function ImportWizardModal(): JSX.Element | null {
                   : ''}
               </p>
             ) : importedSongs.length === 0 ? (
-              <p className="muted">No new items were imported.</p>
+              <p className="muted">
+                Nothing new to tag — these were already in your library, so no duplicates were
+                added.
+              </p>
             ) : (
               <div className="peritem-list">
                 {importedSongs.map((s) => (
@@ -304,7 +333,6 @@ export function ImportWizardModal(): JSX.Element | null {
             </div>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }
