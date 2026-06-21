@@ -1,4 +1,6 @@
-# Flatpak packaging for QuestStream. Build on a host with flatpak + flatpak-builder.
+# Packaging for QuestStream. Primary target is AppImage (full host access — needed for
+# browser-cookie reading, local files, and spawning yt-dlp/ffmpeg without a sandbox in
+# the way). Flatpak is still buildable via `electron-builder --linux flatpak`.
 # See PACKAGING.md for the full procedure.
 appId: io.github.WilderSelf.QuestStream
 productName: QuestStream
@@ -12,7 +14,7 @@ nodeGypRebuild: false
 buildDependenciesFromSource: false
 
 directories:
-  output: dist-flatpak
+  output: dist
   buildResources: build
 
 # The app payload: electron-vite's bundled output + package.json. Production
@@ -28,13 +30,27 @@ extraResources:
     to: bin
     filter:
       - '**/*'
+  # Bundled so the app can copy it into ~/.local/share/icons when the user adds a menu
+  # entry (see src/main/desktop.ts).
+  - from: build/icon.png
+    to: icon.png
 
 linux:
   category: AudioVideo
   icon: build/icon.png
   description: Bring-your-own-audio mixer for tabletop GMs — local files & links, ambience, scenes, Discord
   target:
-    - flatpak
+    - AppImage
+
+appImage:
+  artifactName: ${productName}-${version}-${arch}.AppImage
+
+# Update feed: GitHub Releases. electron-builder embeds this into the build (app-update.yml)
+# and emits latest-linux.yml; electron-updater reads it to offer in-place AppImage updates.
+publish:
+  provider: github
+  owner: WilderSelf
+  repo: QuestStream
 
 flatpak:
   runtimeVersion: '24.08'

@@ -10,8 +10,11 @@ import type {
   ImportProgress,
   AmbienceMode,
   RemoteCommand,
-  RemoteState
+  RemoteState,
+  ItemKind,
+  DesktopStatus
 } from '@shared/types'
+import { defaultGroupBy } from '@shared/taxonomy'
 
 export interface QueueItem {
   uid: string
@@ -132,16 +135,27 @@ interface State {
 
   importStatus: ImportProgress | null
   notice: Notice | null
+  blockingAlert: string | null // sticky banner for a blocking condition (e.g. missing yt-dlp)
+  botErrorDismissed: string | null // the Discord-error text the user has dismissed from the banner
+  updatingYtdlp: boolean // a yt-dlp download is in progress
+  playbackFailures: number // consecutive track failures (reset on a successful play)
+  suggestYtdlpUpdate: boolean // after repeated failures, offer an "Update yt-dlp" banner
   settingsOpen: boolean
   savePromptOpen: boolean
   saveScenePromptOpen: boolean
   loadedSceneId: string | null
 
   search: string
-  selectedTag: string | null
   editSongId: string | null
   shuffle: boolean
   repeat: RepeatMode
+
+  // library browser (tag-faceted, type-based)
+  kindTab: ItemKind // which of Music / Ambience / Soundboard is shown
+  groupBy: Record<ItemKind, string> // accordion grouping dimension, per kind
+  activeFilters: Record<ItemKind, Record<string, string | null>> // secondary chip filters
+  showArtistView: boolean // optional legacy Artist→Album→Song mode
+  importWizardOpen: boolean
 
   ambience: AmbienceSlot[]
   musicVolume: number
@@ -155,9 +169,22 @@ interface State {
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
   setSearch: (q: string) => void
-  setSelectedTag: (tag: string | null) => void
   setEditSong: (songId: string | null) => void
-  showNotice: (text: string, kind?: Notice['kind']) => void
+  showNotice: (text: string, kind?: Notice['kind'], persistent?: boolean) => void
+  dismissNotice: () => void
+  dismissAlert: () => void
+  dismissBotError: () => void
+  updateYtdlp: () => Promise<void>
+  installDesktopMenu: () => Promise<{ ok: boolean; error?: string; status?: DesktopStatus }>
+  notePlaybackFailure: () => void
+  dismissYtdlpSuggestion: () => void
+
+  setKindTab: (kind: ItemKind) => void
+  setGroupBy: (kind: ItemKind, dim: string) => void
+  setKindFilter: (kind: ItemKind, dim: string, value: string | null) => void
+  clearKindFilters: (kind: ItemKind) => void
+  toggleArtistView: () => void
+  setImportWizardOpen: (open: boolean) => void
 
   addAmbience: (song: Song) => void
   removeAmbience: (slotId: string) => void
@@ -230,15 +257,24 @@ export const useStore = create<State>((set, get) => ({
   selectedChannelId: null,
   importStatus: null,
   notice: null,
+  blockingAlert: null,
+  botErrorDismissed: null,
+  updatingYtdlp: false,
+  playbackFailures: 0,
+  suggestYtdlpUpdate: false,
   settingsOpen: false,
   savePromptOpen: false,
   saveScenePromptOpen: false,
   loadedSceneId: null,
   search: '',
-  selectedTag: null,
   editSongId: null,
   shuffle: false,
   repeat: 'off',
+  kindTab: 'track',
+  groupBy: { track: defaultGroupBy('track'), ambience: defaultGroupBy('ambience'), sfx: defaultGroupBy('sfx') },
+  activeFilters: { track: {}, ambience: {}, sfx: {} },
+  showArtistView: false,
+  importWizardOpen: false,
   ambience: [],
   musicVolume: 1,
   monitorEnabled: false,
@@ -265,6 +301,9 @@ export const useStore = create<State>((set, get) => ({
     window.api.discord.onStatus((s) => {
       const prev = get().bot
       set({ bot: s })
+      // A fresh/changed error (or recovery) should re-show the banner even if a prior
+      // one was dismissed.
+      if (s.error !== prev.error) set({ botErrorDismissed: null })
       if (s.state === 'ready') void get().refreshGuilds()
 
       const wasInChannel = !!prev.activeChannelId
@@ -278,12 +317,19 @@ export const useStore = create<State>((set, get) => ({
         get().setMonitor(true)
       }
     })
-    window.api.player.onStatus((s) => set({ player: s }))
+    window.api.player.onStatus((s) => {
+      set({ player: s })
+      // A track that actually starts playing clears the failure streak + any suggestion.
+      if (s.state === 'playing') set({ playbackFailures: 0, suggestYtdlpUpdate: false })
+    })
     window.api.player.onEnded(() => void get().playNext(true))
     window.api.monitor.onPcm((pcm) => {
       if (get().monitorEnabled) localMonitor.feed(pcm)
     })
-    window.api.app.onNotice((n) => get().showNotice(n.message, n.kind))
+    window.api.app.onNotice((n) => {
+      if (n.code === 'playback-failed') get().notePlaybackFailure()
+      get().showNotice(n.message, n.kind, n.persistent)
+    })
 
     // Remote control: execute incoming commands, and push state snapshots (throttled)
     // so the LAN web remote / Stream Deck can reflect now-playing, scenes and soundboard.
@@ -321,16 +367,68 @@ export const useStore = create<State>((set, get) => ({
     set({ selectedArtistId: id, selectedAlbumId: null }),
   selectAlbum: (id) => set({ selectedAlbumId: id }),
   setSearch: (q) => set({ search: q }),
-  setSelectedTag: (tag) => set({ selectedTag: tag }),
   setEditSong: (songId) => set({ editSongId: songId }),
 
-  showNotice: (text, kind = 'info') => {
+  setKindTab: (kind) => set({ kindTab: kind }),
+  setGroupBy: (kind, dim) => set((st) => ({ groupBy: { ...st.groupBy, [kind]: dim } })),
+  setKindFilter: (kind, dim, value) =>
+    set((st) => ({
+      activeFilters: { ...st.activeFilters, [kind]: { ...st.activeFilters[kind], [dim]: value } }
+    })),
+  clearKindFilters: (kind) => set((st) => ({ activeFilters: { ...st.activeFilters, [kind]: {} } })),
+  toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
+  setImportWizardOpen: (open) => set({ importWizardOpen: open }),
+
+  showNotice: (text, kind = 'info', persistent = false) => {
+    // Blocking conditions become a sticky banner (its own slot, so a later transient
+    // notice can't clobber it) and never auto-dismiss — best practice for errors the
+    // user must act on.
+    if (persistent) {
+      set({ blockingAlert: text })
+      return
+    }
     const notice = { text, kind } as Notice
     const id = ++noticeSeq
     set({ notice })
+    // Success/info can auto-dismiss quickly; errors linger longer so they aren't missed.
+    const ms = kind === 'error' ? 8000 : 4500
     setTimeout(() => {
       if (noticeSeq === id) set({ notice: null })
-    }, 4500)
+    }, ms)
+  },
+  dismissNotice: () => set({ notice: null }),
+  dismissAlert: () => set({ blockingAlert: null }),
+  dismissBotError: () => set({ botErrorDismissed: get().bot.error ?? null }),
+  dismissYtdlpSuggestion: () => set({ suggestYtdlpUpdate: false }),
+
+  notePlaybackFailure: () => {
+    const n = get().playbackFailures + 1
+    set({ playbackFailures: n })
+    // A stale yt-dlp is the usual cause of repeated YouTube failures — suggest an update.
+    if (n >= 2) set({ suggestYtdlpUpdate: true })
+  },
+
+  updateYtdlp: async () => {
+    if (get().updatingYtdlp) return
+    set({ updatingYtdlp: true })
+    const r = await window.api.tools.updateYtdlp()
+    set({ updatingYtdlp: false })
+    if (r.ok) {
+      // Clear the conditions that prompted the update.
+      set({ blockingAlert: null, suggestYtdlpUpdate: false, playbackFailures: 0 })
+      get().showNotice(`yt-dlp updated${r.version ? ` to ${r.version}` : ''}.`, 'info')
+    } else {
+      get().showNotice(`yt-dlp update failed: ${r.error ?? 'unknown error'}`, 'error')
+    }
+  },
+
+  // Install the AppImage launcher and surface the same success/error notice to both the
+  // first-run prompt and Settings; callers handle their own extra state (dismiss / status).
+  installDesktopMenu: async () => {
+    const r = await window.api.desktop.install()
+    if (r.ok) get().showNotice('Added QuestStream to your applications menu.', 'info')
+    else get().showNotice(r.error ?? 'Could not add the menu entry', 'error')
+    return r
   },
 
   enqueueSongs: (songs, atIndex) => {
@@ -405,6 +503,7 @@ export const useStore = create<State>((set, get) => ({
     try {
       await window.api.player.play(item.song)
     } catch (err) {
+      get().notePlaybackFailure()
       get().showNotice(`Playback failed: ${(err as Error).message}`, 'error')
     }
     // Warm up the next track so the upcoming crossfade/advance is instant.

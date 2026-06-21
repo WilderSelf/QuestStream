@@ -1,71 +1,55 @@
-import { useMemo } from 'react'
+import { useMemo, type KeyboardEvent } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { useStore, fmtTime } from '../store'
 import type { Song } from '@shared/types'
+import { parseTag, labelForValue } from '@shared/taxonomy'
+import { Icon } from './Icon'
+
+/** Spread onto a clickable non-button row so keyboard users can activate it (Enter/Space). */
+function rowActivation(onActivate: () => void): {
+  role: 'button'
+  tabIndex: 0
+  onClick: () => void
+  onKeyDown: (e: KeyboardEvent) => void
+} {
+  return {
+    role: 'button',
+    tabIndex: 0,
+    onClick: onActivate,
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onActivate()
+      }
+    }
+  }
+}
 
 /**
  * Returns the set of song ids matching the current search across title, artist
  * and album. Returns `null` when there's no search (meaning "everything matches").
  */
-function useMatchingSongIds(): Set<string> | null {
+export function useMatchingSongIds(): Set<string> | null {
   const search = useStore((s) => s.search)
-  const selectedTag = useStore((s) => s.selectedTag)
   const library = useStore((s) => s.library)
   return useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q && !selectedTag) return null
+    if (!q) return null
     const artistName = new Map(library.artists.map((a) => [a.id, a.name.toLowerCase()]))
     const albumTitle = new Map(library.albums.map((a) => [a.id, a.title.toLowerCase()]))
     const ids = new Set<string>()
     for (const s of library.songs) {
       const tags = s.tags ?? []
-      const matchesTag = !selectedTag || tags.includes(selectedTag)
-      const matchesText =
-        !q ||
+      if (
         s.title.toLowerCase().includes(q) ||
         artistName.get(s.artistId)?.includes(q) ||
         albumTitle.get(s.albumId)?.includes(q) ||
         tags.some((t) => t.toLowerCase().includes(q))
-      if (matchesTag && matchesText) ids.add(s.id)
+      )
+        ids.add(s.id)
     }
     return ids
-  }, [search, selectedTag, library])
-}
-
-/** Library-wide tag filter bar. */
-export function TagBar(): JSX.Element | null {
-  const songs = useStore((s) => s.library.songs)
-  const selectedTag = useStore((s) => s.selectedTag)
-  const setSelectedTag = useStore((s) => s.setSelectedTag)
-
-  const tags = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const s of songs) for (const t of s.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1)
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  }, [songs])
-
-  if (tags.length === 0) return null
-
-  return (
-    <div className="tag-bar">
-      <span className="tag-bar-label">Tags:</span>
-      <button
-        className={`tag-chip ${selectedTag === null ? 'active' : ''}`}
-        onClick={() => setSelectedTag(null)}
-      >
-        All
-      </button>
-      {tags.map(([tag, count]) => (
-        <button
-          key={tag}
-          className={`tag-chip ${selectedTag === tag ? 'active' : ''}`}
-          onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-        >
-          {tag} <span className="tag-count">{count}</span>
-        </button>
-      ))}
-    </div>
-  )
+  }, [search, library])
 }
 
 export function PlaylistsPane(): JSX.Element {
@@ -76,7 +60,20 @@ export function PlaylistsPane(): JSX.Element {
   const loadedId = useStore((s) => s.loadedPlaylistId)
   const loadedSceneId = useStore((s) => s.loadedSceneId)
   const clearQueue = useStore((s) => s.clearQueue)
+  const queue = useStore((s) => s.queue)
+  const ambience = useStore((s) => s.ambience)
   const showNotice = useStore((s) => s.showNotice)
+
+  // Both of these replace the whole live mix; guard them when there's unsaved work to lose.
+  function newQueue(): void {
+    if (queue.length === 0 || confirm(`Start a new queue? ${queue.length} track(s) will be cleared.`))
+      clearQueue()
+  }
+  function recallSceneConfirmed(id: string): void {
+    const dirty = queue.length > 0 || ambience.length > 0
+    if (!dirty || loadedSceneId === id || confirm('Replace the current mix with this scene? Unsaved changes will be lost.'))
+      void recallScene(id)
+  }
 
   async function removePlaylist(id: string, e: React.MouseEvent): Promise<void> {
     e.stopPropagation()
@@ -106,17 +103,29 @@ export function PlaylistsPane(): JSX.Element {
     <div className="pane">
       <div className="pane-header">
         <span>Scenes &amp; Playlists</span>
-        <span style={{ display: 'flex', gap: 6 }}>
-          <button className="icon" title="Import a shared pack (.questpack)" onClick={() => void importPack()}>
-            📥
+        <span className="header-actions">
+          <button
+            className="icon"
+            title="Import a shared pack (.questpack)"
+            aria-label="Import a shared pack"
+            onClick={() => void importPack()}
+          >
+            <Icon name="download" size={16} />
           </button>
-          <button className="icon" title="New / clear queue" onClick={clearQueue}>
-            ✚
+          <button
+            className="icon"
+            title="Start a new queue (clears the current one)"
+            aria-label="Start a new queue"
+            onClick={newQueue}
+          >
+            <Icon name="plus" size={16} />
           </button>
         </span>
       </div>
       <div className="pane-body">
-        <div className="section-label">🎬 Scenes</div>
+        <div className="section-label">
+          <Icon name="film" size={13} /> Scenes
+        </div>
         {scenes.length === 0 && (
           <div className="muted small">
             Save a full mix (music + ambience + volumes) as a scene, then recall it in one click.
@@ -127,24 +136,38 @@ export function PlaylistsPane(): JSX.Element {
             key={sc.id}
             className={`row playlist-row scene-row ${loadedSceneId === sc.id ? 'selected' : ''}`}
             title="Recall this scene (crossfades)"
-            onClick={() => recallScene(sc.id)}
+            {...rowActivation(() => recallSceneConfirmed(sc.id))}
           >
             <div className="title">
-              <div className="title">🎬 {sc.name}</div>
+              <div className="title scene-name">
+                <Icon name="film" size={14} /> {sc.name}
+              </div>
               <div className="sub">
                 {sc.songIds.length} tracks · {sc.ambience.length} layers
               </div>
             </div>
-            <button className="remove-btn" title="Export pack" onClick={(e) => void exportScene(sc.id, e)}>
-              📤
+            <button
+              className="remove-btn"
+              title="Export pack"
+              aria-label={`Export scene ${sc.name}`}
+              onClick={(e) => void exportScene(sc.id, e)}
+            >
+              <Icon name="upload" size={15} />
             </button>
-            <button className="remove-btn" title="Delete" onClick={(e) => void removeScene(sc.id, e)}>
-              🗑
+            <button
+              className="remove-btn"
+              title="Delete"
+              aria-label={`Delete scene ${sc.name}`}
+              onClick={(e) => void removeScene(sc.id, e)}
+            >
+              <Icon name="trash" size={15} />
             </button>
           </div>
         ))}
 
-        <div className="section-label">♪ Playlists</div>
+        <div className="section-label">
+          <Icon name="music" size={13} /> Playlists
+        </div>
         {playlists.length === 0 && (
           <div className="muted small">Build a queue, then “Save as playlist”.</div>
         )}
@@ -152,21 +175,27 @@ export function PlaylistsPane(): JSX.Element {
           <div
             key={p.id}
             className={`row playlist-row ${loadedId === p.id ? 'selected' : ''}`}
-            onClick={() => loadPlaylist(p.id)}
+            {...rowActivation(() => loadPlaylist(p.id))}
           >
             <div className="title">
               <div className="title">{p.name}</div>
               <div className="sub">{p.songIds.length} tracks</div>
             </div>
-            <button className="remove-btn" title="Export pack" onClick={(e) => void exportPlaylist(p.id, e)}>
-              📤
+            <button
+              className="remove-btn"
+              title="Export pack"
+              aria-label={`Export playlist ${p.name}`}
+              onClick={(e) => void exportPlaylist(p.id, e)}
+            >
+              <Icon name="upload" size={15} />
             </button>
             <button
               className="remove-btn"
               title="Delete"
+              aria-label={`Delete playlist ${p.name}`}
               onClick={(e) => void removePlaylist(p.id, e)}
             >
-              🗑
+              <Icon name="trash" size={15} />
             </button>
           </div>
         ))}
@@ -207,7 +236,7 @@ export function ArtistsPane(): JSX.Element {
           <div
             key={a.id}
             className={`row ${selected === a.id ? 'selected' : ''}`}
-            onClick={() => selectArtist(a.id)}
+            {...rowActivation(() => selectArtist(a.id))}
           >
             <span className="title">{a.name}</span>
           </div>
@@ -249,7 +278,7 @@ export function AlbumsPane(): JSX.Element {
           <div
             key={al.id}
             className={`row ${selected === al.id ? 'selected' : ''}`}
-            onClick={() => selectAlbum(al.id)}
+            {...rowActivation(() => selectAlbum(al.id))}
           >
             {al.thumbnail ? (
               <img className="thumb" src={al.thumbnail} alt="" />
@@ -267,8 +296,15 @@ export function AlbumsPane(): JSX.Element {
   )
 }
 
-function SongRow({ song }: { song: Song }): JSX.Element {
+/** Format a stored tag for display: namespaced → its value label, free → as-is. */
+function tagLabel(tag: string): string {
+  const { dim, value } = parseTag(tag)
+  return dim ? labelForValue(dim, value) : value
+}
+
+export function SongRow({ song }: { song: Song }): JSX.Element {
   const enqueueSongs = useStore((s) => s.enqueueSongs)
+  const addAmbience = useStore((s) => s.addAmbience)
   const setEditSong = useStore((s) => s.setEditSong)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `song:${song.id}`,
@@ -285,27 +321,51 @@ function SongRow({ song }: { song: Song }): JSX.Element {
       await window.api.library.deleteSong(song.id)
   }
 
+  // Double-click sends the item to its natural place in the live mix, by kind:
+  // ambience → a looping layer, sfx → a soundboard one-shot, otherwise the queue.
+  function activate(): void {
+    if (song.kind === 'ambience') addAmbience(song)
+    else if (song.kind === 'sfx') void window.api.soundboard.add(song.id)
+    else enqueueSongs([song])
+  }
+  const hint =
+    song.kind === 'ambience'
+      ? 'Drag to the mix · double-click to add a looping layer'
+      : song.kind === 'sfx'
+        ? 'Drag to the soundboard · double-click to add a one-shot'
+        : 'Drag to queue · double-click to enqueue'
+
   return (
     <div
       ref={setNodeRef}
       className={`row song ${isDragging ? 'dragging' : ''}`}
-      title="Drag to queue · double-click to enqueue"
+      title={hint}
       {...listeners}
       {...attributes}
-      onDoubleClick={() => enqueueSongs([song])}
+      onDoubleClick={activate}
     >
       <div className="title">
         <div className="title">{song.title}</div>
         {song.tags && song.tags.length > 0 && (
-          <div className="song-tags">{song.tags.map((t) => `#${t}`).join(' ')}</div>
+          <div className="song-tags">{song.tags.map(tagLabel).join(' · ')}</div>
         )}
       </div>
       <span className="duration">{fmtTime(song.duration)}</span>
-      <button className="remove-btn" title="Edit tags & metadata" onClick={edit}>
-        ✎
+      <button
+        className="remove-btn"
+        title="Edit tags & metadata"
+        aria-label={`Edit ${song.title}`}
+        onClick={edit}
+      >
+        <Icon name="edit" size={15} />
       </button>
-      <button className="remove-btn" title="Delete" onClick={(e) => void del(e)}>
-        🗑
+      <button
+        className="remove-btn"
+        title="Delete"
+        aria-label={`Delete ${song.title} from library`}
+        onClick={(e) => void del(e)}
+      >
+        <Icon name="trash" size={15} />
       </button>
     </div>
   )
@@ -327,8 +387,13 @@ export function SongsPane(): JSX.Element {
       <div className="pane-header">
         <span>Songs</span>
         {list.length > 0 && (
-          <button className="icon" title="Add all to queue" onClick={() => enqueueSongs(list)}>
-            ＋ all
+          <button
+            className="icon icon-text"
+            title="Add all to queue"
+            aria-label="Add all to queue"
+            onClick={() => enqueueSongs(list)}
+          >
+            <Icon name="plus" size={14} /> all
           </button>
         )}
       </div>

@@ -215,6 +215,21 @@ export class RemoteServer {
     return !!this.token && safeEq(h, this.token)
   }
 
+  /**
+   * DNS-rebinding defense: a real client reaches us by numeric LAN IP, so a Host header
+   * carrying a DNS name means a foreign page has rebound its domain to our IP. Accept only
+   * IP-literal (or localhost) Host values for /api/ calls.
+   */
+  private allowedHost(req: IncomingMessage): boolean {
+    const name = (req.headers['host'] ?? '')
+      .toString()
+      .replace(/:\d+$/, '') // strip :port
+      .replace(/^\[|\]$/g, '') // strip IPv6 brackets
+    if (name === 'localhost') return true
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(name)) return true // IPv4 literal
+    return name.includes(':') && /^[0-9a-f:]+$/i.test(name) // IPv6 literal
+  }
+
   private json(res: ServerResponse, status: number, body: object): void {
     res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' })
     res.end(JSON.stringify(body))
@@ -234,6 +249,11 @@ export class RemoteServer {
     if (!url.pathname.startsWith('/api/')) {
       res.writeHead(404)
       res.end()
+      return
+    }
+
+    if (!this.allowedHost(req)) {
+      this.json(res, 403, { error: 'forbidden host' })
       return
     }
 

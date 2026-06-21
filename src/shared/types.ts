@@ -22,6 +22,13 @@ export interface Album {
  */
 export type SourceType = 'youtube' | 'url' | 'local'
 
+/**
+ * Which library pane an item belongs to. Exclusive — set at import, drives which of
+ * the three browser panes (Music / Ambience / Soundboard) the item appears in.
+ * Additive: libraries with no field migrate to 'track' (see LibraryStore.load).
+ */
+export type ItemKind = 'track' | 'ambience' | 'sfx'
+
 export interface Song {
   id: string
   albumId: string
@@ -33,9 +40,9 @@ export interface Song {
   thumbnail?: string
   tags: string[]
   addedAt: number
-  enriched?: boolean // MusicBrainz enrichment attempted
   sourceType?: SourceType // undefined in old libraries → migrated to 'youtube'
   effect?: string // optional DSP preset key (see main/bot/effects.ts)
+  kind?: ItemKind // undefined in old libraries → migrated to 'track'
 }
 
 export interface Playlist {
@@ -144,6 +151,67 @@ export interface PlayerStatus {
 export interface AppNotice {
   message: string
   kind: 'info' | 'error'
+  // A persistent/blocking condition (e.g. a missing external tool) renders as a sticky
+  // banner that stays until the user dismisses it, instead of an auto-dismissing toast.
+  persistent?: boolean
+  // Tags a track-playback failure so the renderer can count them and, after a few,
+  // suggest updating yt-dlp (the usual cause when YouTube changes break a stale build).
+  code?: 'playback-failed'
+}
+
+// ---- External tools (yt-dlp / ffmpeg / ffprobe) ----
+export type ToolName = 'yt-dlp' | 'ffmpeg' | 'ffprobe'
+export interface ToolStatus {
+  name: ToolName
+  found: boolean
+  path: string
+  source: 'downloaded' | 'bundled' | 'system' | 'none'
+}
+export interface ToolUpdateResult {
+  ok: boolean
+  version?: string
+  error?: string
+}
+
+// ---- YouTube cookies (to get past "confirm you're not a bot") ----
+export type CookiesMode = 'none' | 'file' | 'browser'
+// Browsers yt-dlp can read cookies from directly (allow-listed to avoid arg injection).
+export const COOKIE_BROWSERS = [
+  'firefox',
+  'chrome',
+  'chromium',
+  'brave',
+  'edge',
+  'vivaldi',
+  'opera',
+  'safari'
+] as const
+export type CookieBrowser = (typeof COOKIE_BROWSERS)[number]
+export interface CookiesStatus {
+  mode: CookiesMode
+  browser?: CookieBrowser
+  hasFile: boolean // an imported cookies.txt exists in app data
+}
+
+// ---- Desktop integration (AppImage → applications menu) ----
+export interface DesktopStatus {
+  isAppImage: boolean // running as an AppImage (so a menu entry can be installed)
+  installed: boolean // a .desktop entry already exists
+}
+
+// ---- Auto-update (electron-updater) ----
+export type UpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+export interface UpdateState {
+  phase: UpdatePhase
+  version?: string // the version being offered/downloaded
+  percent?: number // download progress (0–100) while phase === 'downloading'
+  message?: string // error detail when phase === 'error'
 }
 
 // ---- Remote control (LAN web remote / Stream Deck) ----
@@ -201,4 +269,5 @@ export interface RetagPayload {
   artistName?: string
   albumTitle?: string
   tags?: string[]
+  kind?: ItemKind // re-classify the item into another pane
 }

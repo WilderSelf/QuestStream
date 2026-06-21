@@ -1,10 +1,76 @@
-# Packaging QuestStream as a Flatpak
+# Packaging QuestStream
 
-This produces a fully self-contained Flatpak: the app, Electron, and the external
-tools (`yt-dlp`, `ffmpeg`, `ffprobe`, `deno`) are all bundled, and the app is granted
-**no host-filesystem access**, so everything it writes lives under
-`~/.var/app/io.github.WilderSelf.QuestStream/`. Removing the Flatpak with
-`--delete-data` erases all of it.
+**Primary distribution is an AppImage** — a single, self-contained executable that bundles
+the app, Electron, and the external tools (`yt-dlp`, `ffmpeg`, `ffprobe`, `deno`). It runs
+with full host access, which is what QuestStream needs (reading browser cookies for the
+yt-dlp bot-wall, importing local files, spawning the bundled tools) — a sandbox just gets
+in the way. Flatpak is still available as an optional, sandboxed lane (see the bottom).
+
+---
+
+## AppImage (primary)
+
+### Build
+
+```bash
+cd QuestStream
+npm install                # pulls electron-builder + electron-updater
+npm run pack:binaries      # downloads yt-dlp/ffmpeg/ffprobe/deno into ./bin (gitignored)
+npm run typecheck && npm test   # must be green
+npm run pack:appimage      # electron-vite build + electron-builder AppImage target
+```
+
+Output: **`dist/QuestStream-<version>-x86_64.AppImage`** plus `latest-linux.yml` (the
+auto-update manifest). `bin/` is gitignored (the binaries are large — `deno` alone exceeds
+GitHub's 100 MB file limit), so `pack:binaries` is required on a fresh clone first.
+
+> Unlike the Flatpak, the AppImage **can be built without `flatpak-builder`** — plain
+> `electron-builder` on any x86_64 Linux box with Node 22.
+
+### Run
+
+```bash
+chmod +x dist/QuestStream-*.AppImage
+./dist/QuestStream-*.AppImage
+# If FUSE isn't installed: ./QuestStream-*.AppImage --appimage-extract-and-run
+```
+
+### Applications-menu entry
+
+AppImages don't register themselves. On first run QuestStream offers a one-click **Add to
+menu** banner (also in ⚙ Settings → *Applications menu*). For a manual/scripted install:
+
+```bash
+./scripts/install-desktop.sh /path/to/QuestStream-*.AppImage
+```
+
+This writes `~/.local/share/applications/io.github.WilderSelf.QuestStream.desktop` + an icon.
+
+### Auto-update
+
+Builds carry an update feed (`publish:` in `electron-builder.yml` → GitHub Releases).
+electron-updater checks on launch, downloads in the background, and the app shows a
+**"Restart to update"** banner when ready (in-place AppImage replacement). Requires that
+each release uploads **both** the `.AppImage` and `latest-linux.yml` as release assets.
+
+### Cutting a release
+
+1. Bump `version` in `package.json` (the in-app version comes from it via `app.getVersion()`).
+2. Pin the bundled-tool versions for a reproducible build:
+   `YTDLP_VERSION=2025.xx.xx DENO_VERSION=v2.x.x FFMPEG_VERSION=7.0.2 npm run pack:binaries`
+3. `npm run typecheck && npm test`, then `npm run pack:appimage`.
+4. Smoke-test the AppImage on a clean machine (first-run disclaimer → add-to-menu → local +
+   URL import → cookies file → scene → soundboard/duck → DSP → pack import → Discord voice).
+5. Create the GitHub Release for the tag and **upload both `dist/QuestStream-<v>-x86_64.AppImage`
+   and `dist/latest-linux.yml`** (the second is what makes auto-update work).
+
+---
+
+## Flatpak (optional, sandboxed)
+
+A fully self-contained, sandboxed alternative with **no host-filesystem access** — everything
+lives under `~/.var/app/io.github.WilderSelf.QuestStream/`. Note: browser-cookie reading does
+**not** work here (the sandbox can't see host browser profiles) — use the cookies-*file* mode.
 
 > **Build host:** any **x86_64 Linux** machine with `flatpak`, `flatpak-builder`, and
 > Node 22. The dev sandbox this repo was written in does **not** have `flatpak-builder`,

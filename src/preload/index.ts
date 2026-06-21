@@ -10,8 +10,8 @@ function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
 const api: RendererApi = {
   library: {
     get: () => ipcRenderer.invoke(IPC.libraryGet),
-    addUrl: (url) => ipcRenderer.invoke(IPC.libraryAddUrl, url),
-    addFiles: () => ipcRenderer.invoke(IPC.libraryAddFiles),
+    addUrl: (url, opts) => ipcRenderer.invoke(IPC.libraryAddUrl, url, opts),
+    addFiles: (opts) => ipcRenderer.invoke(IPC.libraryAddFiles, opts),
     setEffect: (songId, effect) => ipcRenderer.invoke(IPC.librarySetEffect, songId, effect),
     retag: (songId, payload) => ipcRenderer.invoke(IPC.libraryRetag, songId, payload),
     deleteSong: (songId) => ipcRenderer.invoke(IPC.libraryDeleteSong, songId),
@@ -36,6 +36,24 @@ const api: RendererApi = {
   },
   packs: {
     import: () => ipcRenderer.invoke(IPC.packImport)
+  },
+  tools: {
+    getStatus: () => ipcRenderer.invoke(IPC.toolsGetStatus),
+    updateYtdlp: () => ipcRenderer.invoke(IPC.toolsUpdateYtdlp)
+  },
+  cookies: {
+    get: () => ipcRenderer.invoke(IPC.cookiesGet),
+    setMode: (mode, browser) => ipcRenderer.invoke(IPC.cookiesSetMode, mode, browser),
+    importFile: () => ipcRenderer.invoke(IPC.cookiesImportFile)
+  },
+  desktop: {
+    getStatus: () => ipcRenderer.invoke(IPC.desktopGetStatus),
+    install: () => ipcRenderer.invoke(IPC.desktopInstall)
+  },
+  update: {
+    onStatus: (cb) => subscribe(IPC.updateStatus, cb),
+    install: () => ipcRenderer.invoke(IPC.updateInstall),
+    check: () => ipcRenderer.invoke(IPC.updateCheck)
   },
   discord: {
     hasToken: () => ipcRenderer.invoke(IPC.discordHasToken),

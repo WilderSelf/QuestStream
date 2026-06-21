@@ -25,8 +25,11 @@
   --panel: var(--nord1);
   --panel-alt: var(--nord2);
   --border: #2b313c;
+  --border-subtle: rgba(43, 49, 60, 0.5);
   --text: var(--nord5);
-  --text-dim: #9aa4b8;
+  /* Dimmed text — kept ≥4.5:1 on --bg for WCAG AA body contrast. */
+  --text-dim: #b4bdd1;
+  --muted: var(--text-dim); /* alias: some rules referenced an undefined --muted */
   --accent: var(--nord8);
   --accent-deep: var(--nord10);
   /* "Active / enabled" emphasis — orange (used for primary actions + toggled buttons) */
@@ -35,6 +38,40 @@
   --active-tint: rgba(208, 135, 112, 0.2);
   --selected: rgba(136, 192, 208, 0.18);
   --hover: rgba(76, 86, 106, 0.4);
+
+  /* Radius scale (was scattered 4/5/6/7/8/10px; 5 & 7 consolidated to the 6px default). */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Type scale (the high-frequency body sizes; headings stay as one-off literals). */
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 12px;
+  --text-md: 13px;
+
+  /* Spacing scale (gaps/paddings). */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-6: 16px;
+}
+
+/* Inline action-button group in pane headers (was a repeated inline flex style). */
+.header-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Smooth the background change on the interactive rows/chips/tabs (buttons already animate). */
+.row,
+.tag-chip,
+.seg,
+.accordion-head {
+  transition: background 0.12s, color 0.12s;
 }
 
 * {
@@ -50,7 +87,7 @@ body,
 
 body {
   font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text);
   background: var(--bg);
   user-select: none;
@@ -59,11 +96,11 @@ body {
 
 button {
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text);
   background: var(--panel-alt);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
@@ -102,20 +139,92 @@ button.icon.toggled {
   color: var(--active);
 }
 
+/* ---- SVG icons ----
+   Render as block to kill the inline-baseline gap, and flex-center within icon-only controls.
+   Icons inherit currentColor, so the existing hover/.toggled/.active colour rules tint them. */
+button svg,
+.grip svg,
+.vol-icon svg,
+.section-label svg,
+.accordion-caret svg,
+.toast-icon svg,
+.alert-icon svg,
+.update-icon svg {
+  display: block;
+}
+button.icon,
+.remove-btn,
+.play-btn,
+.amb-play,
+.sfx-key,
+.sfx-duck,
+.alert-close,
+.toast-close,
+.icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-text {
+  gap: var(--space-1);
+}
+.grip,
+.vol-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.tag-removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 input,
 select {
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text);
   background: var(--nord0);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 6px 8px;
   outline: none;
 }
 input:focus,
 select:focus {
   border-color: var(--accent);
+}
+
+/* Visible keyboard-focus indicator for every interactive surface. Uses :focus-visible so
+   it only shows for keyboard/AT navigation, not mouse clicks. */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+[role='slider']:focus-visible,
+[tabindex]:focus-visible,
+.row:focus-visible,
+.seg:focus-visible,
+.tag-chip:focus-visible,
+.accordion-head:focus-visible,
+.bar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Let users copy content/diagnostic text even though the chrome disables selection. */
+.title,
+.sub,
+.meta,
+.muted,
+.remote-url,
+.remote-token,
+.toast-text,
+.alert-text,
+input,
+textarea {
+  user-select: text;
 }
 
 /* ---- App shell ---- */
@@ -129,7 +238,7 @@ select:focus {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   padding: 8px 12px;
   background: linear-gradient(var(--nord1), var(--nord0));
   border-bottom: 1px solid var(--border);
@@ -151,7 +260,7 @@ select:focus {
 }
 .add-url {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
   align-items: center;
   flex: 1 1 140px;
   min-width: 0;
@@ -164,21 +273,35 @@ select:focus {
 .add-url button {
   flex-shrink: 0;
 }
-.search-box {
+.search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex: 1 1 110px;
   min-width: 0;
   max-width: 190px;
+}
+.search-wrap .search-icon {
+  position: absolute;
+  left: 8px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+.search-box {
+  width: 100%;
+  min-width: 0;
+  padding-left: 28px;
 }
 
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--nord0);
   border: 1px solid var(--border);
-  font-size: 11px;
+  font-size: var(--text-sm);
   white-space: nowrap;
   max-width: 170px;
   overflow: hidden;
@@ -213,7 +336,7 @@ select:focus {
 .tag-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 6px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -222,16 +345,16 @@ select:focus {
   flex-shrink: 0;
 }
 .tag-bar-label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   flex-shrink: 0;
 }
 .tag-chip {
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--nord0);
   border: 1px solid var(--border);
   color: var(--text);
@@ -249,10 +372,10 @@ select:focus {
 }
 .tag-count {
   opacity: 0.6;
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 .song-tags {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--nord15);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -260,7 +383,7 @@ select:focus {
 .tag-edit {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   margin-bottom: 6px;
 }
 .tag-edit.quick {
@@ -273,7 +396,7 @@ select:focus {
 /* ---- Browser panes ---- */
 .browser {
   display: grid;
-  grid-template-columns: 170px 1fr 1fr 1.3fr 1.1fr;
+  grid-template-columns: 180px 1.7fr 1.2fr;
   flex: 1;
   min-height: 0;
 }
@@ -287,7 +410,7 @@ select:focus {
 }
 .pane-header {
   padding: 8px 10px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -296,7 +419,7 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .pane-body {
   overflow-y: auto;
@@ -307,7 +430,7 @@ select:focus {
 .row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 7px 10px;
   cursor: pointer;
   border-bottom: 1px solid rgba(43, 49, 60, 0.5);
@@ -327,12 +450,12 @@ select:focus {
 }
 .row .sub {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 .row .thumb {
   width: 30px;
   height: 30px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   background: var(--panel-alt);
   flex-shrink: 0;
@@ -346,21 +469,21 @@ select:focus {
 .muted {
   color: var(--text-dim);
   padding: 16px 12px;
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.5;
 }
 
 .duration {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ---- Now playing queue ---- */
 .queue.drop-active .pane-body {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .queue-item .grip {
   color: var(--text-dim);
@@ -422,7 +545,7 @@ select:focus {
 .deck-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 6px 10px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -443,7 +566,7 @@ select:focus {
 }
 .ambience-header {
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -457,12 +580,12 @@ select:focus {
 .ambience-list.drop-active {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .amb-slot {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 6px 10px;
   border-bottom: 1px solid rgba(43, 49, 60, 0.5);
 }
@@ -472,7 +595,7 @@ select:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .amb-slot input[type='range'] {
   width: 86px;
@@ -484,25 +607,25 @@ select:focus {
 }
 .amb-slot .amb-play {
   padding: 3px 7px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   flex-shrink: 0;
 }
 .muted.small {
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 10px;
 }
 .amb-slot .amb-interval {
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--muted, #99a);
   flex-shrink: 0;
 }
 .amb-slot .amb-interval input[type='number'] {
   width: 40px;
   padding: 2px 4px;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ---- Remote pairing (settings) ---- */
@@ -515,16 +638,16 @@ select:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   margin-top: 10px;
 }
 .remote-pair img {
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #fff;
   padding: 6px;
 }
 .remote-url {
-  font-size: 10px;
+  font-size: var(--text-xs);
   word-break: break-all;
   color: var(--muted, #99a);
   text-align: center;
@@ -533,13 +656,13 @@ select:focus {
   background: none;
   border: 0;
   color: var(--nord8, #88c0d0);
-  font-size: 11px;
+  font-size: var(--text-sm);
   cursor: pointer;
   padding: 2px;
 }
 .remote-advanced {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .remote-advanced summary {
   cursor: pointer;
@@ -552,28 +675,28 @@ select:focus {
   width: 100%;
   margin-top: 8px;
   font-family: monospace;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ---- Soundboard ---- */
 .sfx-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 6px;
   min-height: 40px;
 }
 .sfx-grid.drop-active {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .sfx {
   display: flex;
   align-items: center;
   gap: 2px;
   background: rgba(43, 49, 60, 0.5);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 2px;
 }
 .sfx .sfx-trigger {
@@ -581,12 +704,12 @@ select:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-base);
   padding: 5px 9px;
 }
 .sfx .sfx-key {
   min-width: 22px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 3px 5px;
 }
 .sfx .sfx-key.bound {
@@ -606,14 +729,17 @@ select:focus {
   padding-bottom: 5px;
 }
 .playlist-row .sub {
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 .scene-row.selected {
   box-shadow: inset 3px 0 0 var(--nord15);
 }
 .section-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: 5px 10px 3px;
-  font-size: 10px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -622,12 +748,184 @@ select:focus {
   background: var(--bg);
 }
 
+/* ---- Library pane (tag-faceted browser) ---- */
+.library-pane {
+  min-width: 0;
+}
+.library-head {
+  gap: var(--space-3);
+}
+.library-head-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+/* segmented control (kind tabs, source/type/mode toggles) */
+.kind-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--nord0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2px;
+}
+.seg {
+  flex: 1;
+  font-size: var(--text-sm);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg:hover {
+  color: var(--text);
+}
+.seg.active {
+  background: var(--accent);
+  color: var(--nord0);
+  font-weight: 600;
+}
+.library-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 6px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.group-by {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+.group-by select {
+  font-size: var(--text-sm);
+  padding: 2px 6px;
+}
+.filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.filter-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+  margin-right: 2px;
+}
+.accordion {
+  border-bottom: 1px solid rgba(43, 49, 60, 0.5);
+}
+.accordion-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--panel);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.accordion-head:hover {
+  background: var(--hover);
+}
+.accordion-caret {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-dim);
+}
+.accordion-title {
+  flex: 1;
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+.artist-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- Import wizard + tag picker ---- */
+.modal.wizard {
+  max-width: 560px;
+  width: 560px;
+}
+.tag-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tag-picker .filter-row {
+  border-bottom: none;
+  padding: 3px 0;
+}
+.custom-tag {
+  font-size: var(--text-sm);
+  padding: 3px 8px;
+  width: 140px;
+}
+.peritem-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.peritem {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.peritem-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.wizard-error {
+  background: rgba(191, 97, 106, 0.14); /* nord11 tint */
+  border: 1px solid var(--nord11);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin: 4px 0 10px;
+}
+.wizard-error-msg {
+  font-size: var(--text-base);
+  color: var(--nord11);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 7.5em;
+  overflow-y: auto;
+}
+.wizard-error-fix {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: 8px;
+}
+.wizard-error-fix .muted {
+  flex: 1;
+}
+
 /* ---- Transport bar ---- */
 .transport {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-6);
   padding: 10px 16px;
   background: linear-gradient(var(--nord0), var(--nord1));
   border-top: 1px solid var(--border);
@@ -635,13 +933,13 @@ select:focus {
 .np-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   min-width: 0;
 }
 .np-info .thumb {
   width: 44px;
   height: 44px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   object-fit: cover;
   background: var(--panel-alt);
 }
@@ -656,7 +954,7 @@ select:focus {
 }
 .np-info .meta .a {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--text-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -665,13 +963,13 @@ select:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 360px;
 }
 .control-buttons {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
 }
 /* Larger, legible transport controls (the small emoji glyphs were hard to read). */
 .control-buttons .icon {
@@ -702,28 +1000,23 @@ select:focus {
   border-color: var(--accent);
   color: var(--nord0);
 }
-/* Optically center the play triangle (its visual mass sits left of the glyph box,
-   so a small nudge makes it look centered in the circle). Pause needs no nudge. */
-.control-buttons .play .play-tri {
-  margin-left: 3px;
-}
 /* Repeat-mode clarity: orange = on, "1" badge = repeat-one. */
 .control-buttons .repeat .rep-badge {
   position: absolute;
   top: 3px;
   right: 6px;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 700;
   line-height: 1;
 }
 .seek {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   width: 100%;
 }
 .seek .time {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
   width: 36px;
@@ -732,7 +1025,7 @@ select:focus {
 .bar {
   flex: 1;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--nord3);
   cursor: pointer;
   position: relative;
@@ -742,18 +1035,52 @@ select:focus {
   left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent);
 }
 .volume {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   justify-content: flex-end;
 }
 .volume input[type='range'] {
   width: 110px;
   accent-color: var(--accent);
+}
+
+/* ---- Narrow-window adaptation ----
+   Electron windows resize freely; without this the fixed 360px transport center column
+   forced the whole app wider than the viewport and (with body overflow:hidden) clipped the
+   right pane + volume controls. These breakpoints let the layout shrink instead of clip. */
+@media (max-width: 900px) {
+  .browser {
+    grid-template-columns: 150px 1.5fr 1.4fr;
+  }
+  .transport {
+    gap: var(--space-3);
+    padding: 10px 10px;
+  }
+  .controls {
+    min-width: 0;
+  }
+  .volume {
+    min-width: 0;
+  }
+  .control-buttons {
+    gap: var(--space-2);
+  }
+}
+@media (max-width: 720px) {
+  .np-info .thumb {
+    display: none;
+  }
+  .volume input[type='range'] {
+    width: 72px;
+  }
+  .control-buttons .icon {
+    min-width: 36px;
+  }
 }
 
 /* ---- Modal ---- */
@@ -769,10 +1096,12 @@ select:focus {
 .modal {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   padding: 20px;
   width: 480px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .modal h2 {
@@ -782,26 +1111,33 @@ select:focus {
 }
 .modal p {
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.6;
   margin: 6px 0 14px;
 }
 .modal .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   margin-bottom: 14px;
 }
-.modal .field label {
-  font-size: 11px;
+.modal .field label,
+.modal .field .field-label {
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-dim);
 }
+/* Section/group captions render like field labels but aren't <label>s (they head a section
+   or a control group, not a single input). h3 resets keep them visually identical. */
+.modal .field h3.field-label {
+  margin: 0;
+  font-weight: normal;
+}
 .modal .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-3);
 }
 .modal a {
   color: var(--nord8);
@@ -816,19 +1152,207 @@ select:focus {
   top: 52px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: 8px;
-  padding: 9px 14px;
-  font-size: 12px;
-  max-width: min(440px, calc(100vw - 24px));
-  text-align: center;
+  border-radius: var(--radius-md);
+  padding: 9px 12px 9px 14px;
+  font-size: var(--text-base);
+  max-width: min(460px, calc(100vw - 24px));
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  z-index: 40;
+  z-index: 60; /* above modals (50) — an alert must never hide behind a dialog */
+  animation: toast-in 0.16s ease-out;
 }
 .toast.error {
   border-left-color: var(--nord11);
+}
+.toast-icon {
+  flex-shrink: 0;
+}
+.toast.error .toast-icon {
+  color: var(--nord11);
+}
+.toast-text {
+  flex: 1;
+}
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: var(--text-base);
+  padding: 2px 4px;
+  line-height: 1;
+}
+.toast-close:hover {
+  color: var(--text);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+}
+
+/* ---- Blocking alert banner (sticky; doesn't auto-dismiss) ---- */
+.alert-stack {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.alert-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 9px 14px;
+  background: rgba(191, 97, 106, 0.16); /* nord11 tint */
+  border-bottom: 1px solid var(--nord11);
+  color: var(--text);
+  font-size: var(--text-base);
+  flex-shrink: 0;
+}
+.alert-icon {
+  color: var(--nord11);
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.alert-text {
+  flex: 1;
+}
+.alert-action {
+  flex-shrink: 0;
+  background: var(--nord11);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--nord6);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  padding: 3px 10px;
+}
+.alert-action:hover {
+  filter: brightness(1.1);
+}
+.alert-close {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: var(--text-base);
+  padding: 2px 8px;
+  line-height: 1.4;
+}
+.alert-close:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+  /* Freeze the now-playing equalizer bars rather than looping them forever. */
+  .queue-item .now-bars span {
+    animation: none;
+  }
+}
+
+/* ---- Settings: external tool status ---- */
+.tool-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tool-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+}
+.tool-name {
+  font-family: ui-monospace, monospace;
+  min-width: 70px;
+}
+.tool-source {
+  flex: 1;
+  color: var(--text-dim);
+}
+.tool-list li.missing .tool-source {
+  color: var(--nord11);
+}
+.tool-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tool-dot.ok {
+  background: var(--nord14);
+}
+.tool-dot.bad {
+  background: var(--nord11);
+}
+.cookies-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: 8px;
+}
+.cookies-row .ok {
+  color: var(--nord14);
+}
+.muted.ok {
+  color: var(--nord14);
+}
+
+/* ---- Desktop-integration prompt (AppImage → menu) ---- */
+.desktop-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 9px 14px;
+  background: var(--selected); /* accent tint — inviting, not alarming */
+  border-bottom: 1px solid var(--accent);
+  flex-shrink: 0;
+  font-size: var(--text-base);
+}
+.desktop-prompt-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.desktop-prompt-text {
+  flex: 1;
+}
+
+/* ---- Auto-update banner ---- */
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 9px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: var(--text-base);
+}
+.update-banner.ready {
+  background: var(--selected);
+  border-bottom-color: var(--accent);
+}
+.update-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.update-text {
+  flex: 1;
 }
 
 ::-webkit-scrollbar {
@@ -837,7 +1361,7 @@ select:focus {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--nord3);
-  border-radius: 6px;
+  border-radius: var(--radius);
   border: 2px solid var(--bg);
 }
 ::-webkit-scrollbar-thumb:hover {

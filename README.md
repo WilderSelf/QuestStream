@@ -12,27 +12,23 @@ theme, Electron + React + TypeScript.
 <!-- Screenshot: drop an image at docs/screenshot.png and uncomment the next line -->
 <!-- ![QuestStream](docs/screenshot.png) -->
 
-## Install (Linux · Flatpak)
+## Install (Linux · AppImage)
 
-Download the latest `.flatpak` from the
+Download the latest `.AppImage` from the
 [**Releases**](https://github.com/WilderSelf/QuestStream/releases/latest) page, then:
 
 ```bash
-# one-time: the Flathub remote provides the shared runtime the bundle references
-flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
-
-flatpak install --user ./QuestStream-*.flatpak
-flatpak run io.github.WilderSelf.QuestStream
+chmod +x QuestStream-*.AppImage
+./QuestStream-*.AppImage
+# no FUSE? → ./QuestStream-*.AppImage --appimage-extract-and-run
 ```
 
-To uninstall and wipe all of its data:
+It's a single self-contained file — `yt-dlp`, `ffmpeg`, `ffprobe`, and `deno` are bundled,
+nothing to install separately. On first launch it offers to **add itself to your
+applications menu** (one click), and it **auto-updates** from GitHub Releases.
 
-```bash
-flatpak uninstall --delete-data io.github.WilderSelf.QuestStream
-```
-
-> x86_64 Linux. The bundle has **no host-filesystem access** — everything it writes lives
-> under `~/.var/app/io.github.WilderSelf.QuestStream/`.
+> x86_64 Linux. Settings live in `~/.config/QuestStream/`. Prefer a sandbox? A Flatpak
+> build is also available — see [PACKAGING.md](PACKAGING.md) (cookies-file mode only there).
 
 ## Features
 
@@ -65,9 +61,10 @@ The app shells out to standalone prebuilt binaries (no native npm modules):
 - **Node.js** 22 LTS · **yt-dlp** (link resolution & metadata) · **ffmpeg/ffprobe**
   (audio decode/normalize).
 
-On another machine put these on `PATH` (or set `QUESTSTREAM_YTDLP_PATH` /
-`QUESTSTREAM_FFMPEG_PATH` / `QUESTSTREAM_FFPROBE_PATH`). When packaged as a Flatpak they’re
-bundled (see [PACKAGING.md](PACKAGING.md)).
+In the packaged **AppImage** (and Flatpak) these are bundled — nothing to install. Running
+from source, put them on `PATH` (or set `QUESTSTREAM_YTDLP_PATH` / `QUESTSTREAM_FFMPEG_PATH`
+/ `QUESTSTREAM_FFPROBE_PATH`), or just drop them in the repo's `bin/` (see
+[PACKAGING.md](PACKAGING.md)). yt-dlp can also be updated in-app from ⚙ Settings.
 
 ## Run from source (development)
 

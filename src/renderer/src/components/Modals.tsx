@@ -1,8 +1,20 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { EFFECT_PRESETS } from '@shared/effects'
-import type { RemoteInfo } from '@shared/types'
+import type {
+  ItemKind,
+  RemoteInfo,
+  ToolStatus,
+  CookiesStatus,
+  CookiesMode,
+  CookieBrowser,
+  DesktopStatus
+} from '@shared/types'
+import { COOKIE_BROWSERS } from '@shared/types'
+import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
 import { useStore } from '../store'
+import { Modal } from './Modal'
+import { TagPicker } from './ImportWizard'
 
 function RemoteSettings(): JSX.Element {
   const [info, setInfo] = useState<RemoteInfo | null>(null)
@@ -36,7 +48,7 @@ function RemoteSettings(): JSX.Element {
 
   return (
     <div className="field">
-      <label>Phone / Stream Deck remote</label>
+      <h3 className="field-label">Phone / Stream Deck remote</h3>
       <p className="muted small" style={{ padding: 0 }}>
         Control playback from a phone on the same Wi-Fi (or a Stream Deck via HTTP). Scan the
         QR to pair — the code is one-time and expires in a few minutes. The connection isn’t
@@ -79,6 +91,184 @@ function RemoteSettings(): JSX.Element {
   )
 }
 
+const TOOL_SOURCE_LABEL: Record<ToolStatus['source'], string> = {
+  downloaded: 'updated copy',
+  bundled: 'bundled with app',
+  system: 'found on system',
+  none: 'not found'
+}
+
+function ToolsSettings(): JSX.Element {
+  const [status, setStatus] = useState<ToolStatus[] | null>(null)
+  const updateYtdlp = useStore((s) => s.updateYtdlp)
+  const updating = useStore((s) => s.updatingYtdlp)
+
+  const refresh = (): void => void window.api.tools.getStatus().then(setStatus)
+  useEffect(() => {
+    refresh()
+  }, [])
+  // Re-read status when an update finishes (so the source flips to "updated copy").
+  useEffect(() => {
+    if (!updating) refresh()
+  }, [updating])
+
+  return (
+    <div className="field">
+      <h3 className="field-label">Playback tools</h3>
+      <p className="muted small" style={{ padding: 0 }}>
+        QuestStream uses <code>yt-dlp</code> + <code>ffmpeg</code> to fetch and decode audio. They
+        ship with the app, but YouTube changes often break a frozen <code>yt-dlp</code> — update it
+        here if links stop playing.
+      </p>
+      <ul className="tool-list">
+        {status?.map((t) => (
+          <li key={t.name} className={t.found ? '' : 'missing'}>
+            <span className="tool-name">{t.name}</span>
+            <span className="tool-source">{t.found ? TOOL_SOURCE_LABEL[t.source] : 'not found'}</span>
+            <span className={`tool-dot ${t.found ? 'ok' : 'bad'}`} aria-hidden="true" />
+          </li>
+        ))}
+      </ul>
+      <button disabled={updating} onClick={() => void updateYtdlp()}>
+        {updating ? 'Updating yt-dlp…' : 'Update yt-dlp'}
+      </button>
+    </div>
+  )
+}
+
+function CookiesSettings(): JSX.Element {
+  const [status, setStatus] = useState<CookiesStatus | null>(null)
+  const showNotice = useStore((s) => s.showNotice)
+
+  useEffect(() => {
+    void window.api.cookies.get().then(setStatus)
+  }, [])
+
+  async function setMode(mode: CookiesMode, browser?: CookieBrowser): Promise<void> {
+    setStatus(await window.api.cookies.setMode(mode, browser))
+  }
+  async function importFile(): Promise<void> {
+    const r = await window.api.cookies.importFile()
+    if (!r.ok) showNotice(r.error ?? 'Could not import cookies', 'error')
+    else if (r.status) {
+      setStatus(r.status)
+      showNotice('Cookies imported — YouTube links should work now.', 'info')
+    }
+  }
+
+  const mode = status?.mode ?? 'none'
+
+  return (
+    <div className="field">
+      <h3 className="field-label">YouTube cookies</h3>
+      <p className="muted small" style={{ padding: 0 }}>
+        If YouTube asks you to “confirm you’re not a bot”, give yt-dlp your cookies so it looks like
+        your signed-in browser. Use a cookies file (works everywhere, incl. the Flatpak) or read them
+        straight from a browser (only when running unsandboxed).
+      </p>
+      <div className="kind-tabs">
+        <button
+          className={`seg ${mode === 'none' ? 'active' : ''}`}
+          aria-pressed={mode === 'none'}
+          onClick={() => void setMode('none')}
+        >
+          Off
+        </button>
+        <button
+          className={`seg ${mode === 'file' ? 'active' : ''}`}
+          aria-pressed={mode === 'file'}
+          onClick={() => void setMode('file')}
+        >
+          Cookies file
+        </button>
+        <button
+          className={`seg ${mode === 'browser' ? 'active' : ''}`}
+          aria-pressed={mode === 'browser'}
+          onClick={() => void setMode('browser', status?.browser ?? 'firefox')}
+        >
+          From browser
+        </button>
+      </div>
+
+      {mode === 'file' && (
+        <div className="cookies-row">
+          <button onClick={() => void importFile()}>Choose cookies.txt…</button>
+          <span className={`muted small ${status?.hasFile ? 'ok' : ''}`} style={{ padding: 0 }}>
+            {status?.hasFile ? '✓ cookies file loaded' : 'No file imported yet'}
+          </span>
+        </div>
+      )}
+      {mode === 'browser' && (
+        <div className="cookies-row">
+          <select
+            value={status?.browser ?? 'firefox'}
+            aria-label="Browser to read cookies from"
+            onChange={(e) => void setMode('browser', e.target.value as CookieBrowser)}
+          >
+            {COOKIE_BROWSERS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          <span className="muted small" style={{ padding: 0 }}>
+            Reads cookies from this browser’s profile. Won’t work inside the Flatpak sandbox — use a
+            cookies file there.
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DesktopIntegrationSettings(): JSX.Element | null {
+  const [status, setStatus] = useState<DesktopStatus | null>(null)
+  const showNotice = useStore((s) => s.showNotice)
+  const installDesktopMenu = useStore((s) => s.installDesktopMenu)
+
+  useEffect(() => {
+    void window.api.desktop.getStatus().then(setStatus)
+  }, [])
+
+  // Only meaningful for an AppImage (other packages register their own launcher).
+  if (!status?.isAppImage) return null
+
+  async function add(): Promise<void> {
+    const r = await installDesktopMenu()
+    if (r.ok && r.status) setStatus(r.status)
+  }
+
+  return (
+    <>
+      <hr className="modal-sep" />
+      <div className="field">
+        <h3 className="field-label">Applications menu</h3>
+        <p className="muted small" style={{ padding: 0 }}>
+          You’re running the AppImage. Add a launcher so QuestStream appears in your applications
+          menu like a normal app.
+        </p>
+        <div className="cookies-row">
+          {status.installed ? (
+            <span className="muted small ok" style={{ padding: 0 }}>
+              ✓ Installed in your applications menu
+            </span>
+          ) : (
+            <button onClick={() => void add()}>Add to applications menu</button>
+          )}
+          <button
+            onClick={() => {
+              void window.api.update.check()
+              showNotice('Checking for updates…', 'info')
+            }}
+          >
+            Check for updates
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function SettingsModal(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
   const setOpen = useStore((s) => s.setSettingsOpen)
@@ -107,9 +297,8 @@ export function SettingsModal(): JSX.Element | null {
   }
 
   return (
-    <div className="modal-backdrop" onClick={() => setOpen(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Discord Bot Settings</h2>
+    <Modal onClose={() => setOpen(false)} labelledBy="settings-title">
+        <h2 id="settings-title">Discord Bot Settings</h2>
         <p>
           Paste your bot token from the{' '}
           <a href="https://discord.com/developers/applications" target="_blank" rel="noreferrer">
@@ -119,8 +308,9 @@ export function SettingsModal(): JSX.Element | null {
           this machine only.
         </p>
         <div className="field">
-          <label>Bot Token</label>
+          <label htmlFor="bot-token">Bot Token</label>
           <input
+            id="bot-token"
             type="password"
             value={token}
             placeholder={hasToken ? '•••••••• saved — type to replace' : 'MTrase…'}
@@ -134,6 +324,11 @@ export function SettingsModal(): JSX.Element | null {
           <p style={{ color: 'var(--nord14)' }}>✓ Connected as {bot.username}</p>
         )}
         <hr className="modal-sep" />
+        <ToolsSettings />
+        <hr className="modal-sep" />
+        <CookiesSettings />
+        <DesktopIntegrationSettings />
+        <hr className="modal-sep" />
         <RemoteSettings />
         <div className="actions">
           <button onClick={() => setOpen(false)}>Close</button>
@@ -145,8 +340,7 @@ export function SettingsModal(): JSX.Element | null {
             {saving ? 'Connecting…' : hasToken && !token.trim() ? 'Connect' : 'Save & Connect'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -163,9 +357,8 @@ export function DisclaimerModal(): JSX.Element | null {
     setOpen(false)
   }
   return (
-    <div className="modal-backdrop">
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Welcome to QuestStream</h2>
+    <Modal onClose={accept} dismissable={false} labelledBy="disclaimer-title">
+        <h2 id="disclaimer-title">Welcome to QuestStream</h2>
         <p>
           A bring-your-own-audio mixer for tabletop game masters: build a soundtrack from your
           own files or links, layer ambience and one-shots, snapshot whole scenes, and play it
@@ -187,12 +380,9 @@ export function DisclaimerModal(): JSX.Element | null {
             Get started
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
-
-const QUICK_TAGS = ['Combat', 'Boss', 'Tavern', 'Travel', 'Town', 'Forest', 'Dungeon', 'Sad', 'Tense', 'Ambient']
 
 export function SongEditModal(): JSX.Element | null {
   const songId = useStore((s) => s.editSongId)
@@ -204,7 +394,7 @@ export function SongEditModal(): JSX.Element | null {
   const [artist, setArtist] = useState('')
   const [album, setAlbum] = useState('')
   const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState('')
+  const [kind, setKind] = useState<ItemKind>('track')
   const [effect, setEffect] = useState('')
 
   useEffect(() => {
@@ -213,48 +403,42 @@ export function SongEditModal(): JSX.Element | null {
     setArtist(library.artists.find((a) => a.id === song.artistId)?.name ?? '')
     setAlbum(library.albums.find((a) => a.id === song.albumId)?.title ?? '')
     setTags(song.tags ?? [])
-    setTagInput('')
+    setKind(song.kind ?? 'track')
     setEffect(song.effect ?? '')
   }, [songId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!song) return null
-
-  const addTag = (t: string): void => {
-    const v = t.trim()
-    if (v && !tags.some((x) => x.toLowerCase() === v.toLowerCase())) setTags([...tags, v])
-    setTagInput('')
-  }
 
   async function save(): Promise<void> {
     await window.api.library.retag(song!.id, {
       title,
       artistName: artist,
       albumTitle: album,
-      tags
+      tags,
+      kind
     })
     await window.api.library.setEffect(song!.id, effect || null)
     setEditSong(null)
   }
 
   return (
-    <div className="modal-backdrop" onClick={() => setEditSong(null)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Edit Track</h2>
+    <Modal onClose={() => setEditSong(null)} labelledBy="songedit-title">
+        <h2 id="songedit-title">Edit item</h2>
         <div className="field">
-          <label>Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          <label htmlFor="edit-title">Title</label>
+          <input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div className="field">
-          <label>Artist</label>
-          <input value={artist} onChange={(e) => setArtist(e.target.value)} />
+          <label htmlFor="edit-artist">Artist</label>
+          <input id="edit-artist" value={artist} onChange={(e) => setArtist(e.target.value)} />
         </div>
         <div className="field">
-          <label>Album</label>
-          <input value={album} onChange={(e) => setAlbum(e.target.value)} />
+          <label htmlFor="edit-album">Album</label>
+          <input id="edit-album" value={album} onChange={(e) => setAlbum(e.target.value)} />
         </div>
         <div className="field">
-          <label>Effect (DSP)</label>
-          <select value={effect} onChange={(e) => setEffect(e.target.value)}>
+          <label htmlFor="edit-effect">Effect (DSP)</label>
+          <select id="edit-effect" value={effect} onChange={(e) => setEffect(e.target.value)}>
             <option value="">None</option>
             {EFFECT_PRESETS.map((p) => (
               <option key={p.key} value={p.key}>
@@ -264,34 +448,23 @@ export function SongEditModal(): JSX.Element | null {
           </select>
         </div>
         <div className="field">
-          <label>Tags</label>
-          <div className="tag-edit">
-            {tags.map((t) => (
-              <span key={t} className="tag-chip active" onClick={() => setTags(tags.filter((x) => x !== t))}>
-                {t} ✕
-              </span>
+          <div className="field-label">Type</div>
+          <div className="kind-tabs">
+            {KIND_ORDER.map((k) => (
+              <button
+                key={k}
+                className={`seg ${kind === k ? 'active' : ''}`}
+                aria-pressed={kind === k}
+                onClick={() => setKind(k)}
+              >
+                {KIND_LABELS[k]}
+              </button>
             ))}
           </div>
-          <input
-            value={tagInput}
-            placeholder="Add a tag, press Enter"
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addTag(tagInput)
-              }
-            }}
-          />
-          <div className="tag-edit quick">
-            {QUICK_TAGS.filter((t) => !tags.some((x) => x.toLowerCase() === t.toLowerCase())).map(
-              (t) => (
-                <span key={t} className="tag-chip" onClick={() => addTag(t)}>
-                  + {t}
-                </span>
-              )
-            )}
-          </div>
+        </div>
+        <div className="field">
+          <div className="field-label">Tags</div>
+          <TagPicker kind={kind} value={tags} onChange={setTags} />
         </div>
         <div className="actions">
           <button onClick={() => setEditSong(null)}>Cancel</button>
@@ -299,8 +472,53 @@ export function SongEditModal(): JSX.Element | null {
             Save
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
+  )
+}
+
+/**
+ * Shared "save the current mix as a named X" dialog. Owns the name field; the caller
+ * supplies the copy, the seed name (for re-saving over a loaded entity), and the save
+ * action (which applies its own empty-name fallback). The "Update …" button only shows
+ * when there's an entity to overwrite.
+ */
+function SaveAsModal(props: {
+  title: string
+  description: string
+  label: string
+  placeholder: string
+  seedName: string
+  existingName?: string
+  onClose: () => void
+  onSave: (name: string, overwrite: boolean) => void
+}): JSX.Element {
+  const { title, description, label, placeholder, seedName, existingName, onClose, onSave } = props
+  const [name, setName] = useState(seedName)
+  useEffect(() => setName(seedName), [seedName]) // re-seed if the loaded entity changes
+
+  return (
+    <Modal onClose={onClose} labelledBy="saveas-title">
+        <h2 id="saveas-title">{title}</h2>
+        <p>{description}</p>
+        <div className="field">
+          <label htmlFor="saveas-name">{label}</label>
+          <input
+            id="saveas-name"
+            autoFocus
+            value={name}
+            placeholder={placeholder}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onSave(name, false)}
+          />
+        </div>
+        <div className="actions">
+          <button onClick={onClose}>Cancel</button>
+          {existingName && <button onClick={() => onSave(name, true)}>Update “{existingName}”</button>}
+          <button className="primary" disabled={!name.trim()} onClick={() => onSave(name, false)}>
+            Save new
+          </button>
+        </div>
+    </Modal>
   )
 }
 
@@ -312,47 +530,24 @@ export function SaveSceneModal(): JSX.Element | null {
   const scenes = useStore((s) => s.library.scenes)
   const loadedSceneId = useStore((s) => s.loadedSceneId)
   const saveScene = useStore((s) => s.saveScene)
-  const [name, setName] = useState('')
-
-  useEffect(() => {
-    if (open) setName(scenes.find((s) => s.id === loadedSceneId)?.name ?? '')
-  }, [open, loadedSceneId, scenes])
 
   if (!open) return null
-
-  async function save(overwrite: boolean): Promise<void> {
-    await saveScene(name.trim() || 'Untitled Scene', overwrite ? loadedSceneId ?? undefined : undefined)
-    setOpen(false)
-  }
   const existing = scenes.find((s) => s.id === loadedSceneId)
 
   return (
-    <div className="modal-backdrop" onClick={() => setOpen(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Save as Scene</h2>
-        <p>
-          Snapshots the whole mix: {queue.length} queued track(s), {ambience.length} ambience
-          layer(s), and all volumes. Recall it later in one click.
-        </p>
-        <div className="field">
-          <label>Scene name</label>
-          <input
-            autoFocus
-            value={name}
-            placeholder="Tavern brawl"
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void save(false)}
-          />
-        </div>
-        <div className="actions">
-          <button onClick={() => setOpen(false)}>Cancel</button>
-          {existing && <button onClick={() => void save(true)}>Update “{existing.name}”</button>}
-          <button className="primary" disabled={!name.trim()} onClick={() => void save(false)}>
-            Save new
-          </button>
-        </div>
-      </div>
-    </div>
+    <SaveAsModal
+      title="Save as Scene"
+      description={`Snapshots the whole mix: ${queue.length} queued track(s), ${ambience.length} ambience layer(s), and all volumes. Recall it later in one click.`}
+      label="Scene name"
+      placeholder="Tavern brawl"
+      seedName={existing?.name ?? ''}
+      existingName={existing?.name}
+      onClose={() => setOpen(false)}
+      onSave={(name, overwrite) => {
+        void saveScene(name.trim() || 'Untitled Scene', overwrite ? loadedSceneId ?? undefined : undefined)
+        setOpen(false)
+      }}
+    />
   )
 }
 
@@ -362,50 +557,28 @@ export function SavePlaylistModal(): JSX.Element | null {
   const queue = useStore((s) => s.queue)
   const loadedId = useStore((s) => s.loadedPlaylistId)
   const playlists = useStore((s) => s.library.playlists)
-  const [name, setName] = useState('')
-
-  useEffect(() => {
-    if (open) {
-      const existing = playlists.find((p) => p.id === loadedId)
-      setName(existing?.name ?? '')
-    }
-  }, [open, loadedId, playlists])
 
   if (!open) return null
-
-  async function save(overwrite: boolean): Promise<void> {
-    const songIds = queue.map((q) => q.song.id)
-    await window.api.playlists.save(name.trim() || 'Untitled Playlist', songIds, overwrite ? loadedId ?? undefined : undefined)
-    setOpen(false)
-  }
-
   const existing = playlists.find((p) => p.id === loadedId)
 
   return (
-    <div className="modal-backdrop" onClick={() => setOpen(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Save as Playlist</h2>
-        <p>{queue.length} tracks will be saved.</p>
-        <div className="field">
-          <label>Playlist name</label>
-          <input
-            autoFocus
-            value={name}
-            placeholder="My mix"
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void save(false)}
-          />
-        </div>
-        <div className="actions">
-          <button onClick={() => setOpen(false)}>Cancel</button>
-          {existing && (
-            <button onClick={() => void save(true)}>Update “{existing.name}”</button>
-          )}
-          <button className="primary" disabled={!name.trim()} onClick={() => void save(false)}>
-            Save new
-          </button>
-        </div>
-      </div>
-    </div>
+    <SaveAsModal
+      title="Save as Playlist"
+      description={`${queue.length} tracks will be saved.`}
+      label="Playlist name"
+      placeholder="My mix"
+      seedName={existing?.name ?? ''}
+      existingName={existing?.name}
+      onClose={() => setOpen(false)}
+      onSave={(name, overwrite) => {
+        const songIds = queue.map((q) => q.song.id)
+        void window.api.playlists.save(
+          name.trim() || 'Untitled Playlist',
+          songIds,
+          overwrite ? loadedId ?? undefined : undefined
+        )
+        setOpen(false)
+      }}
+    />
   )
 }

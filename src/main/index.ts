@@ -3,8 +3,11 @@ import { join } from 'node:path'
 import { IPC } from '../shared/ipc'
 import type { AppNotice } from '../shared/types'
 import { LibraryStore } from './library/store'
+import { seedFromLegacyProfile } from './library/migrate'
 import { mediaDirFor, sweepMediaTemp } from './library/media'
-import { missingBinaries } from './bot/binaries'
+import { missingBinaries, setDownloadedYtDlp, setCookieArgs } from './bot/binaries'
+import { buildCookieArgs } from './bot/cookies'
+import { initAutoUpdater } from './appUpdater'
 import { DiscordBot } from './bot/DiscordBot'
 import { Config } from './config'
 import { registerIpc } from './ipc/handlers'
@@ -60,7 +63,8 @@ function createWindow(): void {
     setTimeout(() => {
       const notice: AppNotice = {
         message: `${missing.join(' + ')} not found — playback won't work. See the README's "External tools" section.`,
-        kind: 'error'
+        kind: 'error',
+        persistent: true // a missing tool is a standing condition, not a passing event
       }
       mainWindow?.webContents.send(IPC.notice, notice)
     }, 1500)
@@ -91,10 +95,17 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   const userData = app.getPath('userData')
+  // If this profile is new (e.g. after an app rename moved userData), seed it from the
+  // richest legacy profile so the user's library doesn't appear to vanish.
+  seedFromLegacyProfile(userData)
   const mediaDir = mediaDirFor(userData)
   sweepMediaTemp(mediaDir) // clear any orphaned import temp files from a prior crash
+  // Prefer a previously-downloaded yt-dlp (from the "Update yt-dlp" action) if present.
+  setDownloadedYtDlp(join(userData, 'bin', 'yt-dlp'))
   store = new LibraryStore(join(userData, 'library.json'))
   const config = new Config(join(userData, 'config.json'))
+  // Apply the saved yt-dlp cookie source (if any) before the first import/playback.
+  setCookieArgs(buildCookieArgs({ mode: config.cookiesMode, browser: config.cookiesBrowser, userData }))
   bot = new DiscordBot(mediaDir)
 
   ipcHandle = registerIpc({
@@ -102,10 +113,13 @@ app.whenReady().then(() => {
     bot,
     config,
     mediaDir,
+    userData,
     appVersion: app.getVersion(),
     getWindow: () => mainWindow
   })
   createWindow()
+  // background update checks (packaged builds only); never let a setup failure crash startup
+  void initAutoUpdater(() => mainWindow).catch((e) => console.error('[update] init failed', e))
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

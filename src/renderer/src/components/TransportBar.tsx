@@ -1,4 +1,5 @@
 import { useStore, fmtTime } from '../store'
+import { Icon } from './Icon'
 
 export function TransportBar(): JSX.Element {
   const player = useStore((s) => s.player)
@@ -31,6 +32,22 @@ export function TransportBar(): JSX.Element {
     void seekTo(frac * duration)
   }
 
+  // Keyboard seeking: arrows nudge ±5s, Home/End jump to start/end.
+  function seekKey(e: React.KeyboardEvent<HTMLDivElement>): void {
+    if (!current || duration <= 0) return
+    const step = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -5 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 5 : 0
+    if (step) {
+      e.preventDefault()
+      void seekTo(Math.min(duration, Math.max(0, player.positionSec + step)))
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      void seekTo(0)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      void seekTo(duration)
+    }
+  }
+
   return (
     <div className="transport">
       <div className="np-info">
@@ -56,18 +73,25 @@ export function TransportBar(): JSX.Element {
           <button
             className={`icon ${shuffle ? 'toggled' : ''}`}
             title={shuffle ? 'Shuffle: on' : 'Shuffle: off'}
+            aria-label={shuffle ? 'Shuffle: on' : 'Shuffle: off'}
+            aria-pressed={shuffle}
             onClick={toggleShuffle}
           >
-            🔀
+            <Icon name="shuffle" />
           </button>
-          <button className="icon" title="Previous" onClick={() => void playPrev()}>
-            ⏮
+          <button className="icon" title="Previous" aria-label="Previous track" onClick={() => void playPrev()}>
+            <Icon name="prev" />
           </button>
-          <button className="primary play" title="Play / Pause" onClick={() => void togglePlay()}>
-            <span className={isPlaying ? '' : 'play-tri'}>{isPlaying ? '⏸' : '▶'}</span>
+          <button
+            className="primary play"
+            title="Play / Pause"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            onClick={() => void togglePlay()}
+          >
+            <Icon name={isPlaying ? 'pause' : 'play'} size={20} />
           </button>
-          <button className="icon" title="Next" onClick={() => void playNext()}>
-            ⏭
+          <button className="icon" title="Next" aria-label="Next track" onClick={() => void playNext()}>
+            <Icon name="next" />
           </button>
           <button
             className={`icon repeat ${repeat !== 'off' ? 'toggled' : ''}`}
@@ -78,15 +102,34 @@ export function TransportBar(): JSX.Element {
                   ? 'Repeat: all tracks'
                   : 'Repeat: this track'
             }
+            aria-label={
+              repeat === 'off'
+                ? 'Repeat: off'
+                : repeat === 'all'
+                  ? 'Repeat: all tracks'
+                  : 'Repeat: this track'
+            }
+            aria-pressed={repeat !== 'off'}
             onClick={cycleRepeat}
           >
-            🔁
+            <Icon name="repeat" />
             {repeat === 'one' && <sup className="rep-badge">1</sup>}
           </button>
         </div>
         <div className="seek">
           <span className="time">{fmtTime(player.positionSec)}</span>
-          <div className="bar" onClick={seek}>
+          <div
+            className="bar"
+            role="slider"
+            tabIndex={current ? 0 : -1}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(duration)}
+            aria-valuenow={Math.round(player.positionSec)}
+            aria-valuetext={`${fmtTime(player.positionSec)} of ${fmtTime(duration)}`}
+            onClick={seek}
+            onKeyDown={seekKey}
+          >
             <div className="fill" style={{ width: `${pct}%` }} />
           </div>
           <span className="time">{fmtTime(duration)}</span>
@@ -97,9 +140,11 @@ export function TransportBar(): JSX.Element {
         <button
           className={`icon ${ducking ? 'toggled' : ''}`}
           title={ducking ? 'Narration duck ON — music lowered' : 'Duck music for narration'}
+          aria-label={ducking ? 'Narration duck: on' : 'Narration duck: off'}
+          aria-pressed={ducking}
           onClick={() => setDuck(!ducking)}
         >
-          🎙
+          <Icon name="mic" />
         </button>
         <button
           className={`icon ${monitorEnabled ? 'toggled' : ''}`}
@@ -108,16 +153,21 @@ export function TransportBar(): JSX.Element {
               ? 'Local output ON — you hear the mix on this machine (mute to avoid doubling when in the call)'
               : 'Local output muted — audio only goes to Discord'
           }
+          aria-label={monitorEnabled ? 'Local output: on' : 'Local output: muted'}
+          aria-pressed={monitorEnabled}
           onClick={toggleMonitor}
         >
-          {monitorEnabled ? '🎧' : '🔇'}
+          <Icon name={monitorEnabled ? 'headphones' : 'volume-mute'} />
         </button>
-        <span title="Master volume">🔈</span>
+        <span className="vol-icon" title="Master volume" aria-hidden="true">
+          <Icon name="volume" size={16} />
+        </span>
         <input
           type="range"
           min={0}
           max={1}
           step={0.01}
+          aria-label="Master volume"
           value={player.volume}
           onChange={(e) => setMasterVolume(parseFloat(e.target.value))}
         />

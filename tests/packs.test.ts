@@ -63,6 +63,41 @@ test('scene pack round-trips through export → import into a fresh library', ()
   assert.equal(v1.effect, 'cavern')
 })
 
+test('scene pack round-trips namespaced tags + item kind', () => {
+  const a = newStore()
+  const s1 = a.addSong(track({ videoId: 'v1', kind: 'ambience' }))
+  a.retag(s1.id, { tags: ['genre:fantasy', 'mood:tense'] })
+  const scene = a.saveScene({
+    name: 'X',
+    songIds: [s1.id],
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: []
+  })
+  const pack = buildScenePack(a.snapshot(), scene.id)!
+  assert.equal(pack.songs[0].kind, 'ambience')
+
+  const b = newStore()
+  importPack(b, validatePack(JSON.parse(JSON.stringify(pack))))
+  const v1 = b.snapshot().songs.find((x) => x.videoId === 'v1')!
+  assert.deepEqual(v1.tags, ['genre:fantasy', 'mood:tense'])
+  assert.equal(v1.kind, 'ambience')
+})
+
+test('a pack song with no kind defaults to track on import', () => {
+  const b = newStore()
+  const pack = validatePack({
+    kind: 'playlist',
+    version: 1,
+    name: 'P',
+    songIds: ['v9'],
+    songs: [{ videoId: 'v9', url: 'https://y/v9' }] // no kind field
+  })
+  assert.equal(pack.songs[0].kind, 'track')
+  importPack(b, pack)
+  assert.equal(b.snapshot().songs.find((s) => s.videoId === 'v9')!.kind, 'track')
+})
+
 test('importing does not clobber an existing song\'s tags', () => {
   const b = newStore()
   const existing = b.addSong(track({ videoId: 'v1' }))

@@ -45,6 +45,13 @@ test('addSong dedupes by videoId', () => {
   assert.equal(s.snapshot().songs.length, 1)
 })
 
+test('hasSong tracks existence so re-imports are not re-counted/re-tagged', () => {
+  const s = newStore()
+  assert.equal(s.hasSong('vid1'), false)
+  s.addSong(track())
+  assert.equal(s.hasSong('vid1'), true) // a second import would be a de-duped no-op
+})
+
 test('addSong falls back to Unknown Artist / Untitled', () => {
   const s = newStore()
   const song = s.addSong(track({ artistName: '   ', title: '   ' }))
@@ -62,16 +69,52 @@ test('artists/albums are reused case-insensitively', () => {
   assert.equal(db.albums.length, 1)
 })
 
-test('retag normalizes tags: trim, drop empties, de-dupe, cap at 12', () => {
+test('retag normalizes tags: trim, drop empties, de-dupe, cap at 32', () => {
   const s = newStore()
   const song = s.addSong(track())
-  const many = Array.from({ length: 20 }, (_, i) => `tag${i}`)
+  const many = Array.from({ length: 40 }, (_, i) => `tag${i}`)
   s.retag(song.id, { tags: ['  Combat  ', 'combat', '', '   ', 'Tavern', ...many] })
   const tags = s.snapshot().songs[0].tags
-  assert.equal(tags.length, 12)
+  assert.equal(tags.length, 32)
   assert.equal(tags[0], 'Combat')
   // case-insensitive de-dupe kept only the first "Combat"
   assert.equal(tags.filter((t) => t.toLowerCase() === 'combat').length, 1)
+})
+
+test('retag normalizes namespaced tags but preserves legacy free-tag case', () => {
+  const s = newStore()
+  const song = s.addSong(track())
+  s.retag(song.id, { tags: ['Genre:Fantasy', 'mood : Tense', 'LoFi'] })
+  const tags = s.snapshot().songs[0].tags
+  assert.deepEqual(tags, ['genre:fantasy', 'mood:tense', 'LoFi'])
+})
+
+test('addSong stamps kind + tags; legacy songs default kind to track', () => {
+  const s = newStore()
+  const amb = s.addSong(track({ videoId: 'v1', kind: 'ambience', tags: ['Location:Tavern'] }))
+  const def = s.addSong(track({ videoId: 'v2' }))
+  const db = s.snapshot()
+  const a = db.songs.find((x) => x.id === amb.id)!
+  assert.equal(a.kind, 'ambience')
+  assert.deepEqual(a.tags, ['location:tavern'])
+  assert.equal(db.songs.find((x) => x.id === def.id)!.kind, 'track')
+})
+
+test('addSong dedupe leaves an existing song kind/tags untouched', () => {
+  const s = newStore()
+  const first = s.addSong(track({ videoId: 'v1', kind: 'ambience', tags: ['location:tavern'] }))
+  const again = s.addSong(track({ videoId: 'v1', kind: 'sfx', tags: ['category:magic'] }))
+  assert.equal(first.id, again.id)
+  const db = s.snapshot()
+  assert.equal(db.songs[0].kind, 'ambience')
+  assert.deepEqual(db.songs[0].tags, ['location:tavern'])
+})
+
+test('retag can re-classify an item kind', () => {
+  const s = newStore()
+  const song = s.addSong(track())
+  s.retag(song.id, { kind: 'sfx' })
+  assert.equal(s.snapshot().songs[0].kind, 'sfx')
 })
 
 test('retag changing artist moves the album and GCs the orphan', () => {
@@ -117,30 +160,6 @@ test('savePlaylist updates in place when given an id', () => {
   assert.equal(s.snapshot().playlists[0].songIds.length, 2)
 })
 
-test('enrichSong only fills generic fields, never overwrites real data', () => {
-  const s = newStore()
-  const generic = s.addSong(track({ videoId: 'v1', artistName: 'Unknown Artist', albumTitle: 'Singles' }))
-  const real = s.addSong(track({ videoId: 'v2', artistName: 'Real Band', albumTitle: 'Real Album' }))
-
-  assert.equal(s.enrichSong(generic.id, { artistName: 'Discovered', albumTitle: 'Found' }), true)
-  assert.equal(s.enrichSong(real.id, { artistName: 'Should Not Apply' }), false)
-
-  const db = s.snapshot()
-  const ga = db.artists.find((a) => a.id === db.songs.find((x) => x.id === generic.id)!.artistId)
-  const ra = db.artists.find((a) => a.id === db.songs.find((x) => x.id === real.id)!.artistId)
-  assert.equal(ga?.name, 'Discovered')
-  assert.equal(ra?.name, 'Real Band')
-})
-
-test('unenriched tracking + markEnriched', () => {
-  const s = newStore()
-  const song = s.addSong(track())
-  assert.deepEqual(s.unenrichedSongIds(), [song.id])
-  s.markEnriched(song.id)
-  assert.deepEqual(s.unenrichedSongIds(), [])
-  assert.equal(s.getEnrichInfo(song.id), null) // enriched → no further work
-})
-
 test('addSong defaults sourceType to youtube; local files carry their type', () => {
   const s = newStore()
   const yt = s.addSong(track({ videoId: 'v1' }))
@@ -152,11 +171,11 @@ test('addSong defaults sourceType to youtube; local files carry their type', () 
   assert.equal(db.songs.find((x) => x.id === local.id)?.sourceType, 'local')
 })
 
-test('migration backfills sourceType + soundboard for old libraries', () => {
+test('migration backfills sourceType + kind + soundboard for old libraries', () => {
   const dir = mkdtempSync(join(tmpdir(), 'qs-lib-'))
   dirs.push(dir)
   const path = join(dir, 'library.json')
-  // Hand-write a pre-feature library: a song with no sourceType, no soundboard key.
+  // Hand-write a pre-feature library: a song with no sourceType/kind, no soundboard key.
   const legacy = {
     artists: [{ id: 'a1', name: 'A' }],
     albums: [{ id: 'al1', artistId: 'a1', title: 'Al' }],
@@ -170,7 +189,29 @@ test('migration backfills sourceType + soundboard for old libraries', () => {
   const s = new LibraryStore(path)
   const db = s.snapshot()
   assert.equal(db.songs[0].sourceType, 'youtube')
+  assert.equal(db.songs[0].kind, 'track')
   assert.deepEqual(db.soundboard, [])
+})
+
+test('migration reclassifies soundboard-referenced songs as sfx', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qs-lib-'))
+  dirs.push(dir)
+  const path = join(dir, 'library.json')
+  const legacy = {
+    artists: [{ id: 'a1', name: 'A' }],
+    albums: [{ id: 'al1', artistId: 'a1', title: 'Al' }],
+    songs: [
+      { id: 's1', albumId: 'al1', artistId: 'a1', title: 'Music', url: 'https://y/x', videoId: 'x', duration: 1, tags: [], addedAt: 1 },
+      { id: 's2', albumId: 'al1', artistId: 'a1', title: 'Clang', url: 'https://y/y', videoId: 'y', duration: 1, tags: [], addedAt: 1 }
+    ],
+    playlists: [],
+    scenes: [],
+    soundboard: [{ id: 'sb1', songId: 's2' }]
+  }
+  writeFileSync(path, JSON.stringify(legacy), 'utf8')
+  const db = new LibraryStore(path).snapshot()
+  assert.equal(db.songs.find((s) => s.id === 's1')!.kind, 'track')
+  assert.equal(db.songs.find((s) => s.id === 's2')!.kind, 'sfx')
 })
 
 test('soundboard CRUD: add, set unique hotkey, remove', () => {

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { YT_DLP, YT_CLIENT_ARGS, SPAWN_ENV } from './binaries'
+import { ytDlp, cookieArgs, YT_CLIENT_ARGS, SPAWN_ENV } from './binaries'
 import type { SourceType } from '../../shared/types'
 
 export interface ResolvedTrack {
@@ -17,6 +17,10 @@ export interface ProbeResult {
   kind: 'video' | 'playlist'
   playlistTitle?: string
   entryUrls: string[]
+  // For a single video, the probe's `-J` output IS the full metadata (--flat-playlist
+  // is a no-op when there's no playlist to flatten), so we hand the resolved track back
+  // and skip a second, redundant network resolve. Absent for playlists.
+  track?: ResolvedTrack
 }
 
 export interface YtdlpJson {
@@ -39,7 +43,7 @@ export interface YtdlpJson {
 
 function run(args: string[], timeoutMs = 60_000): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(YT_DLP, args, { windowsHide: true, env: SPAWN_ENV })
+    const child = spawn(ytDlp(), args, { windowsHide: true, env: SPAWN_ENV })
     // Collect stdout as Buffers and decode once — a per-chunk toString() can split a
     // multibyte UTF-8 char across a chunk boundary and corrupt non-ASCII titles.
     const out: Buffer[] = []
@@ -136,11 +140,17 @@ function toTrack(j: YtdlpJson, albumHint?: string): ResolvedTrack {
   }
 }
 
-/** Cheaply determine whether a URL is a single video or a playlist of videos. */
-export async function probe(url: string): Promise<ProbeResult> {
+/**
+ * Resolve a URL in a single yt-dlp call. For a single video this returns the fully
+ * resolved track (no second network round-trip needed). For a real playlist URL it
+ * returns the flat entry list, which the caller resolves per-entry.
+ */
+export async function probe(url: string, albumHint?: string): Promise<ProbeResult> {
   // --no-playlist: a `watch?v=…&list=…` URL resolves to just that video, not the
   // whole attached playlist. A pure `playlist?list=…` URL still enumerates fully.
-  const raw = await run(['-J', '--flat-playlist', '--no-playlist', '--no-warnings', ...YT_CLIENT_ARGS, '--', url])
+  // --flat-playlist keeps the playlist branch cheap (entries aren't each extracted);
+  // for a single video it's a no-op, so `j` carries the complete metadata.
+  const raw = await run(['-J', '--flat-playlist', '--no-playlist', '--no-warnings', ...cookieArgs(), ...YT_CLIENT_ARGS, '--', url])
   const j = JSON.parse(raw) as YtdlpJson
   if (j._type === 'playlist' && Array.isArray(j.entries)) {
     const entryUrls = j.entries
@@ -148,11 +158,11 @@ export async function probe(url: string): Promise<ProbeResult> {
       .filter(Boolean)
     return { kind: 'playlist', playlistTitle: j.title, entryUrls }
   }
-  return { kind: 'video', entryUrls: [url] }
+  return { kind: 'video', entryUrls: [url], track: toTrack(j, albumHint) }
 }
 
 /** Full metadata extraction for a single video (slower; gives artist/album). */
 export async function extractTrack(url: string, albumHint?: string): Promise<ResolvedTrack> {
-  const raw = await run(['-J', '--no-warnings', '--no-playlist', ...YT_CLIENT_ARGS, '--', url])
+  const raw = await run(['-J', '--no-warnings', '--no-playlist', ...cookieArgs(), ...YT_CLIENT_ARGS, '--', url])
   return toTrack(JSON.parse(raw) as YtdlpJson, albumHint)
 }

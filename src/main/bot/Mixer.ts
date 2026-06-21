@@ -1,6 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { isAbsolute } from 'node:path'
-import { YT_DLP, FFMPEG, YT_CLIENT_ARGS, SPAWN_ENV } from './binaries'
+import { ytDlp, cookieArgs, FFMPEG, YT_CLIENT_ARGS, SPAWN_ENV } from './binaries'
 import { buildAfChain } from './effects'
 import { clamp01 } from '../../shared/num'
 import type { Song } from '../../shared/types'
@@ -102,11 +102,12 @@ export class MixerInput {
     let ytdlp: ChildProcessWithoutNullStreams | null = null
     if (!isLocal) {
       ytdlp = spawn(
-        YT_DLP,
+        ytDlp(),
         [
           '-f', 'bestaudio/best',
           '-o', '-',
           '--quiet', '--no-warnings', '--no-playlist',
+          ...cookieArgs(),
           ...YT_CLIENT_ARGS,
           '--', // stop option parsing: a URL can never be misread as a yt-dlp flag (e.g. --exec)
           this.song.url
