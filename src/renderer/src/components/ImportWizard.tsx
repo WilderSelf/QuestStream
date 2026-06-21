@@ -191,7 +191,7 @@ export function ImportWizardModal(): JSX.Element | null {
             <h2 id="wizard-title">Import audio</h2>
 
             <div className="field">
-              <label>Source</label>
+              <div className="field-label">Source</div>
               <div className="kind-tabs">
                 <button
                   className={`seg ${source === 'url' ? 'active' : ''}`}
@@ -212,6 +212,7 @@ export function ImportWizardModal(): JSX.Element | null {
                 <input
                   autoFocus
                   value={url}
+                  aria-label="Audio URL"
                   placeholder="Paste a URL (a playlist imports all its tracks)"
                   onChange={(e) => setUrl(e.target.value)}
                 />
@@ -223,7 +224,7 @@ export function ImportWizardModal(): JSX.Element | null {
             </div>
 
             <div className="field">
-              <label>Type</label>
+              <div className="field-label">Type</div>
               <div className="kind-tabs">
                 {KIND_ORDER.map((k) => (
                   <button
@@ -239,7 +240,7 @@ export function ImportWizardModal(): JSX.Element | null {
             </div>
 
             <div className="field">
-              <label>Tagging</label>
+              <div className="field-label">Tagging</div>
               <div className="kind-tabs">
                 <button
                   className={`seg ${mode === 'batch' ? 'active' : ''}`}
@@ -265,7 +266,7 @@ export function ImportWizardModal(): JSX.Element | null {
 
             {mode === 'batch' && (
               <div className="field">
-                <label>Tags</label>
+                <div className="field-label">Tags</div>
                 <TagPicker kind={kind} value={batchTags} onChange={setBatchTags} />
               </div>
             )}

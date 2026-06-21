@@ -48,7 +48,7 @@ function RemoteSettings(): JSX.Element {
 
   return (
     <div className="field">
-      <label>Phone / Stream Deck remote</label>
+      <h3 className="field-label">Phone / Stream Deck remote</h3>
       <p className="muted small" style={{ padding: 0 }}>
         Control playback from a phone on the same Wi-Fi (or a Stream Deck via HTTP). Scan the
         QR to pair — the code is one-time and expires in a few minutes. The connection isn’t
@@ -114,7 +114,7 @@ function ToolsSettings(): JSX.Element {
 
   return (
     <div className="field">
-      <label>Playback tools</label>
+      <h3 className="field-label">Playback tools</h3>
       <p className="muted small" style={{ padding: 0 }}>
         QuestStream uses <code>yt-dlp</code> + <code>ffmpeg</code> to fetch and decode audio. They
         ship with the app, but YouTube changes often break a frozen <code>yt-dlp</code> — update it
@@ -160,7 +160,7 @@ function CookiesSettings(): JSX.Element {
 
   return (
     <div className="field">
-      <label>YouTube cookies</label>
+      <h3 className="field-label">YouTube cookies</h3>
       <p className="muted small" style={{ padding: 0 }}>
         If YouTube asks you to “confirm you’re not a bot”, give yt-dlp your cookies so it looks like
         your signed-in browser. Use a cookies file (works everywhere, incl. the Flatpak) or read them
@@ -242,7 +242,7 @@ function DesktopIntegrationSettings(): JSX.Element | null {
     <>
       <hr className="modal-sep" />
       <div className="field">
-        <label>Applications menu</label>
+        <h3 className="field-label">Applications menu</h3>
         <p className="muted small" style={{ padding: 0 }}>
           You’re running the AppImage. Add a launcher so QuestStream appears in your applications
           menu like a normal app.
@@ -308,8 +308,9 @@ export function SettingsModal(): JSX.Element | null {
           this machine only.
         </p>
         <div className="field">
-          <label>Bot Token</label>
+          <label htmlFor="bot-token">Bot Token</label>
           <input
+            id="bot-token"
             type="password"
             value={token}
             placeholder={hasToken ? '•••••••• saved — type to replace' : 'MTrase…'}
@@ -424,20 +425,20 @@ export function SongEditModal(): JSX.Element | null {
     <Modal onClose={() => setEditSong(null)} labelledBy="songedit-title">
         <h2 id="songedit-title">Edit item</h2>
         <div className="field">
-          <label>Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          <label htmlFor="edit-title">Title</label>
+          <input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div className="field">
-          <label>Artist</label>
-          <input value={artist} onChange={(e) => setArtist(e.target.value)} />
+          <label htmlFor="edit-artist">Artist</label>
+          <input id="edit-artist" value={artist} onChange={(e) => setArtist(e.target.value)} />
         </div>
         <div className="field">
-          <label>Album</label>
-          <input value={album} onChange={(e) => setAlbum(e.target.value)} />
+          <label htmlFor="edit-album">Album</label>
+          <input id="edit-album" value={album} onChange={(e) => setAlbum(e.target.value)} />
         </div>
         <div className="field">
-          <label>Effect (DSP)</label>
-          <select value={effect} onChange={(e) => setEffect(e.target.value)}>
+          <label htmlFor="edit-effect">Effect (DSP)</label>
+          <select id="edit-effect" value={effect} onChange={(e) => setEffect(e.target.value)}>
             <option value="">None</option>
             {EFFECT_PRESETS.map((p) => (
               <option key={p.key} value={p.key}>
@@ -447,7 +448,7 @@ export function SongEditModal(): JSX.Element | null {
           </select>
         </div>
         <div className="field">
-          <label>Type</label>
+          <div className="field-label">Type</div>
           <div className="kind-tabs">
             {KIND_ORDER.map((k) => (
               <button
@@ -462,7 +463,7 @@ export function SongEditModal(): JSX.Element | null {
           </div>
         </div>
         <div className="field">
-          <label>Tags</label>
+          <div className="field-label">Tags</div>
           <TagPicker kind={kind} value={tags} onChange={setTags} />
         </div>
         <div className="actions">
@@ -500,8 +501,9 @@ function SaveAsModal(props: {
         <h2 id="saveas-title">{title}</h2>
         <p>{description}</p>
         <div className="field">
-          <label>{label}</label>
+          <label htmlFor="saveas-name">{label}</label>
           <input
+            id="saveas-name"
             autoFocus
             value={name}
             placeholder={placeholder}

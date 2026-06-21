@@ -1121,11 +1121,18 @@ textarea {
   gap: var(--space-2);
   margin-bottom: 14px;
 }
-.modal .field label {
+.modal .field label,
+.modal .field .field-label {
   font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-dim);
+}
+/* Section/group captions render like field labels but aren't <label>s (they head a section
+   or a control group, not a single input). h3 resets keep them visually identical. */
+.modal .field h3.field-label {
+  margin: 0;
+  font-weight: normal;
 }
 .modal .actions {
   display: flex;
