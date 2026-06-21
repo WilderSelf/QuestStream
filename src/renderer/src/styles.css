@@ -977,6 +977,40 @@ textarea {
   accent-color: var(--accent);
 }
 
+/* ---- Narrow-window adaptation ----
+   Electron windows resize freely; without this the fixed 360px transport center column
+   forced the whole app wider than the viewport and (with body overflow:hidden) clipped the
+   right pane + volume controls. These breakpoints let the layout shrink instead of clip. */
+@media (max-width: 900px) {
+  .browser {
+    grid-template-columns: 150px 1.5fr 1.4fr;
+  }
+  .transport {
+    gap: 8px;
+    padding: 10px 10px;
+  }
+  .controls {
+    min-width: 0;
+  }
+  .volume {
+    min-width: 0;
+  }
+  .control-buttons {
+    gap: 6px;
+  }
+}
+@media (max-width: 720px) {
+  .np-info .thumb {
+    display: none;
+  }
+  .volume input[type='range'] {
+    width: 72px;
+  }
+  .control-buttons .icon {
+    min-width: 36px;
+  }
+}
+
 /* ---- Modal ---- */
 .modal-backdrop {
   position: fixed;
