@@ -448,7 +448,7 @@ export class DiscordBot extends EventEmitter {
       onEnd: () => this.removeDuck(id),
       onError: (reason) => {
         this.removeDuck(id)
-        this.emit('notice', { message: `Sound “${song.title}” failed: ${reason}`, kind: 'error' })
+        this.emit('notice', { message: `Sound “${song.title}” failed: ${reason}`, kind: 'error', code: 'playback-failed' })
       }
     })
   }
@@ -493,7 +493,7 @@ export class DiscordBot extends EventEmitter {
       fadeInMs: 800,
       loop: true,
       onError: (reason) =>
-        this.emit('notice', { message: `Ambience “${song.title}” failed: ${reason}`, kind: 'error' })
+        this.emit('notice', { message: `Ambience “${song.title}” failed: ${reason}`, kind: 'error', code: 'playback-failed' })
     })
   }
 
@@ -609,7 +609,7 @@ export class DiscordBot extends EventEmitter {
   /** A music track failed to stream (hang / dead / blocked). Notify, then advance. */
   private handleMusicError(id: string, songId: string, reason: string): void {
     if (id !== this.currentMusicId) return
-    this.emit('notice', { message: `Couldn't play this track: ${reason}`, kind: 'error' })
+    this.emit('notice', { message: `Couldn't play this track: ${reason}`, kind: 'error', code: 'playback-failed' })
     this.handleMusicEnd(id, songId) // clears state + emits 'ended' so the renderer advances
   }
 

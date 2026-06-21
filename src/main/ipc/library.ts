@@ -1,10 +1,23 @@
-import { readFileSync, statSync, writeFileSync } from 'node:fs'
-import { IPC, type SceneInput } from '../../shared/ipc'
-import type { RetagPayload, Song, ImportProgress, SoundboardItem } from '../../shared/types'
-import { Enricher } from '../library/enrich'
+import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { IPC, type SceneInput, type ImportOpts } from '../../shared/ipc'
+import type {
+  RetagPayload,
+  Song,
+  ImportProgress,
+  SoundboardItem,
+  CookiesMode,
+  CookieBrowser,
+  CookiesStatus
+} from '../../shared/types'
 import { copyIntoMedia, removeMedia, AUDIO_EXTS } from '../library/media'
 import { buildScenePack, buildPlaylistPack, validatePack, importPack } from '../library/packs'
-import { probe, extractTrack } from '../bot/ytdlp'
+import { probe, extractTrack, type ResolvedTrack } from '../bot/ytdlp'
+import { toolStatus, setCookieArgs } from '../bot/binaries'
+import { updateYtDlp } from '../bot/updater'
+import { buildCookieArgs, cookiesFilePath, isCookieBrowser } from '../bot/cookies'
+import { desktopStatus, installDesktopEntry } from '../desktop'
+import { checkForUpdates, quitAndInstall } from '../appUpdater'
+import { join } from 'node:path'
 import type { IpcContext } from './context'
 
 const MAX_PACK_BYTES = 8 * 1024 * 1024 // a metadata-only pack is KBs; reject anything absurd
@@ -13,12 +26,9 @@ const MAX_PACK_BYTES = 8 * 1024 * 1024 // a metadata-only pack is KBs; reject an
  * Library + content IPC: import (URL & local files), tagging, soundboard, playlists,
  * scenes, and shareable packs. All of these mutate the store and re-broadcast it.
  */
-export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
-  const { store, bot, mediaDir, appVersion, handle, send, broadcastLibrary, openDialog, saveDialog } = ctx
+export function registerLibraryIpc(ctx: IpcContext): void {
+  const { store, bot, config, mediaDir, userData, handle, send, broadcastLibrary, openDialog, saveDialog } = ctx
   const sendProgress = (p: ImportProgress): void => send(IPC.importProgress, p)
-
-  const enricher = new Enricher(store, broadcastLibrary, appVersion)
-  enricher.enqueue(store.unenrichedSongIds())
 
   // Serialize imports so their progress toasts can't interleave into garbage totals,
   // while each caller still receives its own result.
@@ -32,20 +42,104 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
   // ---- library ----
   handle(IPC.libraryGet, () => store.view())
 
-  const doImport = async (url: string): Promise<{ ok: boolean; error?: string }> => {
+  // ---- external tools (yt-dlp updater) ----
+  handle(IPC.toolsGetStatus, () => toolStatus())
+  handle(IPC.toolsUpdateYtdlp, () => updateYtDlp(join(userData, 'bin')))
+
+  // ---- YouTube cookies (bypass the "confirm you're not a bot" wall) ----
+  const cookieStatus = (): CookiesStatus => ({
+    mode: config.cookiesMode,
+    browser: isCookieBrowser(config.cookiesBrowser) ? config.cookiesBrowser : undefined,
+    hasFile: existsSync(cookiesFilePath(userData))
+  })
+  // Rebuild the yt-dlp cookie args from the current setting (called after any change).
+  const applyCookies = (): void =>
+    setCookieArgs(
+      buildCookieArgs({ mode: config.cookiesMode, browser: config.cookiesBrowser, userData })
+    )
+
+  handle(IPC.cookiesGet, () => cookieStatus())
+  handle(IPC.cookiesSetMode, (_e, mode: CookiesMode, browser?: CookieBrowser) => {
+    const b = mode === 'browser' && browser && isCookieBrowser(browser) ? browser : ''
+    // 'browser' with no valid browser falls back to off, so we never emit a bad flag.
+    config.setCookies(mode === 'browser' && !b ? 'none' : mode, b)
+    applyCookies()
+    return cookieStatus()
+  })
+  handle(IPC.cookiesImportFile, async (): Promise<{ ok: boolean; error?: string; status?: CookiesStatus }> => {
+    const res = await openDialog({
+      title: 'Choose a cookies.txt file',
+      properties: ['openFile'],
+      filters: [{ name: 'Cookies (Netscape txt)', extensions: ['txt'] }]
+    })
+    if (res.canceled || !res.filePaths[0]) return { ok: true } // cancelled — no change
+    try {
+      const src = res.filePaths[0]
+      const content = readFileSync(src, 'utf8')
+      // A Netscape cookies file has the header and/or data lines of 7 tab-separated fields.
+      // Requiring real structure (not merely "contains a tab") avoids copying arbitrary text
+      // that yt-dlp would then silently ignore — a confusing failure to debug.
+      const hasHeader = /# (Netscape|HTTP Cookie File)/i.test(content)
+      const hasCookieLine = content
+        .split('\n')
+        .some((l) => l.trim() && !l.startsWith('#') && l.split('\t').length === 7)
+      if (!hasHeader && !hasCookieLine) {
+        return { ok: false, error: 'That doesn’t look like a cookies.txt (Netscape format) file.' }
+      }
+      copyFileSync(src, cookiesFilePath(userData))
+      config.setCookies('file')
+      applyCookies()
+      return { ok: true, status: cookieStatus() }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
+    }
+  })
+
+  // ---- desktop integration (AppImage → applications menu) ----
+  handle(IPC.desktopGetStatus, () => desktopStatus())
+  handle(IPC.desktopInstall, () => {
+    const r = installDesktopEntry()
+    return { ...r, status: desktopStatus() }
+  })
+
+  // ---- auto-update (electron-updater) ----
+  handle(IPC.updateCheck, () => checkForUpdates())
+  handle(IPC.updateInstall, () => quitAndInstall())
+
+  const doImport = async (
+    url: string,
+    opts?: ImportOpts
+  ): Promise<{ ok: boolean; error?: string }> => {
     const clean = (url ?? '').trim()
     if (!clean) return { ok: false, error: 'Empty URL' }
     if (!/^https?:\/\//i.test(clean)) return { ok: false, error: 'Enter an http(s) URL' }
     try {
       sendProgress({ url: clean, status: 'resolving' })
       const result = await probe(clean)
+      const addedSongIds: string[] = []
+      const stamp = (track: ResolvedTrack): void => {
+        if (!track.videoId) return
+        // Only newly-created songs go in addedSongIds — a re-imported URL is de-duped by
+        // the store, and the import wizard would otherwise re-tag it (clobbering its tags).
+        const isNew = !store.hasSong(track.videoId)
+        const song = store.addSong({ ...track, kind: opts?.kind, tags: opts?.tags })
+        if (isNew) addedSongIds.push(song.id)
+      }
+
+      // Single video: the probe already resolved it fully — no second network call.
+      if (result.kind === 'video' && result.track) {
+        stamp(result.track)
+        broadcastLibrary()
+        sendProgress({ url: clean, status: 'done', total: 1, completed: 1, addedSongIds })
+        return { ok: true }
+      }
+
+      // Playlist: resolve each entry (this is where the per-entry network cost lives).
       const total = result.entryUrls.length
       let completed = 0
-      const addedSongIds: string[] = []
       for (const entry of result.entryUrls) {
         try {
-          const track = await extractTrack(entry, result.playlistTitle)
-          if (track.videoId) addedSongIds.push(store.addSong(track).id)
+          stamp(await extractTrack(entry, result.playlistTitle))
         } catch (err) {
           console.error('[import] failed for', entry, (err as Error).message)
         }
@@ -55,7 +149,6 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
       }
       broadcastLibrary()
       sendProgress({ url: clean, status: 'done', total, completed, addedSongIds })
-      enricher.enqueue(addedSongIds)
       return { ok: true }
     } catch (err) {
       const message = (err as Error).message
@@ -63,11 +156,13 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
       return { ok: false, error: message }
     }
   }
-  handle(IPC.libraryAddUrl, (_e, url: string) => queueImport(() => doImport(url)))
+  handle(IPC.libraryAddUrl, (_e, url: string, opts?: ImportOpts) =>
+    queueImport(() => doImport(url, opts))
+  )
 
   // Import local files. The dialog routes through the XDG Document portal under Flatpak,
   // so only the picked files are granted; we copy each into the media dir immediately.
-  handle(IPC.libraryAddFiles, async (): Promise<{ ok: boolean; added: number; error?: string }> => {
+  handle(IPC.libraryAddFiles, async (_e, opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }> => {
     const result = await openDialog({
       title: 'Add local audio files',
       properties: ['openFile', 'multiSelections'],
@@ -82,6 +177,7 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
       for (const [i, path] of result.filePaths.entries()) {
         try {
           const m = await copyIntoMedia(mediaDir, path)
+          const isNew = !store.hasSong(`local:${m.sha1}`)
           const song = store.addSong({
             videoId: `local:${m.sha1}`,
             url: m.storedPath,
@@ -89,9 +185,11 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
             artistName: m.artist ?? 'Unknown Artist',
             albumTitle: m.album ?? 'Local Files',
             duration: m.durationSec,
-            sourceType: 'local'
+            sourceType: 'local',
+            kind: opts?.kind,
+            tags: opts?.tags
           })
-          addedSongIds.push(song.id)
+          if (isNew) addedSongIds.push(song.id) // only new songs get tagged by the wizard
           added++
         } catch (err) {
           console.error('[import] local file failed for', path, (err as Error).message)
@@ -100,7 +198,6 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
       }
       broadcastLibrary()
       sendProgress({ url: 'Local files', status: 'done', total, completed: total, addedSongIds })
-      enricher.enqueue(addedSongIds)
       return { ok: true, added }
     })
   })
@@ -205,6 +302,4 @@ export function registerLibraryIpc(ctx: IpcContext): { enricher: Enricher } {
       return { ok: false, error: (err as Error).message }
     }
   })
-
-  return { enricher }
 }

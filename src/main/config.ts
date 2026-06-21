@@ -10,6 +10,8 @@ interface ConfigShape {
   remotePort?: number
   remoteToken?: string // plaintext fallback bearer token
   remoteTokenEnc?: string // base64 of an OS-encrypted bearer token
+  cookiesMode?: 'none' | 'file' | 'browser' // yt-dlp cookie source
+  cookiesBrowser?: string // browser name when cookiesMode === 'browser'
 }
 
 const DEFAULT_REMOTE_PORT = 3333
@@ -25,6 +27,8 @@ export class Config {
   private remoteEnabled_ = false
   private remotePort_ = DEFAULT_REMOTE_PORT
   private remoteToken_ = ''
+  private cookiesMode_: 'none' | 'file' | 'browser' = 'none'
+  private cookiesBrowser_ = ''
 
   constructor(private readonly path: string) {
     const data = this.load()
@@ -32,6 +36,8 @@ export class Config {
     this.remoteEnabled_ = data.remoteEnabled
     this.remotePort_ = data.remotePort
     this.remoteToken_ = data.remoteToken
+    this.cookiesMode_ = data.cookiesMode
+    this.cookiesBrowser_ = data.cookiesBrowser
     // Migrate any plaintext credential to encrypted form on startup.
     if (data.legacyPlaintext && safeStorage.isEncryptionAvailable()) this.save()
   }
@@ -52,6 +58,8 @@ export class Config {
     remoteEnabled: boolean
     remotePort: number
     remoteToken: string
+    cookiesMode: 'none' | 'file' | 'browser'
+    cookiesBrowser: string
     legacyPlaintext: boolean
   } {
     try {
@@ -59,11 +67,15 @@ export class Config {
         const data = JSON.parse(readFileSync(this.path, 'utf8')) as ConfigShape
         const tk = this.decrypt(data.discordTokenEnc, data.discordToken)
         const rt = this.decrypt(data.remoteTokenEnc, data.remoteToken)
+        const mode =
+          data.cookiesMode === 'file' || data.cookiesMode === 'browser' ? data.cookiesMode : 'none'
         return {
           token: tk.value,
           remoteEnabled: !!data.remoteEnabled,
           remotePort: typeof data.remotePort === 'number' ? data.remotePort : DEFAULT_REMOTE_PORT,
           remoteToken: rt.value,
+          cookiesMode: mode,
+          cookiesBrowser: typeof data.cookiesBrowser === 'string' ? data.cookiesBrowser : '',
           legacyPlaintext: tk.legacy || rt.legacy
         }
       }
@@ -75,13 +87,20 @@ export class Config {
       remoteEnabled: false,
       remotePort: DEFAULT_REMOTE_PORT,
       remoteToken: '',
+      cookiesMode: 'none',
+      cookiesBrowser: '',
       legacyPlaintext: false
     }
   }
 
   private save(): void {
     mkdirSync(dirname(this.path), { recursive: true })
-    const out: ConfigShape = { remoteEnabled: this.remoteEnabled_, remotePort: this.remotePort_ }
+    const out: ConfigShape = {
+      remoteEnabled: this.remoteEnabled_,
+      remotePort: this.remotePort_,
+      cookiesMode: this.cookiesMode_,
+      cookiesBrowser: this.cookiesBrowser_ || undefined
+    }
     const canEncrypt = safeStorage.isEncryptionAvailable()
     if (!canEncrypt && (this.token_ || this.remoteToken_)) {
       console.warn('[config] OS encryption unavailable — storing credential(s) in plaintext')
@@ -124,6 +143,19 @@ export class Config {
       this.save()
     }
     return this.remoteToken_
+  }
+
+  get cookiesMode(): 'none' | 'file' | 'browser' {
+    return this.cookiesMode_
+  }
+  get cookiesBrowser(): string {
+    return this.cookiesBrowser_
+  }
+  /** Set the yt-dlp cookie source. */
+  setCookies(mode: 'none' | 'file' | 'browser', browser = ''): void {
+    this.cookiesMode_ = mode
+    this.cookiesBrowser_ = mode === 'browser' ? browser : ''
+    this.save()
   }
 
   /** Rotate the remote bearer token (invalidates every paired device). Returns the new one. */

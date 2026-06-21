@@ -14,6 +14,7 @@ export interface IpcContext {
   bot: DiscordBot
   config: Config
   mediaDir: string
+  userData: string // writable app data dir (for downloaded tools under userData/bin)
   appVersion: string
   getWindow: () => BrowserWindow | null
   /** Send a main → renderer event to the active window (no-op if it's gone). */

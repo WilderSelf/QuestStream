@@ -14,10 +14,24 @@ import type {
   AppNotice,
   RemoteCommand,
   RemoteState,
-  RemoteInfo
+  RemoteInfo,
+  ItemKind,
+  ToolStatus,
+  ToolUpdateResult,
+  CookiesStatus,
+  CookiesMode,
+  CookieBrowser,
+  DesktopStatus,
+  UpdateState
 } from './types'
 
 export type SceneInput = Omit<Scene, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+
+/** Kind + tags stamped onto every song an import creates (chosen in the import wizard). */
+export interface ImportOpts {
+  kind?: ItemKind
+  tags?: string[]
+}
 
 export const IPC = {
   // library
@@ -48,6 +62,24 @@ export const IPC = {
 
   // shareable packs (import auto-detects scene vs playlist)
   packImport: 'pack:import',
+
+  // external tools (yt-dlp / ffmpeg / ffprobe)
+  toolsGetStatus: 'tools:getStatus',
+  toolsUpdateYtdlp: 'tools:updateYtdlp',
+
+  // YouTube cookies (bypass "confirm you're not a bot")
+  cookiesGet: 'cookies:get',
+  cookiesSetMode: 'cookies:setMode',
+  cookiesImportFile: 'cookies:importFile',
+
+  // desktop integration (AppImage → applications menu)
+  desktopGetStatus: 'desktop:getStatus',
+  desktopInstall: 'desktop:install',
+
+  // auto-update (electron-updater)
+  updateInstall: 'update:install', // quit + install a downloaded update
+  updateCheck: 'update:check', // manual "check now"
+  updateStatus: 'update:status', // main -> renderer event
 
   // discord
   discordHasToken: 'discord:hasToken',
@@ -105,7 +137,8 @@ export const EVENT_CHANNELS: readonly string[] = [
   IPC.playerEnded,
   IPC.monitorPcm,
   IPC.remoteCommand,
-  IPC.notice
+  IPC.notice,
+  IPC.updateStatus
 ]
 
 /**
@@ -121,8 +154,8 @@ export const MAIN_HANDLED_CHANNELS: readonly string[] = Object.values(IPC).filte
 export interface RendererApi {
   library: {
     get(): Promise<LibrarySnapshot>
-    addUrl(url: string): Promise<{ ok: boolean; error?: string }>
-    addFiles(): Promise<{ ok: boolean; added: number; error?: string }>
+    addUrl(url: string, opts?: ImportOpts): Promise<{ ok: boolean; error?: string }>
+    addFiles(opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }>
     setEffect(songId: string, effect: string | null): Promise<void>
     retag(songId: string, payload: RetagPayload): Promise<void>
     deleteSong(songId: string): Promise<void>
@@ -147,6 +180,24 @@ export interface RendererApi {
   }
   packs: {
     import(): Promise<{ ok: boolean; kind?: 'scene' | 'playlist'; name?: string; error?: string }>
+  }
+  tools: {
+    getStatus(): Promise<ToolStatus[]>
+    updateYtdlp(): Promise<ToolUpdateResult>
+  }
+  cookies: {
+    get(): Promise<CookiesStatus>
+    setMode(mode: CookiesMode, browser?: CookieBrowser): Promise<CookiesStatus>
+    importFile(): Promise<{ ok: boolean; error?: string; status?: CookiesStatus }>
+  }
+  desktop: {
+    getStatus(): Promise<DesktopStatus>
+    install(): Promise<{ ok: boolean; error?: string; status?: DesktopStatus }>
+  }
+  update: {
+    onStatus(cb: (s: UpdateState) => void): () => void
+    install(): Promise<void>
+    check(): Promise<void>
   }
   discord: {
     hasToken(): Promise<boolean>

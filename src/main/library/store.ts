@@ -10,8 +10,10 @@ import type {
   Scene,
   SoundboardItem,
   RetagPayload,
-  SourceType
+  SourceType,
+  ItemKind
 } from '../../shared/types'
+import { normalizeTag } from '../../shared/taxonomy'
 
 interface DbShape {
   artists: Artist[]
@@ -51,12 +53,19 @@ export class LibraryStore {
       if (existsSync(this.path)) {
         const parsed = JSON.parse(readFileSync(this.path, 'utf8')) as Partial<DbShape>
         const db = { ...structuredClone(EMPTY), ...parsed }
-        // migrate: ensure every song has a tags array + a source type
+        // migrate: ensure every song has a tags array + a source type + a kind
         db.songs.forEach((s) => {
           if (!Array.isArray(s.tags)) s.tags = []
           if (!s.sourceType) s.sourceType = 'youtube'
+          if (!s.kind) s.kind = 'track'
         })
         if (!Array.isArray(db.soundboard)) db.soundboard = []
+        // Songs referenced by a soundboard item are one-shots → classify them as 'sfx'
+        // so they land in the Soundboard pane. Runs after the default so it wins.
+        const sfxIds = new Set(db.soundboard.map((sb) => sb.songId))
+        db.songs.forEach((s) => {
+          if (sfxIds.has(s.id)) s.kind = 'sfx'
+        })
         return db
       }
     } catch (err) {
@@ -165,6 +174,12 @@ export class LibraryStore {
     return album
   }
 
+  /** Whether a song with this videoId already exists (import paths use it to avoid
+   * re-tagging or re-counting a song that addSong would de-dupe away). */
+  hasSong(videoId: string): boolean {
+    return this.db.songs.some((s) => s.videoId === videoId)
+  }
+
   /** Insert a resolved track. De-dupes by videoId. Returns the song (existing or new). */
   addSong(input: {
     videoId: string
@@ -175,7 +190,10 @@ export class LibraryStore {
     duration: number
     thumbnail?: string
     sourceType?: SourceType
+    kind?: ItemKind
+    tags?: string[]
   }): Song {
+    // De-dupe by videoId: re-importing must never clobber a song's existing kind/tags.
     const dupe = this.db.songs.find((s) => s.videoId === input.videoId)
     if (dupe) return dupe
 
@@ -190,32 +208,42 @@ export class LibraryStore {
       videoId: input.videoId,
       duration: input.duration,
       thumbnail: input.thumbnail,
-      tags: [],
+      tags: this.normalizeTags(input.tags ?? []),
       addedAt: Date.now(),
-      sourceType: input.sourceType ?? 'youtube'
+      sourceType: input.sourceType ?? 'youtube',
+      kind: input.kind ?? 'track'
     }
     this.db.songs.push(song)
     this.persist()
     return song
   }
 
+  /**
+   * Normalize a tag list for storage: trim/normalize each (namespaced tags get a
+   * lowercased dim+value; legacy free tags keep their case), drop empties, de-dupe
+   * case-insensitively, and cap length. The cap is generous (32) because namespaced
+   * taxonomy tags across several dimensions plus a few free tags add up fast — the old
+   * cap of 12 would silently truncate them.
+   */
+  private normalizeTags(tags: string[]): string[] {
+    const seen = new Set<string>()
+    return tags
+      .map((t) => normalizeTag(t))
+      .filter((t) => {
+        const k = t.toLowerCase()
+        if (!t || seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+      .slice(0, 32)
+  }
+
   retag(songId: string, payload: RetagPayload): void {
     const song = this.db.songs.find((s) => s.id === songId)
     if (!song) return
     if (payload.title !== undefined) song.title = payload.title.trim() || song.title
-    if (payload.tags !== undefined) {
-      // normalize: trim, drop empties, de-dupe (case-insensitive), cap length
-      const seen = new Set<string>()
-      song.tags = payload.tags
-        .map((t) => t.trim())
-        .filter((t) => {
-          const k = t.toLowerCase()
-          if (!t || seen.has(k)) return false
-          seen.add(k)
-          return true
-        })
-        .slice(0, 12)
-    }
+    if (payload.tags !== undefined) song.tags = this.normalizeTags(payload.tags)
+    if (payload.kind !== undefined) song.kind = payload.kind
 
     if (payload.artistName !== undefined) {
       const artist = this.findOrCreateArtist(payload.artistName)
@@ -353,62 +381,5 @@ export class LibraryStore {
   deleteScene(id: string): void {
     this.db.scenes = this.db.scenes.filter((s) => s.id !== id)
     this.persist()
-  }
-
-  // ---- MusicBrainz enrichment (background, fill-only) ----
-
-  /** Info the enricher needs to query MusicBrainz; null if the song is gone/done. */
-  getEnrichInfo(
-    songId: string
-  ): { title: string; artistName: string; albumTitle: string } | null {
-    const song = this.db.songs.find((s) => s.id === songId)
-    if (!song || song.enriched) return null
-    const artist = this.db.artists.find((a) => a.id === song.artistId)
-    const album = this.db.albums.find((a) => a.id === song.albumId)
-    return {
-      title: song.title,
-      artistName: artist?.name ?? 'Unknown Artist',
-      albumTitle: album?.title ?? 'Singles'
-    }
-  }
-
-  /** Song ids that haven't been through enrichment yet. */
-  unenrichedSongIds(): string[] {
-    return this.db.songs.filter((s) => !s.enriched).map((s) => s.id)
-  }
-
-  /** Apply MusicBrainz results, but only FILL generic fields — never overwrite good data. */
-  enrichSong(songId: string, data: { artistName?: string; albumTitle?: string }): boolean {
-    const song = this.db.songs.find((s) => s.id === songId)
-    if (!song) return false
-    const curArtist = this.db.artists.find((a) => a.id === song.artistId)
-    const curAlbum = this.db.albums.find((a) => a.id === song.albumId)
-    const artistGeneric = !curArtist || /^unknown artist$/i.test(curArtist.name)
-    const albumGeneric = !curAlbum || /^(singles|unknown album)$/i.test(curAlbum.title)
-    let changed = false
-
-    if (data.artistName && artistGeneric) {
-      const artist = this.findOrCreateArtist(data.artistName)
-      song.artistId = artist.id
-      const albumTitle = albumGeneric && data.albumTitle ? data.albumTitle : (curAlbum?.title ?? 'Singles')
-      song.albumId = this.findOrCreateAlbum(artist.id, albumTitle, song.thumbnail).id
-      changed = true
-    } else if (data.albumTitle && albumGeneric) {
-      song.albumId = this.findOrCreateAlbum(song.artistId, data.albumTitle, song.thumbnail).id
-      changed = true
-    }
-
-    song.enriched = true
-    this.gcEmpty()
-    this.persist()
-    return changed
-  }
-
-  markEnriched(songId: string): void {
-    const song = this.db.songs.find((s) => s.id === songId)
-    if (song && !song.enriched) {
-      song.enriched = true
-      this.persist()
-    }
   }
 }

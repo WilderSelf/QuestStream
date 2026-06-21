@@ -5,7 +5,7 @@
 // `videoId` so a pack re-resolves cleanly on another machine (local-source songs
 // import as placeholders the recipient re-links, since their media path is foreign).
 
-import type { AmbienceMode, LibrarySnapshot, SceneAmbience, SourceType } from '../../shared/types'
+import type { AmbienceMode, ItemKind, LibrarySnapshot, SceneAmbience, SourceType } from '../../shared/types'
 import { clamp01 } from '../../shared/num'
 import type { LibraryStore } from './store'
 
@@ -22,6 +22,7 @@ export interface PackSong {
   tags: string[]
   sourceType: SourceType
   effect?: string
+  kind?: ItemKind
 }
 
 export interface ScenePack {
@@ -63,7 +64,8 @@ function songMetaByVideoId(snap: LibrarySnapshot, internalIds: string[]): Map<st
       thumbnail: song.thumbnail,
       tags: song.tags ?? [],
       sourceType: song.sourceType ?? 'youtube',
-      effect: song.effect
+      effect: song.effect,
+      kind: song.kind ?? 'track'
     })
   }
   return out
@@ -115,6 +117,7 @@ function validatePackSong(raw: unknown): PackSong {
   const r = raw as Record<string, unknown>
   if (typeof r.videoId !== 'string' || typeof r.url !== 'string') throw new Error('pack: song missing videoId/url')
   const st = r.sourceType
+  const k = r.kind
   return {
     videoId: r.videoId,
     url: r.url,
@@ -125,7 +128,8 @@ function validatePackSong(raw: unknown): PackSong {
     thumbnail: typeof r.thumbnail === 'string' ? r.thumbnail : undefined,
     tags: Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === 'string') : [],
     sourceType: st === 'local' || st === 'url' || st === 'youtube' ? st : 'youtube',
-    effect: typeof r.effect === 'string' ? r.effect : undefined
+    effect: typeof r.effect === 'string' ? r.effect : undefined,
+    kind: k === 'ambience' || k === 'sfx' || k === 'track' ? k : 'track'
   }
 }
 
@@ -185,7 +189,8 @@ export function importPack(store: LibraryStore, pack: Pack): { kind: Pack['kind'
       albumTitle: ps.albumTitle,
       duration: ps.duration,
       thumbnail: ps.thumbnail,
-      sourceType: ps.sourceType
+      sourceType: ps.sourceType,
+      kind: ps.kind ?? 'track'
     })
     vidToId.set(ps.videoId, song.id)
     // Only apply pack tags/effect to songs we just created — don't overwrite the

@@ -9,7 +9,8 @@ import {
 } from '@dnd-kit/core'
 import { useStore } from './store'
 import { TopBar } from './components/TopBar'
-import { PlaylistsPane, ArtistsPane, AlbumsPane, SongsPane, TagBar } from './components/Browser'
+import { PlaylistsPane } from './components/Browser'
+import { LibraryPane } from './components/LibraryPane'
 import { QueuePane } from './components/QueuePane'
 import { TransportBar } from './components/TransportBar'
 import {
@@ -19,6 +20,10 @@ import {
   SongEditModal,
   DisclaimerModal
 } from './components/Modals'
+import { ImportWizardModal } from './components/ImportWizard'
+import { AlertBanner } from './components/AlertBanner'
+import { DesktopPrompt } from './components/DesktopPrompt'
+import { UpdateBanner } from './components/UpdateBanner'
 import { Toast } from './components/Toast'
 
 export function App(): JSX.Element {
@@ -87,12 +92,12 @@ export function App(): JSX.Element {
       <div className="app">
         <TopBar />
         <div className="main">
-          <TagBar />
+          <UpdateBanner />
+          <DesktopPrompt />
+          <AlertBanner />
           <div className="browser">
             <PlaylistsPane />
-            <ArtistsPane />
-            <AlbumsPane />
-            <SongsPane />
+            <LibraryPane />
             <QueuePane />
           </div>
         </div>
@@ -102,6 +107,7 @@ export function App(): JSX.Element {
       <SavePlaylistModal />
       <SaveSceneModal />
       <SongEditModal />
+      <ImportWizardModal />
       <DisclaimerModal />
       <Toast />
     </DndContext>

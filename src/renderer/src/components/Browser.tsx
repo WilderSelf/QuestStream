@@ -2,70 +2,33 @@ import { useMemo } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { useStore, fmtTime } from '../store'
 import type { Song } from '@shared/types'
+import { parseTag, labelForValue } from '@shared/taxonomy'
 
 /**
  * Returns the set of song ids matching the current search across title, artist
  * and album. Returns `null` when there's no search (meaning "everything matches").
  */
-function useMatchingSongIds(): Set<string> | null {
+export function useMatchingSongIds(): Set<string> | null {
   const search = useStore((s) => s.search)
-  const selectedTag = useStore((s) => s.selectedTag)
   const library = useStore((s) => s.library)
   return useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q && !selectedTag) return null
+    if (!q) return null
     const artistName = new Map(library.artists.map((a) => [a.id, a.name.toLowerCase()]))
     const albumTitle = new Map(library.albums.map((a) => [a.id, a.title.toLowerCase()]))
     const ids = new Set<string>()
     for (const s of library.songs) {
       const tags = s.tags ?? []
-      const matchesTag = !selectedTag || tags.includes(selectedTag)
-      const matchesText =
-        !q ||
+      if (
         s.title.toLowerCase().includes(q) ||
         artistName.get(s.artistId)?.includes(q) ||
         albumTitle.get(s.albumId)?.includes(q) ||
         tags.some((t) => t.toLowerCase().includes(q))
-      if (matchesTag && matchesText) ids.add(s.id)
+      )
+        ids.add(s.id)
     }
     return ids
-  }, [search, selectedTag, library])
-}
-
-/** Library-wide tag filter bar. */
-export function TagBar(): JSX.Element | null {
-  const songs = useStore((s) => s.library.songs)
-  const selectedTag = useStore((s) => s.selectedTag)
-  const setSelectedTag = useStore((s) => s.setSelectedTag)
-
-  const tags = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const s of songs) for (const t of s.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1)
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  }, [songs])
-
-  if (tags.length === 0) return null
-
-  return (
-    <div className="tag-bar">
-      <span className="tag-bar-label">Tags:</span>
-      <button
-        className={`tag-chip ${selectedTag === null ? 'active' : ''}`}
-        onClick={() => setSelectedTag(null)}
-      >
-        All
-      </button>
-      {tags.map(([tag, count]) => (
-        <button
-          key={tag}
-          className={`tag-chip ${selectedTag === tag ? 'active' : ''}`}
-          onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-        >
-          {tag} <span className="tag-count">{count}</span>
-        </button>
-      ))}
-    </div>
-  )
+  }, [search, library])
 }
 
 export function PlaylistsPane(): JSX.Element {
@@ -267,8 +230,15 @@ export function AlbumsPane(): JSX.Element {
   )
 }
 
-function SongRow({ song }: { song: Song }): JSX.Element {
+/** Format a stored tag for display: namespaced → its value label, free → as-is. */
+function tagLabel(tag: string): string {
+  const { dim, value } = parseTag(tag)
+  return dim ? labelForValue(dim, value) : value
+}
+
+export function SongRow({ song }: { song: Song }): JSX.Element {
   const enqueueSongs = useStore((s) => s.enqueueSongs)
+  const addAmbience = useStore((s) => s.addAmbience)
   const setEditSong = useStore((s) => s.setEditSong)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `song:${song.id}`,
@@ -285,19 +255,33 @@ function SongRow({ song }: { song: Song }): JSX.Element {
       await window.api.library.deleteSong(song.id)
   }
 
+  // Double-click sends the item to its natural place in the live mix, by kind:
+  // ambience → a looping layer, sfx → a soundboard one-shot, otherwise the queue.
+  function activate(): void {
+    if (song.kind === 'ambience') addAmbience(song)
+    else if (song.kind === 'sfx') void window.api.soundboard.add(song.id)
+    else enqueueSongs([song])
+  }
+  const hint =
+    song.kind === 'ambience'
+      ? 'Drag to the mix · double-click to add a looping layer'
+      : song.kind === 'sfx'
+        ? 'Drag to the soundboard · double-click to add a one-shot'
+        : 'Drag to queue · double-click to enqueue'
+
   return (
     <div
       ref={setNodeRef}
       className={`row song ${isDragging ? 'dragging' : ''}`}
-      title="Drag to queue · double-click to enqueue"
+      title={hint}
       {...listeners}
       {...attributes}
-      onDoubleClick={() => enqueueSongs([song])}
+      onDoubleClick={activate}
     >
       <div className="title">
         <div className="title">{song.title}</div>
         {song.tags && song.tags.length > 0 && (
-          <div className="song-tags">{song.tags.map((t) => `#${t}`).join(' ')}</div>
+          <div className="song-tags">{song.tags.map(tagLabel).join(' · ')}</div>
         )}
       </div>
       <span className="duration">{fmtTime(song.duration)}</span>

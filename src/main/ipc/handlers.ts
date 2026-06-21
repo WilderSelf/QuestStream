@@ -13,6 +13,7 @@ interface Deps {
   bot: DiscordBot
   config: Config
   mediaDir: string
+  userData: string
   appVersion: string
   getWindow: () => BrowserWindow | null
 }

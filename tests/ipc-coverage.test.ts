@@ -11,7 +11,6 @@ import type { IpcContext } from '../src/main/ipc/context.ts'
 // network — `RemoteServer` is constructed but never started (config.remoteEnabled = false).
 function stubContext(registered: Set<string>): IpcContext {
   const store = {
-    unenrichedSongIds: () => [],
     view: () => ({ artists: [], albums: [], songs: [], playlists: [], scenes: [], soundboard: [] })
   }
   const config = { remotePort: 0, remoteEnabled: false, remoteToken: 'stub' }
