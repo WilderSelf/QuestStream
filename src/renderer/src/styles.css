@@ -38,12 +38,32 @@
   --active-tint: rgba(208, 135, 112, 0.2);
   --selected: rgba(136, 192, 208, 0.18);
   --hover: rgba(76, 86, 106, 0.4);
+
+  /* Radius scale (was scattered 4/5/6/7/8/10px; 5 & 7 consolidated to the 6px default). */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Type scale (the high-frequency body sizes; headings stay as one-off literals). */
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 12px;
+  --text-md: 13px;
+
+  /* Spacing scale (gaps/paddings). */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-6: 16px;
 }
 
 /* Inline action-button group in pane headers (was a repeated inline flex style). */
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 /* Smooth the background change on the interactive rows/chips/tabs (buttons already animate). */
@@ -67,7 +87,7 @@ body,
 
 body {
   font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--text);
   background: var(--bg);
   user-select: none;
@@ -76,11 +96,11 @@ body {
 
 button {
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text);
   background: var(--panel-alt);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
@@ -146,7 +166,7 @@ button.icon,
   justify-content: center;
 }
 .icon-text {
-  gap: 4px;
+  gap: var(--space-1);
 }
 .grip,
 .vol-icon {
@@ -162,11 +182,11 @@ button.icon,
 input,
 select {
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--text);
   background: var(--nord0);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 6px 8px;
   outline: none;
 }
@@ -218,7 +238,7 @@ textarea {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   padding: 8px 12px;
   background: linear-gradient(var(--nord1), var(--nord0));
   border-bottom: 1px solid var(--border);
@@ -240,7 +260,7 @@ textarea {
 }
 .add-url {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
   align-items: center;
   flex: 1 1 140px;
   min-width: 0;
@@ -276,12 +296,12 @@ textarea {
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--nord0);
   border: 1px solid var(--border);
-  font-size: 11px;
+  font-size: var(--text-sm);
   white-space: nowrap;
   max-width: 170px;
   overflow: hidden;
@@ -316,7 +336,7 @@ textarea {
 .tag-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 6px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -325,16 +345,16 @@ textarea {
   flex-shrink: 0;
 }
 .tag-bar-label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   flex-shrink: 0;
 }
 .tag-chip {
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--nord0);
   border: 1px solid var(--border);
   color: var(--text);
@@ -352,10 +372,10 @@ textarea {
 }
 .tag-count {
   opacity: 0.6;
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 .song-tags {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--nord15);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -363,7 +383,7 @@ textarea {
 .tag-edit {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   margin-bottom: 6px;
 }
 .tag-edit.quick {
@@ -390,7 +410,7 @@ textarea {
 }
 .pane-header {
   padding: 8px 10px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -399,7 +419,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .pane-body {
   overflow-y: auto;
@@ -410,7 +430,7 @@ textarea {
 .row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 7px 10px;
   cursor: pointer;
   border-bottom: 1px solid rgba(43, 49, 60, 0.5);
@@ -430,12 +450,12 @@ textarea {
 }
 .row .sub {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 .row .thumb {
   width: 30px;
   height: 30px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   background: var(--panel-alt);
   flex-shrink: 0;
@@ -449,21 +469,21 @@ textarea {
 .muted {
   color: var(--text-dim);
   padding: 16px 12px;
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.5;
 }
 
 .duration {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ---- Now playing queue ---- */
 .queue.drop-active .pane-body {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .queue-item .grip {
   color: var(--text-dim);
@@ -525,7 +545,7 @@ textarea {
 .deck-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 6px 10px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -546,7 +566,7 @@ textarea {
 }
 .ambience-header {
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -560,12 +580,12 @@ textarea {
 .ambience-list.drop-active {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .amb-slot {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 6px 10px;
   border-bottom: 1px solid rgba(43, 49, 60, 0.5);
 }
@@ -575,7 +595,7 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .amb-slot input[type='range'] {
   width: 86px;
@@ -587,25 +607,25 @@ textarea {
 }
 .amb-slot .amb-play {
   padding: 3px 7px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   flex-shrink: 0;
 }
 .muted.small {
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 10px;
 }
 .amb-slot .amb-interval {
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--muted, #99a);
   flex-shrink: 0;
 }
 .amb-slot .amb-interval input[type='number'] {
   width: 40px;
   padding: 2px 4px;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ---- Remote pairing (settings) ---- */
@@ -618,16 +638,16 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   margin-top: 10px;
 }
 .remote-pair img {
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #fff;
   padding: 6px;
 }
 .remote-url {
-  font-size: 10px;
+  font-size: var(--text-xs);
   word-break: break-all;
   color: var(--muted, #99a);
   text-align: center;
@@ -636,13 +656,13 @@ textarea {
   background: none;
   border: 0;
   color: var(--nord8, #88c0d0);
-  font-size: 11px;
+  font-size: var(--text-sm);
   cursor: pointer;
   padding: 2px;
 }
 .remote-advanced {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .remote-advanced summary {
   cursor: pointer;
@@ -655,28 +675,28 @@ textarea {
   width: 100%;
   margin-top: 8px;
   font-family: monospace;
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ---- Soundboard ---- */
 .sfx-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 6px;
   min-height: 40px;
 }
 .sfx-grid.drop-active {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .sfx {
   display: flex;
   align-items: center;
   gap: 2px;
   background: rgba(43, 49, 60, 0.5);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 2px;
 }
 .sfx .sfx-trigger {
@@ -684,12 +704,12 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-base);
   padding: 5px 9px;
 }
 .sfx .sfx-key {
   min-width: 22px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 3px 5px;
 }
 .sfx .sfx-key.bound {
@@ -709,7 +729,7 @@ textarea {
   padding-bottom: 5px;
 }
 .playlist-row .sub {
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 .scene-row.selected {
   box-shadow: inset 3px 0 0 var(--nord15);
@@ -717,9 +737,9 @@ textarea {
 .section-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 5px 10px 3px;
-  font-size: 10px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--text-dim);
@@ -733,11 +753,11 @@ textarea {
   min-width: 0;
 }
 .library-head {
-  gap: 8px;
+  gap: var(--space-3);
 }
 .library-head-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
 }
 /* segmented control (kind tabs, source/type/mode toggles) */
 .kind-tabs {
@@ -745,14 +765,14 @@ textarea {
   gap: 2px;
   background: var(--nord0);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius);
   padding: 2px;
 }
 .seg {
   flex: 1;
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 4px 10px;
-  border-radius: 5px;
+  border-radius: var(--radius);
   background: transparent;
   border: none;
   color: var(--text-dim);
@@ -770,7 +790,7 @@ textarea {
 .library-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   padding: 6px 10px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -778,24 +798,24 @@ textarea {
 .group-by {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--text-dim);
 }
 .group-by select {
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 2px 6px;
 }
 .filter-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
 }
 .filter-label {
-  font-size: 10px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-dim);
@@ -807,7 +827,7 @@ textarea {
 .accordion-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   width: 100%;
   padding: 6px 10px;
   background: var(--panel);
@@ -830,7 +850,7 @@ textarea {
 }
 .accordion-title {
   flex: 1;
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 .artist-view {
@@ -848,14 +868,14 @@ textarea {
 .tag-picker {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 .tag-picker .filter-row {
   border-bottom: none;
   padding: 3px 0;
 }
 .custom-tag {
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 3px 8px;
   width: 140px;
 }
@@ -864,11 +884,11 @@ textarea {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-4);
 }
 .peritem {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 8px;
 }
 .peritem-title {
@@ -878,12 +898,12 @@ textarea {
 .wizard-error {
   background: rgba(191, 97, 106, 0.14); /* nord11 tint */
   border: 1px solid var(--nord11);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   margin: 4px 0 10px;
 }
 .wizard-error-msg {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--nord11);
   white-space: pre-wrap;
   word-break: break-word;
@@ -893,7 +913,7 @@ textarea {
 .wizard-error-fix {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   margin-top: 8px;
 }
 .wizard-error-fix .muted {
@@ -905,7 +925,7 @@ textarea {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-6);
   padding: 10px 16px;
   background: linear-gradient(var(--nord0), var(--nord1));
   border-top: 1px solid var(--border);
@@ -913,13 +933,13 @@ textarea {
 .np-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   min-width: 0;
 }
 .np-info .thumb {
   width: 44px;
   height: 44px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   object-fit: cover;
   background: var(--panel-alt);
 }
@@ -934,7 +954,7 @@ textarea {
 }
 .np-info .meta .a {
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--text-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -943,13 +963,13 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 360px;
 }
 .control-buttons {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
 }
 /* Larger, legible transport controls (the small emoji glyphs were hard to read). */
 .control-buttons .icon {
@@ -985,18 +1005,18 @@ textarea {
   position: absolute;
   top: 3px;
   right: 6px;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 700;
   line-height: 1;
 }
 .seek {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   width: 100%;
 }
 .seek .time {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
   width: 36px;
@@ -1005,7 +1025,7 @@ textarea {
 .bar {
   flex: 1;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--nord3);
   cursor: pointer;
   position: relative;
@@ -1015,13 +1035,13 @@ textarea {
   left: 0;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent);
 }
 .volume {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
   justify-content: flex-end;
 }
 .volume input[type='range'] {
@@ -1038,7 +1058,7 @@ textarea {
     grid-template-columns: 150px 1.5fr 1.4fr;
   }
   .transport {
-    gap: 8px;
+    gap: var(--space-3);
     padding: 10px 10px;
   }
   .controls {
@@ -1048,7 +1068,7 @@ textarea {
     min-width: 0;
   }
   .control-buttons {
-    gap: 6px;
+    gap: var(--space-2);
   }
 }
 @media (max-width: 720px) {
@@ -1076,7 +1096,7 @@ textarea {
 .modal {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   padding: 20px;
   width: 480px;
   max-width: 90vw;
@@ -1091,18 +1111,18 @@ textarea {
 }
 .modal p {
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.6;
   margin: 6px 0 14px;
 }
 .modal .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   margin-bottom: 14px;
 }
 .modal .field label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-dim);
@@ -1110,7 +1130,7 @@ textarea {
 .modal .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-3);
 }
 .modal a {
   color: var(--nord8);
@@ -1131,9 +1151,9 @@ textarea {
   background: var(--panel);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 9px 12px 9px 14px;
-  font-size: 12px;
+  font-size: var(--text-base);
   max-width: min(460px, calc(100vw - 24px));
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   z-index: 60; /* above modals (50) — an alert must never hide behind a dialog */
@@ -1157,7 +1177,7 @@ textarea {
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-base);
   padding: 2px 4px;
   line-height: 1;
 }
@@ -1180,12 +1200,12 @@ textarea {
 .alert-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   padding: 9px 14px;
   background: rgba(191, 97, 106, 0.16); /* nord11 tint */
   border-bottom: 1px solid var(--nord11);
   color: var(--text);
-  font-size: 12px;
+  font-size: var(--text-base);
   flex-shrink: 0;
 }
 .alert-icon {
@@ -1200,10 +1220,10 @@ textarea {
   flex-shrink: 0;
   background: var(--nord11);
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius);
   color: var(--nord6);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 3px 10px;
 }
 .alert-action:hover {
@@ -1213,10 +1233,10 @@ textarea {
   flex-shrink: 0;
   background: none;
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius);
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-base);
   padding: 2px 8px;
   line-height: 1.4;
 }
@@ -1242,13 +1262,13 @@ textarea {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 .tool-list li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--space-3);
+  font-size: var(--text-base);
 }
 .tool-name {
   font-family: ui-monospace, monospace;
@@ -1276,7 +1296,7 @@ textarea {
 .cookies-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   margin-top: 8px;
 }
 .cookies-row .ok {
@@ -1290,12 +1310,12 @@ textarea {
 .desktop-prompt {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   padding: 9px 14px;
   background: var(--selected); /* accent tint — inviting, not alarming */
   border-bottom: 1px solid var(--accent);
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .desktop-prompt-icon {
   font-size: 15px;
@@ -1309,12 +1329,12 @@ textarea {
 .update-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-4);
   padding: 9px 14px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .update-banner.ready {
   background: var(--selected);
@@ -1334,7 +1354,7 @@ textarea {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--nord3);
-  border-radius: 6px;
+  border-radius: var(--radius);
   border: 2px solid var(--bg);
 }
 ::-webkit-scrollbar-thumb:hover {
