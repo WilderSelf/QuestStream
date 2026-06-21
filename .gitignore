@@ -11,3 +11,4 @@ bin/
 # Internal/agent-local notes — kept locally, never published
 .claude/
 HANDOFF.md
+SESSION-HANDOFF.md
