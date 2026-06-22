@@ -297,7 +297,7 @@ export function SettingsModal(): JSX.Element | null {
   }
 
   return (
-    <Modal onClose={() => setOpen(false)} labelledBy="settings-title">
+    <Modal onClose={() => setOpen(false)} className="settings" labelledBy="settings-title">
         <h2 id="settings-title">Discord Bot Settings</h2>
         <p>
           Paste your bot token from the{' '}

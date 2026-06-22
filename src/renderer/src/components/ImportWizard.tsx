@@ -86,12 +86,14 @@ export function ImportWizardModal(): JSX.Element | null {
   const setOpen = useStore((s) => s.setImportWizardOpen)
   const importStatus = useStore((s) => s.importStatus)
   const songs = useStore((s) => s.library.songs)
+  const kindTab = useStore((s) => s.kindTab)
   const updateYtdlp = useStore((s) => s.updateYtdlp)
   const updatingYtdlp = useStore((s) => s.updatingYtdlp)
 
   const [source, setSource] = useState<Source>('url')
   const [url, setUrl] = useState('')
-  const [kind, setKind] = useState<ItemKind>('track')
+  // Default the import Type to whichever library section the user is in (Music/Ambience/SFX).
+  const [kind, setKind] = useState<ItemKind>(kindTab)
   const [mode, setMode] = useState<Mode>('batch')
   const [batchTags, setBatchTags] = useState<string[]>([])
   const [phase, setPhase] = useState<Phase>('setup')
@@ -105,7 +107,7 @@ export function ImportWizardModal(): JSX.Element | null {
     if (open) {
       setSource('url')
       setUrl('')
-      setKind('track')
+      setKind(kindTab)
       setMode('batch')
       setBatchTags([])
       setPhase('setup')
@@ -114,7 +116,7 @@ export function ImportWizardModal(): JSX.Element | null {
       setPerItem({})
       setError(null)
     }
-  }, [open])
+  }, [open, kindTab])
 
   // In per-item mode we kick off the import, then wait for the `done` progress event
   // to learn which songs were created so they can be tagged individually.

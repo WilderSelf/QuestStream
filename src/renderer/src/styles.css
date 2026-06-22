@@ -492,21 +492,26 @@ textarea {
 .queue-item.current {
   background: var(--selected);
 }
-.queue-item .now-bars {
+.queue-item .now-bars,
+.amb-card .now-bars {
   display: inline-flex;
   gap: 2px;
   align-items: flex-end;
   height: 12px;
+  flex-shrink: 0;
 }
-.queue-item .now-bars span {
+.queue-item .now-bars span,
+.amb-card .now-bars span {
   width: 3px;
   background: var(--accent);
   animation: eq 0.9s ease-in-out infinite;
 }
-.queue-item .now-bars span:nth-child(2) {
+.queue-item .now-bars span:nth-child(2),
+.amb-card .now-bars span:nth-child(2) {
   animation-delay: 0.3s;
 }
-.queue-item .now-bars span:nth-child(3) {
+.queue-item .now-bars span:nth-child(3),
+.amb-card .now-bars span:nth-child(3) {
   animation-delay: 0.6s;
 }
 @keyframes eq {
@@ -565,6 +570,10 @@ textarea {
   flex-shrink: 0;
 }
 .ambience-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding: 6px 10px;
   font-size: var(--text-sm);
   text-transform: uppercase;
@@ -572,6 +581,10 @@ textarea {
   color: var(--text-dim);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+}
+.ambience-header .link-btn {
+  text-transform: none;
+  letter-spacing: 0;
 }
 .ambience-list {
   overflow-y: auto;
@@ -582,50 +595,85 @@ textarea {
   outline-offset: -4px;
   border-radius: var(--radius);
 }
-.amb-slot {
+
+/* Each ambience layer is a card (top row + a controls row), mirroring the Now-Playing
+   rows so it reads as "a list of layers, each with its own settings". */
+.amb-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 10px;
+  border-bottom: 1px solid rgba(43, 49, 60, 0.5);
+}
+.amb-card.playing {
+  background: var(--selected);
+}
+.amb-card.paused {
+  opacity: 0.6;
+}
+.amb-card.drop-active {
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+  border-radius: var(--radius);
+}
+.amb-card-top {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 6px 10px;
-  border-bottom: 1px solid rgba(43, 49, 60, 0.5);
 }
-.amb-slot .amb-title {
+.amb-card .amb-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-base);
+  font-size: var(--text-md);
 }
-.amb-slot input[type='range'] {
-  width: 86px;
+.amb-card .amb-vol {
+  width: 96px;
   accent-color: var(--nord15);
   flex-shrink: 0;
 }
-.amb-slot.paused {
-  opacity: 0.55;
+.amb-card-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
-.amb-slot .amb-play {
-  padding: 3px 7px;
+/* The mode toggle sizes to its content rather than stretching like the full-width tabs. */
+.amb-mode {
+  flex: 0 0 auto;
+}
+.amb-mode .seg {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.amb-mode-hint {
   font-size: var(--text-sm);
-  flex-shrink: 0;
+  color: var(--text-dim);
+}
+.amb-interval {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+.amb-interval input[type='number'] {
+  width: 48px;
+  padding: 2px 4px;
+  font-size: var(--text-sm);
+}
+.amb-card-hint {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  font-style: italic;
 }
 .muted.small {
   font-size: var(--text-sm);
   padding: 10px;
-}
-.amb-slot .amb-interval {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: var(--text-sm);
-  color: var(--muted, #99a);
-  flex-shrink: 0;
-}
-.amb-slot .amb-interval input[type='number'] {
-  width: 40px;
-  padding: 2px 4px;
-  font-size: var(--text-sm);
 }
 
 /* ---- Remote pairing (settings) ---- */
@@ -1141,6 +1189,20 @@ textarea {
 }
 .modal a {
   color: var(--nord8);
+}
+
+/* The settings dialog is content-heavy; widen it and pin the action row to the bottom so
+   Close/Connect are always visible without scrolling the section list (1080p-safe). */
+.modal.settings {
+  width: 640px;
+}
+.modal.settings .actions {
+  position: sticky;
+  bottom: -20px; /* cancel the .modal 20px bottom padding so it sits flush */
+  margin: 8px -20px -20px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
 }
 
 /* ---- Toast / import progress ---- */
