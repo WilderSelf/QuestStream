@@ -134,12 +134,12 @@ export function LibraryPane(): JSX.Element {
             <Icon name="layers" size={16} />
           </button>
           <button
-            className="icon"
-            title="Import with the tagging wizard"
+            className="icon icon-text"
+            title="Import audio with the tagging wizard"
             aria-label="Import audio"
             onClick={() => setImportWizardOpen(true)}
           >
-            <Icon name="plus" size={16} />
+            <Icon name="plus" size={16} /> Import
           </button>
         </span>
       </div>

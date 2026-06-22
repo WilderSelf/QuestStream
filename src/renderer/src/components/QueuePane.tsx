@@ -88,88 +88,129 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
   // random pool (only meaningful in random mode, but harmless otherwise).
   const { setNodeRef, isOver } = useDroppable({ id: `ambslot:${slot.id}` })
   const random = slot.mode === 'random'
+  const playing = slot.playing
+  const poolCount = slot.pool.length
   return (
     <div
       ref={setNodeRef}
-      className={`amb-slot ${slot.playing ? '' : 'paused'} ${isOver ? 'drop-active' : ''}`}
-      title={slot.song.title}
+      className={`amb-card ${playing ? 'playing' : 'paused'} ${isOver ? 'drop-active' : ''}`}
     >
-      <button
-        className="icon amb-play"
-        title={slot.playing ? 'Pause layer' : 'Play layer'}
-        aria-label={slot.playing ? 'Pause layer' : 'Play layer'}
-        aria-pressed={slot.playing}
-        onClick={() => toggleAmbience(slot.id)}
-      >
-        <Icon name={slot.playing ? 'pause' : 'play'} size={14} />
-      </button>
-      <button
-        className="icon"
-        title={random ? 'Random one-shots — click for a seamless loop' : 'Looping — click for random one-shots'}
-        aria-label={random ? 'Mode: random one-shots' : 'Mode: looping'}
-        onClick={() => setAmbienceMode(slot.id, random ? 'loop' : 'random')}
-      >
-        <Icon name={random ? 'dice' : 'repeat'} size={16} />
-      </button>
-      <span className="amb-title">
-        {random ? `${slot.pool.length} sound${slot.pool.length > 1 ? 's' : ''}` : slot.song.title}
-      </span>
-      {random && (
-        <span className="amb-interval" title="Fire a random sound every N–M seconds">
-          <input
-            type="number"
-            min={1}
-            aria-label="Minimum interval (seconds)"
-            value={slot.minSec}
-            onChange={(e) => setAmbienceInterval(slot.id, parseInt(e.target.value) || 1, slot.maxSec)}
-          />
-          –
-          <input
-            type="number"
-            min={1}
-            aria-label="Maximum interval (seconds)"
-            value={slot.maxSec}
-            onChange={(e) => setAmbienceInterval(slot.id, slot.minSec, parseInt(e.target.value) || slot.minSec)}
-          />
-          s
+      <div className="amb-card-top">
+        <button
+          className="play-btn"
+          title={playing ? 'Pause layer' : 'Play layer'}
+          aria-label={playing ? `Pause ${slot.song.title}` : `Play ${slot.song.title}`}
+          aria-pressed={playing}
+          onClick={() => toggleAmbience(slot.id)}
+        >
+          <Icon name={playing ? 'pause' : 'play'} size={14} />
+        </button>
+        {playing ? (
+          <span className="now-bars" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        ) : null}
+        <span className="amb-title" title={slot.song.title}>
+          {random ? `Random · ${poolCount} sound${poolCount === 1 ? '' : 's'}` : slot.song.title}
         </span>
-      )}
-      <input
-        type="range"
-        min={0}
-        max={1}
-        step={0.01}
-        value={slot.volume}
-        title="Layer volume"
-        aria-label="Layer volume"
-        onChange={(e) => setAmbienceVolume(slot.id, parseFloat(e.target.value))}
-      />
-      <button
-        className="remove-btn"
-        title="Remove layer"
-        aria-label="Remove ambience layer"
-        onClick={() => removeAmbience(slot.id)}
-      >
-        <Icon name="x" size={15} />
-      </button>
+        <input
+          type="range"
+          className="amb-vol"
+          min={0}
+          max={1}
+          step={0.01}
+          value={slot.volume}
+          title="Layer volume"
+          aria-label={`Volume for ${slot.song.title}`}
+          onChange={(e) => setAmbienceVolume(slot.id, parseFloat(e.target.value))}
+        />
+        <button
+          className="remove-btn"
+          title="Remove layer"
+          aria-label={`Remove ${slot.song.title} layer`}
+          onClick={() => removeAmbience(slot.id)}
+        >
+          <Icon name="x" size={15} />
+        </button>
+      </div>
+      <div className="amb-card-controls">
+        <div className="kind-tabs amb-mode" role="group" aria-label="Playback mode">
+          <button
+            className={`seg ${!random ? 'active' : ''}`}
+            aria-pressed={!random}
+            title="Play this layer as a continuous, seamless loop (rain, crowd, wind…)"
+            onClick={() => setAmbienceMode(slot.id, 'loop')}
+          >
+            <Icon name="repeat" size={13} /> Loop
+          </button>
+          <button
+            className={`seg ${random ? 'active' : ''}`}
+            aria-pressed={random}
+            title="Fire one random sound from this layer's pool at intervals (a wolf howl, a creaking timber)"
+            onClick={() => setAmbienceMode(slot.id, 'random')}
+          >
+            <Icon name="dice" size={13} /> Random
+          </button>
+        </div>
+        {random ? (
+          <label
+            className="amb-interval"
+            title="Fires a random sound from this layer's pool every min–max seconds"
+          >
+            <span className="amb-interval-label">Every</span>
+            <input
+              type="number"
+              min={1}
+              aria-label="Minimum seconds between sounds"
+              value={slot.minSec}
+              onChange={(e) => setAmbienceInterval(slot.id, parseInt(e.target.value) || 1, slot.maxSec)}
+            />
+            <span>–</span>
+            <input
+              type="number"
+              min={1}
+              aria-label="Maximum seconds between sounds"
+              value={slot.maxSec}
+              onChange={(e) =>
+                setAmbienceInterval(slot.id, slot.minSec, parseInt(e.target.value) || slot.minSec)
+              }
+            />
+            <span className="amb-interval-label">sec</span>
+          </label>
+        ) : (
+          <span className="amb-mode-hint">Continuous loop</span>
+        )}
+      </div>
+      {random && <div className="amb-card-hint">Drag tracks here to grow the pool.</div>}
     </div>
   )
 }
 
 function AmbienceSection(): JSX.Element {
   const ambience = useStore((s) => s.ambience)
+  const setKindTab = useStore((s) => s.setKindTab)
   const { setNodeRef, isOver } = useDroppable({ id: 'ambience-drop' })
   return (
     <div className="ambience">
       <div className="ambience-header">
         <span>Ambience layers · {ambience.length}</span>
+        <button
+          className="link-btn"
+          title="Browse the Ambience library to add a layer"
+          onClick={() => setKindTab('ambience')}
+        >
+          + Add layer
+        </button>
       </div>
       <div className={`ambience-list ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
         {ambience.length === 0 && (
           <div className="muted small">
-            Drag a track here to loop it under your music (rain, crowd, wind…). Switch a layer
-            from loop to random to fire one-shots at intervals (a wolf howl, a creaking timber);
-            drag more tracks onto it to grow its pool.
+            Build a soundscape from layers that all play at once — e.g. a rain bed, a tavern
+            crowd, and the occasional thunderclap. Drag an ambience track here (or double-click
+            it) to add a layer, then set each layer to <strong>Loop</strong> (continuous) or{' '}
+            <strong>Random</strong> (one-shots fired every few seconds).
           </div>
         )}
         {ambience.map((s) => (
