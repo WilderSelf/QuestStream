@@ -39,6 +39,8 @@ export function LibraryPane(): JSX.Element {
   const showArtistView = useStore((s) => s.showArtistView)
   const toggleArtistView = useStore((s) => s.toggleArtistView)
   const openImportWizard = useStore((s) => s.openImportWizard)
+  const search = useStore((s) => s.search)
+  const setSearch = useStore((s) => s.setSearch)
   const matching = useMatchingSongIds()
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -142,6 +144,17 @@ export function LibraryPane(): JSX.Element {
             <Icon name="plus" size={16} /> Import
           </button>
         </span>
+      </div>
+
+      <div className="library-search">
+        <Icon name="search" size={14} className="search-icon" />
+        <input
+          className="search-box"
+          placeholder="Filter library…"
+          aria-label="Filter library"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       {showArtistView ? (

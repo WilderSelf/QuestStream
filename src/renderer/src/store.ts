@@ -155,6 +155,7 @@ interface State {
   groupBy: Record<ItemKind, string> // accordion grouping dimension, per kind
   activeFilters: Record<ItemKind, Record<string, string | null>> // secondary chip filters
   showArtistView: boolean // optional legacy Artist→Album→Song mode
+  playlistsCollapsed: boolean // Scenes/Playlists rail collapsed to a slim icon strip
   importWizardOpen: boolean
   importWizardUrl: string // URL to pre-fill the wizard with (from the top-bar quick-add)
   importWizardSource: 'url' | 'files' // which source the wizard opens on
@@ -186,6 +187,7 @@ interface State {
   setKindFilter: (kind: ItemKind, dim: string, value: string | null) => void
   clearKindFilters: (kind: ItemKind) => void
   toggleArtistView: () => void
+  togglePlaylistsCollapsed: () => void
   setImportWizardOpen: (open: boolean) => void
   openImportWizard: (opts?: { url?: string; source?: 'url' | 'files' }) => void
 
@@ -277,6 +279,13 @@ export const useStore = create<State>((set, get) => ({
   groupBy: { track: defaultGroupBy('track'), ambience: defaultGroupBy('ambience'), sfx: defaultGroupBy('sfx') },
   activeFilters: { track: {}, ambience: {}, sfx: {} },
   showArtistView: false,
+  playlistsCollapsed: ((): boolean => {
+    try {
+      return localStorage.getItem('qs.playlistsCollapsed') === '1'
+    } catch {
+      return false
+    }
+  })(),
   importWizardOpen: false,
   importWizardUrl: '',
   importWizardSource: 'url',
@@ -382,8 +391,20 @@ export const useStore = create<State>((set, get) => ({
     })),
   clearKindFilters: (kind) => set((st) => ({ activeFilters: { ...st.activeFilters, [kind]: {} } })),
   toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
+  togglePlaylistsCollapsed: () =>
+    set((st) => {
+      const v = !st.playlistsCollapsed
+      try {
+        localStorage.setItem('qs.playlistsCollapsed', v ? '1' : '0')
+      } catch {
+        /* localStorage unavailable — preference just won't persist */
+      }
+      return { playlistsCollapsed: v }
+    }),
+  // Always normalize the prefill fields: opening via this setter means "no prefill", closing
+  // clears them. openImportWizard is the prefill-aware opener (it sets the fields explicitly).
   setImportWizardOpen: (open) =>
-    set({ importWizardOpen: open, ...(open ? {} : { importWizardUrl: '', importWizardSource: 'url' }) }),
+    set({ importWizardOpen: open, importWizardUrl: '', importWizardSource: 'url' }),
   openImportWizard: (opts) =>
     set({
       importWizardOpen: true,

@@ -324,7 +324,8 @@ export function QueuePane(): JSX.Element {
   }
 
   return (
-    <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
+    <div className="right-col">
+      <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
       <div className="pane-header">
         <span>Now Playing · {queue.length}</span>
         <span className="header-actions">
@@ -387,8 +388,12 @@ export function QueuePane(): JSX.Element {
         </SortableContext>
       </div>
 
-      <AmbienceSection />
-      <SoundboardSection />
+      </div>
+
+      <div className="pane mixer">
+        <AmbienceSection />
+        <SoundboardSection />
+      </div>
     </div>
   )
 }

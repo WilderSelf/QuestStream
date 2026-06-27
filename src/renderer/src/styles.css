@@ -21,43 +21,76 @@
   --nord14: #a3be8c; /* green */
   --nord15: #b48ead; /* purple */
 
-  --bg: var(--nord0);
-  --panel: var(--nord1);
-  --panel-alt: var(--nord2);
-  --border: #2b313c;
-  --border-subtle: rgba(43, 49, 60, 0.5);
+  /* ---- Surfaces: a rising elevation ramp (each lighter than the one below), with light
+     hairline borders instead of dark trenches darker than the panels they bound. ---- */
+  --bg: #242931; /* deepest */
+  --surface: #2e3440; /* panels */
+  --surface-raised: #3b4252; /* cards, pane headers */
+  --surface-over: #434c5e; /* modals, transport (the focal anchor) */
+  --panel: var(--surface); /* back-compat aliases for existing rules */
+  --panel-alt: var(--surface-raised);
+  --border: rgba(216, 222, 233, 0.1); /* faint light hairline */
+  --border-strong: rgba(216, 222, 233, 0.16); /* structural divisions */
+  --border-subtle: rgba(216, 222, 233, 0.06);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.38);
+
   --text: var(--nord5);
   /* Dimmed text — kept ≥4.5:1 on --bg for WCAG AA body contrast. */
   --text-dim: #b4bdd1;
+  --text-faint: #8a93a6; /* tertiary: counts, hints */
   --muted: var(--text-dim); /* alias: some rules referenced an undefined --muted */
-  --accent: var(--nord8);
-  --accent-deep: var(--nord10);
-  /* "Active / enabled" emphasis — orange (used for primary actions + toggled buttons) */
-  --active: var(--nord12);
-  --active-hi: #e0a98f;
-  --active-tint: rgba(208, 135, 112, 0.2);
-  --selected: rgba(136, 192, 208, 0.18);
-  --hover: rgba(76, 86, 106, 0.4);
 
-  /* Radius scale (was scattered 4/5/6/7/8/10px; 5 & 7 consolidated to the 6px default). */
-  --radius-sm: 4px;
+  /* ---- One primary: warm "torchlit" amber. The ONLY action/emphasis colour — primary
+     buttons, toggled-on states, and selection. ---- */
+  --primary: #e0a35c;
+  --primary-hi: #edb877; /* hover */
+  --primary-press: #cf8f46;
+  --primary-tint: rgba(224, 163, 92, 0.16);
+  --on-primary: #21262e; /* dark text on amber (AA) */
+  /* back-compat: primary buttons / .toggled still reference --active* */
+  --active: var(--primary);
+  --active-hi: var(--primary-hi);
+  --active-tint: var(--primary-tint);
+
+  /* ---- Semantic-only accents — never an action colour. ---- */
+  --live: var(--nord8); /* cyan: audio sounding NOW (eq bars, playing/current, seek fill) */
+  --live-tint: rgba(136, 192, 208, 0.16);
+  --accent: var(--live); /* back-compat: focus ring, input focus, range accent, drop outlines */
+  --accent-deep: var(--nord10);
+  --tag: var(--nord15); /* purple: tag DATA only (chips/text) */
+  --danger: var(--nord11);
+  --warn: var(--nord13);
+  --ok: var(--nord14);
+
+  --selected: var(--primary-tint); /* "I picked this" = amber, distinct from --live */
+  --hover: rgba(216, 222, 233, 0.06);
+
+  /* Radius: two real steps + pill (was 4/5/6/7/8/10; sm/md now fold into the 6px default). */
+  --radius-sm: 6px;
   --radius: 6px;
-  --radius-md: 8px;
+  --radius-md: 6px;
   --radius-lg: 10px;
   --radius-pill: 999px;
 
-  /* Type scale (the high-frequency body sizes; headings stay as one-off literals). */
-  --text-xs: 10px;
-  --text-sm: 11px;
-  --text-base: 12px;
-  --text-md: 13px;
+  /* Type scale — real steps (size+weight carry hierarchy; uppercase no longer does). */
+  --text-2xs: 10px; /* micro: counts/badges */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px; /* body */
+  --text-md: 15px; /* row/emphasis */
+  --text-lg: 18px; /* now-playing title, section heads */
+  --text-xl: 22px; /* modal headings */
+  --lh-tight: 1.25;
+  --lh: 1.45;
 
-  /* Spacing scale (gaps/paddings). */
+  /* Spacing scale (4px base; fills the old 10→16 gap, adds breathing room). */
   --space-1: 4px;
   --space-2: 6px;
   --space-3: 8px;
-  --space-4: 10px;
-  --space-6: 16px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
 }
 
 /* Inline action-button group in pane headers (was a repeated inline flex style). */
@@ -87,7 +120,8 @@ body,
 
 body {
   font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: var(--text-md);
+  font-size: var(--text-base);
+  line-height: var(--lh);
   color: var(--text);
   background: var(--bg);
   user-select: none;
@@ -123,14 +157,18 @@ button.primary:hover:not(:disabled) {
   background: var(--active-hi);
   border-color: var(--active-hi);
 }
+/* Disabled primary stays amber-tinted so the main action is locatable before it's valid. */
 button.primary:disabled {
-  background: var(--panel-alt);
-  border-color: var(--border);
-  color: var(--text);
+  background: var(--primary-tint);
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  color: var(--primary);
+  opacity: 0.7;
 }
 button.icon {
   padding: 6px 8px;
   line-height: 1;
+  min-width: 32px;
+  min-height: 32px;
 }
 /* Toggled state (shuffle on, repeat on) shares the orange "active" language. */
 button.icon.toggled {
@@ -155,7 +193,6 @@ button svg,
 button.icon,
 .remove-btn,
 .play-btn,
-.amb-play,
 .sfx-key,
 .sfx-duck,
 .alert-close,
@@ -246,7 +283,7 @@ textarea {
 .topbar .brand {
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--nord8);
+  color: var(--primary);
   margin-right: 6px;
   white-space: nowrap;
   flex-shrink: 0;
@@ -258,32 +295,19 @@ textarea {
   max-width: 150px;
   min-width: 0;
 }
-.add-url {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-  flex: 1 1 140px;
-  min-width: 0;
-  max-width: 460px;
-}
-.add-url input {
-  flex: 1;
-  min-width: 0;
-}
-.add-url button {
-  flex-shrink: 0;
-}
-.search-wrap {
+/* Library filter — search now lives in the Library pane header, where it acts (not the top
+   bar). Reuses .search-box / .search-icon. */
+.library-search {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1 1 110px;
-  min-width: 0;
-  max-width: 190px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
-.search-wrap .search-icon {
+.library-search .search-icon {
   position: absolute;
-  left: 8px;
+  left: 20px;
   color: var(--text-dim);
   pointer-events: none;
 }
@@ -396,9 +420,37 @@ textarea {
 /* ---- Browser panes ---- */
 .browser {
   display: grid;
-  grid-template-columns: 180px 1.7fr 1.2fr;
+  /* First column is the Scenes/Playlists rail; its own width (200px ↔ 48px collapsed) drives
+     the `auto` track, so collapsing reclaims the space without coordinating a parent class. */
+  grid-template-columns: auto 1.7fr 1.2fr;
   flex: 1;
   min-height: 0;
+}
+.scenes-pane {
+  width: 200px;
+}
+.scenes-pane.collapsed {
+  width: 48px;
+  align-items: center;
+  padding-top: var(--space-3);
+  gap: var(--space-4);
+}
+.pane-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.flip {
+  transform: rotate(180deg);
+}
+.rail-glyphs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  color: var(--text-faint);
 }
 .pane {
   display: flex;
@@ -409,12 +461,11 @@ textarea {
   background: var(--bg);
 }
 .pane-header {
-  padding: 8px 10px;
+  padding: 10px 12px;
   font-size: var(--text-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  font-weight: 600;
   color: var(--text-dim);
-  background: var(--panel);
+  background: var(--surface-raised);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -433,7 +484,7 @@ textarea {
   gap: var(--space-3);
   padding: 7px 10px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(43, 49, 60, 0.5);
+  border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
 }
 .row:hover {
@@ -441,7 +492,7 @@ textarea {
 }
 .row.selected {
   background: var(--selected);
-  box-shadow: inset 3px 0 0 var(--accent);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 .row .title {
   overflow: hidden;
@@ -490,7 +541,8 @@ textarea {
   cursor: grab;
 }
 .queue-item.current {
-  background: var(--selected);
+  background: var(--live-tint);
+  box-shadow: inset 3px 0 0 var(--live);
 }
 .queue-item .now-bars,
 .amb-card .now-bars {
@@ -523,12 +575,13 @@ textarea {
     height: 12px;
   }
 }
+/* Always faintly visible (not hover-only) so the action is discoverable + touch-reachable. */
 .remove-btn {
-  opacity: 0;
+  opacity: 0.45;
   background: transparent;
   border: none;
   color: var(--nord11);
-  padding: 2px 6px;
+  padding: 4px 6px;
 }
 .play-btn {
   opacity: 1;
@@ -542,7 +595,11 @@ textarea {
   color: var(--nord8);
 }
 .row:hover .remove-btn,
-.queue-item:hover .remove-btn {
+.row:focus-within .remove-btn,
+.queue-item:hover .remove-btn,
+.queue-item:focus-within .remove-btn,
+.remove-btn:hover,
+.remove-btn:focus-visible {
   opacity: 1;
 }
 
@@ -562,12 +619,31 @@ textarea {
 }
 
 /* ---- Ambience layers ---- */
+/* The right column splits into two elevated panels: Now Playing (.queue) over Mixer (.mixer).
+   Each balances via flex and scrolls independently — no more magic 42% clamp. */
+.right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.right-col .queue {
+  flex: 1 1 58%;
+  min-height: 0;
+}
+.mixer {
+  flex: 1 1 42%;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 2px solid var(--border-strong);
+}
 .ambience {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--border);
-  max-height: 42%;
   flex-shrink: 0;
+}
+.ambience + .ambience {
+  border-top: 1px solid var(--border);
 }
 .ambience-header {
   display: flex;
@@ -576,10 +652,9 @@ textarea {
   gap: var(--space-3);
   padding: 6px 10px;
   font-size: var(--text-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  font-weight: 600;
   color: var(--text-dim);
-  background: var(--panel);
+  background: var(--surface-raised);
   border-bottom: 1px solid var(--border);
 }
 .ambience-header .link-btn {
@@ -603,10 +678,11 @@ textarea {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3) 10px;
-  border-bottom: 1px solid rgba(43, 49, 60, 0.5);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .amb-card.playing {
-  background: var(--selected);
+  background: var(--live-tint);
+  box-shadow: inset 3px 0 0 var(--live), var(--shadow-1);
 }
 .amb-card.paused {
   opacity: 0.6;
@@ -780,16 +856,15 @@ textarea {
   font-size: var(--text-xs);
 }
 .scene-row.selected {
-  box-shadow: inset 3px 0 0 var(--nord15);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 .section-label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 5px 10px 3px;
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  padding: 7px 10px 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--text-dim);
   position: sticky;
   top: 0;
@@ -864,13 +939,12 @@ textarea {
 }
 .filter-label {
   font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+  font-weight: 600;
   color: var(--text-dim);
   margin-right: 2px;
 }
 .accordion {
-  border-bottom: 1px solid rgba(43, 49, 60, 0.5);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .accordion-head {
   display: flex;
@@ -974,9 +1048,12 @@ textarea {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--space-6);
-  padding: 10px 16px;
-  background: linear-gradient(var(--nord0), var(--nord1));
-  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--surface-over);
+  border-top: 1px solid var(--border-strong);
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.32);
+  position: relative;
+  z-index: 1;
 }
 .np-info {
   display: flex;
@@ -995,7 +1072,9 @@ textarea {
   min-width: 0;
 }
 .np-info .meta .t {
+  font-size: var(--text-lg);
   font-weight: 600;
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1103,7 +1182,11 @@ textarea {
    right pane + volume controls. These breakpoints let the layout shrink instead of clip. */
 @media (max-width: 900px) {
   .browser {
-    grid-template-columns: 150px 1.5fr 1.4fr;
+    /* keep the rail's own width (collapsible) driving the first track */
+    grid-template-columns: auto 1.5fr 1.4fr;
+  }
+  .scenes-pane {
+    width: 168px;
   }
   .transport {
     gap: var(--space-3);
@@ -1153,9 +1236,10 @@ textarea {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .modal h2 {
-  margin: 0 0 4px;
-  font-size: 16px;
-  color: var(--nord8);
+  margin: 0 0 8px;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text);
 }
 .modal p {
   color: var(--text-dim);
@@ -1172,8 +1256,7 @@ textarea {
 .modal .field label,
 .modal .field .field-label {
   font-size: var(--text-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+  font-weight: 600;
   color: var(--text-dim);
 }
 /* Section/group captions render like field labels but aren't <label>s (they head a section

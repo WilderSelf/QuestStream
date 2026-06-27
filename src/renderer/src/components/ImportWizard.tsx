@@ -87,8 +87,6 @@ export function ImportWizardModal(): JSX.Element | null {
   const importStatus = useStore((s) => s.importStatus)
   const songs = useStore((s) => s.library.songs)
   const kindTab = useStore((s) => s.kindTab)
-  const prefillUrl = useStore((s) => s.importWizardUrl)
-  const prefillSource = useStore((s) => s.importWizardSource)
   const updateYtdlp = useStore((s) => s.updateYtdlp)
   const updatingYtdlp = useStore((s) => s.updatingYtdlp)
 
@@ -104,21 +102,23 @@ export function ImportWizardModal(): JSX.Element | null {
   const [perItem, setPerItem] = useState<Record<string, string[]>>({})
   const [error, setError] = useState<string | null>(null)
 
-  // Reset to a clean slate each time the wizard opens.
+  // Reset to a clean slate each time the wizard opens. Read the prefill/kind snapshot
+  // imperatively (not as effect deps) so only the open transition resets the form — a later
+  // change to kindTab/prefill while the wizard is open can't wipe the user's in-progress input.
   useEffect(() => {
-    if (open) {
-      setSource(prefillSource)
-      setUrl(prefillUrl) // pre-filled when opened from the top-bar quick-add box
-      setKind(kindTab)
-      setMode('batch')
-      setBatchTags([])
-      setPhase('setup')
-      setBusy(false)
-      setImportedIds([])
-      setPerItem({})
-      setError(null)
-    }
-  }, [open, kindTab, prefillUrl, prefillSource])
+    if (!open) return
+    const { kindTab, importWizardUrl, importWizardSource } = useStore.getState()
+    setSource(importWizardSource)
+    setUrl(importWizardUrl) // pre-filled when opened from the top-bar quick-add box
+    setKind(kindTab)
+    setMode('batch')
+    setBatchTags([])
+    setPhase('setup')
+    setBusy(false)
+    setImportedIds([])
+    setPerItem({})
+    setError(null)
+  }, [open])
 
   // In per-item mode we kick off the import, then wait for the `done` progress event
   // to learn which songs were created so they can be tagged individually.

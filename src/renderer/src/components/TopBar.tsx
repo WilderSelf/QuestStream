@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import { useStore } from '../store'
 import { Icon } from './Icon'
 
 export function TopBar(): JSX.Element {
-  const [url, setUrl] = useState('')
   const bot = useStore((s) => s.bot)
   const guilds = useStore((s) => s.guilds)
   const channels = useStore((s) => s.channels)
@@ -12,21 +10,9 @@ export function TopBar(): JSX.Element {
   const selectGuild = useStore((s) => s.selectGuild)
   const selectChannel = useStore((s) => s.selectChannel)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
-  const search = useStore((s) => s.search)
-  const setSearch = useStore((s) => s.setSearch)
   const showNotice = useStore((s) => s.showNotice)
-  const openImportWizard = useStore((s) => s.openImportWizard)
 
   const inChannel = !!bot.activeChannelId
-
-  // Both the URL box and the local-files button hand off to the import wizard so every import
-  // goes through the same type/tag step (the wizard's file picker opens for the 'files' source).
-  function addUrl(): void {
-    const clean = url.trim()
-    if (!clean) return
-    setUrl('')
-    openImportWizard({ url: clean })
-  }
 
   async function joinOrLeave(): Promise<void> {
     if (inChannel) {
@@ -52,38 +38,6 @@ export function TopBar(): JSX.Element {
   return (
     <div className="topbar">
       <span className="brand">♪ QUESTSTREAM</span>
-
-      <div className="search-wrap">
-        <Icon name="search" size={14} className="search-icon" />
-        <input
-          className="search-box"
-          placeholder="Filter library…"
-          aria-label="Filter library"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="add-url">
-        <input
-          placeholder="Paste a YouTube / SoundCloud / Bandcamp URL…"
-          aria-label="Add audio from a URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void addUrl()}
-        />
-        <button className="primary" disabled={!url.trim()} onClick={() => addUrl()}>
-          Add
-        </button>
-        <button
-          className="icon"
-          title="Add local audio files"
-          aria-label="Add local audio files"
-          onClick={() => openImportWizard({ source: 'files' })}
-        >
-          <Icon name="folder" size={16} />
-        </button>
-      </div>
 
       <div className="spacer" />
 

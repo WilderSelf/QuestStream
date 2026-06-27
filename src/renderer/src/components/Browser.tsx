@@ -63,6 +63,8 @@ export function PlaylistsPane(): JSX.Element {
   const queue = useStore((s) => s.queue)
   const ambience = useStore((s) => s.ambience)
   const showNotice = useStore((s) => s.showNotice)
+  const collapsed = useStore((s) => s.playlistsCollapsed)
+  const toggleCollapsed = useStore((s) => s.togglePlaylistsCollapsed)
 
   // Both of these replace the whole live mix; guard them when there's unsaved work to lose.
   function newQueue(): void {
@@ -99,10 +101,39 @@ export function PlaylistsPane(): JSX.Element {
     else if (res.name) showNotice(`Imported ${res.kind} “${res.name}”`, 'info')
   }
 
+  if (collapsed) {
+    return (
+      <div className="pane scenes-pane collapsed">
+        <button
+          className="icon rail-expand"
+          title="Show Scenes &amp; Playlists"
+          aria-label="Show Scenes and Playlists"
+          onClick={toggleCollapsed}
+        >
+          <Icon name="chevron-right" size={16} />
+        </button>
+        <div className="rail-glyphs" aria-hidden="true">
+          <Icon name="film" size={16} />
+          <Icon name="music" size={16} />
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="pane">
+    <div className="pane scenes-pane">
       <div className="pane-header">
-        <span>Scenes &amp; Playlists</span>
+        <span className="pane-title">
+          <button
+            className="icon"
+            title="Collapse panel"
+            aria-label="Collapse Scenes and Playlists"
+            onClick={toggleCollapsed}
+          >
+            <Icon name="chevron-right" size={16} className="flip" />
+          </button>
+          Scenes &amp; Playlists
+        </span>
         <span className="header-actions">
           <button
             className="icon"
