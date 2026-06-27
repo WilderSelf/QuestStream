@@ -72,47 +72,21 @@ function pickThumbnail(j: YtdlpJson): string | undefined {
   return undefined
 }
 
-/** Strip the usual YouTube-title cruft: "(Official Video)", "[HD]", "Lyrics", etc. */
-export function cleanTitle(t: string): string {
-  return t
-    .replace(/[([]\s*(official\s*)?(music\s*)?(video|audio|lyric[s]?|visualizer|mv|hd|hq|4k)\s*[)\]]/gi, '')
-    .replace(/[([]\s*lyric[s]?\s*[)\]]/gi, '')
-    .replace(/\bofficial\s+(music\s+)?(video|audio)\b/gi, '')
-    .replace(/\s*[-|]\s*topic\s*$/gi, '')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s*[-|]\s*$/, '')
-    .trim()
-}
-
 /**
- * Derive clean, best-effort metadata from a yt-dlp entry, fully offline:
- * prefer YouTube Music's structured artist/album/track; otherwise parse
- * "Artist - Title" out of the video title and tidy up the channel name.
+ * Take the source's own metadata verbatim — no cruft-stripping, no "Artist - Title" parsing.
+ * Imports should reflect exactly what the source reports; the user edits anything they don't
+ * like in the import wizard or the item editor. Prefers YouTube Music's structured `track`
+ * field when present (that IS the source's title), otherwise the video title; artist falls
+ * back through the structured/uploader fields; album defaults to "Singles".
  */
 export function deriveMeta(j: YtdlpJson, albumHint?: string): {
   title: string
   artistName: string
   albumTitle: string
 } {
-  const rawTitle = j.track || j.title || 'Untitled'
-  let title = cleanTitle(rawTitle) || rawTitle
-  let artist = (j.artist || j.creator || '').trim()
-  const uploader = (j.uploader || j.channel || '').replace(/\s*-\s*topic\s*$/i, '').trim()
-
-  if (!artist) {
-    const parts = title.split(/\s+[-–—]\s+/)
-    if (!j.track && parts.length >= 2) {
-      // "Artist - Title" form
-      artist = parts[0].trim()
-      title = parts.slice(1).join(' - ').trim()
-    } else {
-      artist = uploader || 'Unknown Artist'
-    }
-  }
-
   return {
-    title: title || 'Untitled',
-    artistName: artist || 'Unknown Artist',
+    title: (j.track || j.title || '').trim() || 'Untitled',
+    artistName: (j.artist || j.creator || j.uploader || j.channel || '').trim() || 'Unknown Artist',
     albumTitle: (j.album || albumHint || 'Singles').trim()
   }
 }

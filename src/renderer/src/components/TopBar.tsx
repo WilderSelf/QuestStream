@@ -1,10 +1,7 @@
-import { useState } from 'react'
 import { useStore } from '../store'
 import { Icon } from './Icon'
 
 export function TopBar(): JSX.Element {
-  const [url, setUrl] = useState('')
-  const [busy, setBusy] = useState(false)
   const bot = useStore((s) => s.bot)
   const guilds = useStore((s) => s.guilds)
   const channels = useStore((s) => s.channels)
@@ -13,29 +10,10 @@ export function TopBar(): JSX.Element {
   const selectGuild = useStore((s) => s.selectGuild)
   const selectChannel = useStore((s) => s.selectChannel)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
-  const search = useStore((s) => s.search)
-  const setSearch = useStore((s) => s.setSearch)
   const showNotice = useStore((s) => s.showNotice)
+  const openImportWizard = useStore((s) => s.openImportWizard)
 
   const inChannel = !!bot.activeChannelId
-
-  async function addUrl(): Promise<void> {
-    const clean = url.trim()
-    if (!clean) return
-    setBusy(true)
-    setUrl('')
-    const res = await window.api.library.addUrl(clean)
-    if (!res.ok) showNotice(res.error ?? 'Could not add that URL', 'error')
-    setBusy(false)
-  }
-
-  async function addFiles(): Promise<void> {
-    setBusy(true)
-    const res = await window.api.library.addFiles()
-    if (!res.ok) showNotice(res.error ?? 'Could not import files', 'error')
-    else if (res.added > 0) showNotice(`Added ${res.added} local file${res.added > 1 ? 's' : ''}`, 'info')
-    setBusy(false)
-  }
 
   async function joinOrLeave(): Promise<void> {
     if (inChannel) {
@@ -56,48 +34,31 @@ export function TopBar(): JSX.Element {
         ? 'Connecting…'
         : bot.state === 'error'
           ? bot.error ?? 'Error'
-          : 'Offline'
+          : 'Local only'
+
+  const statusTitle =
+    bot.error ??
+    (bot.state === 'ready'
+      ? `Connected as ${bot.username ?? 'bot'}`
+      : bot.state === 'connecting'
+        ? 'Connecting to Discord…'
+        : 'Playing locally on this machine — connect a Discord bot to stream to a voice channel')
 
   return (
     <div className="topbar">
       <span className="brand">♪ QUESTSTREAM</span>
 
-      <div className="search-wrap">
-        <Icon name="search" size={14} className="search-icon" />
-        <input
-          className="search-box"
-          placeholder="Filter library…"
-          aria-label="Filter library"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="add-url">
-        <input
-          placeholder="Paste a YouTube / SoundCloud / Bandcamp URL…"
-          aria-label="Add audio from a URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void addUrl()}
-        />
-        <button className="primary" disabled={busy || !url.trim()} onClick={() => void addUrl()}>
-          {busy ? 'Adding…' : 'Add'}
-        </button>
-        <button
-          className="icon"
-          title="Add local audio files"
-          aria-label="Add local audio files"
-          disabled={busy}
-          onClick={() => void addFiles()}
-        >
-          <Icon name="folder" size={16} />
-        </button>
-      </div>
+      <button
+        className="primary icon-text add-audio"
+        title="Import audio from a link or local files"
+        onClick={() => openImportWizard()}
+      >
+        <Icon name="plus" size={16} /> Add audio
+      </button>
 
       <div className="spacer" />
 
-      <span className="status-pill" title={bot.error ?? statusLabel}>
+      <span className="status-pill" title={statusTitle}>
         <span className={`dot ${bot.state}`} aria-hidden="true" />
         {statusLabel}
       </span>

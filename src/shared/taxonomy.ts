@@ -135,6 +135,14 @@ export const KIND_LABELS: Record<ItemKind, string> = {
 
 export const KIND_ORDER: ItemKind[] = ['track', 'ambience', 'sfx']
 
+/** One-line explainer for each kind, shown under the library tabs so the three content
+ *  types are legible without exploring. */
+export const KIND_HINTS: Record<ItemKind, string> = {
+  track: 'Songs you queue and play one after another.',
+  ambience: 'Background beds that loop or fire random one-shots — many can play at once.',
+  sfx: 'One-shot buttons (a door knock, a sword clash) you trigger live, with optional hotkeys.'
+}
+
 /** Lowercase slug: trim, lowercase, collapse internal whitespace to single dashes. */
 function slug(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, '-')

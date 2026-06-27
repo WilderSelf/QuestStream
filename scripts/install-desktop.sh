@@ -28,14 +28,23 @@ apps_dir="$HOME/.local/share/applications"
 icons_dir="$HOME/.local/share/icons"
 mkdir -p "$apps_dir" "$icons_dir"
 
-# Try to extract the bundled icon from the AppImage; fall back to the generic name.
+# Try to extract the bundled icon from the AppImage so the launcher shows it; if anything
+# about extraction fails, fall back to the generic icon name — it must never abort the install.
 icon_ref="$APP_NAME"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 if (cd "$tmp" && "$appimage" --appimage-extract '*.png' >/dev/null 2>&1); then
-  found="$(find "$tmp/squashfs-root" -maxdepth 2 -name '*.png' 2>/dev/null | head -n1 || true)"
-  if [ -n "$found" ]; then
-    cp "$found" "$icons_dir/${APP_ID}.png"
+  # The '*.png' glob only extracts the top-level icon, which is a *symlink* into
+  # usr/share/icons/...; its target isn't extracted, so follow the link and extract that path
+  # too. Then pick the largest real PNG (-type f skips the dangling symlink itself).
+  link="$(find "$tmp/squashfs-root" -maxdepth 1 -name '*.png' 2>/dev/null | head -n1)"
+  if [ -n "$link" ] && [ -L "$link" ]; then
+    target="$(readlink "$link")"
+    (cd "$tmp" && "$appimage" --appimage-extract "$target" >/dev/null 2>&1) || true
+  fi
+  found="$(find "$tmp/squashfs-root" -type f -name '*.png' -printf '%s\t%p\n' 2>/dev/null \
+    | sort -rn | head -n1 | cut -f2-)"
+  if [ -n "$found" ] && cp "$found" "$icons_dir/${APP_ID}.png" 2>/dev/null; then
     icon_ref="$icons_dir/${APP_ID}.png"
   fi
 fi

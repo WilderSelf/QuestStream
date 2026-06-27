@@ -323,13 +323,17 @@ export function SettingsModal(): JSX.Element | null {
         {bot.state === 'ready' && (
           <p style={{ color: 'var(--nord14)' }}>✓ Connected as {bot.username}</p>
         )}
-        <hr className="modal-sep" />
-        <ToolsSettings />
-        <hr className="modal-sep" />
-        <CookiesSettings />
         <DesktopIntegrationSettings />
-        <hr className="modal-sep" />
-        <RemoteSettings />
+        <details className="settings-advanced">
+          <summary>Advanced — playback tools, YouTube cookies, remote</summary>
+          <div className="settings-advanced-body">
+            <ToolsSettings />
+            <hr className="modal-sep" />
+            <CookiesSettings />
+            <hr className="modal-sep" />
+            <RemoteSettings />
+          </div>
+        </details>
         <div className="actions">
           <button onClick={() => setOpen(false)}>Close</button>
           <button

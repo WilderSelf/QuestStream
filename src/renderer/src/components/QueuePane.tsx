@@ -198,10 +198,10 @@ function AmbienceSection(): JSX.Element {
         <span>Ambience layers · {ambience.length}</span>
         <button
           className="link-btn"
-          title="Browse the Ambience library to add a layer"
+          title="Open the Ambience library to add a layer"
           onClick={() => setKindTab('ambience')}
         >
-          + Add layer
+          Browse ambience →
         </button>
       </div>
       <div className={`ambience-list ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
@@ -324,7 +324,8 @@ export function QueuePane(): JSX.Element {
   }
 
   return (
-    <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
+    <div className="right-col">
+      <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
       <div className="pane-header">
         <span>Now Playing · {queue.length}</span>
         <span className="header-actions">
@@ -387,8 +388,15 @@ export function QueuePane(): JSX.Element {
         </SortableContext>
       </div>
 
-      <AmbienceSection />
-      <SoundboardSection />
+      </div>
+
+      <div className="pane mixer">
+        <div className="pane-header">
+          <span>Mixer · live layers</span>
+        </div>
+        <AmbienceSection />
+        <SoundboardSection />
+      </div>
     </div>
   )
 }

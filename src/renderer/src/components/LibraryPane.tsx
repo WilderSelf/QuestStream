@@ -4,6 +4,7 @@ import type { Song } from '@shared/types'
 import {
   KIND_ORDER,
   KIND_LABELS,
+  KIND_HINTS,
   dimensionsFor,
   labelForDimension,
   labelForValue,
@@ -38,7 +39,9 @@ export function LibraryPane(): JSX.Element {
   const clearKindFilters = useStore((s) => s.clearKindFilters)
   const showArtistView = useStore((s) => s.showArtistView)
   const toggleArtistView = useStore((s) => s.toggleArtistView)
-  const setImportWizardOpen = useStore((s) => s.setImportWizardOpen)
+  const openImportWizard = useStore((s) => s.openImportWizard)
+  const search = useStore((s) => s.search)
+  const setSearch = useStore((s) => s.setSearch)
   const matching = useMatchingSongIds()
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -125,23 +128,36 @@ export function LibraryPane(): JSX.Element {
         </div>
         <span className="library-head-actions">
           <button
-            className={`icon ${showArtistView ? 'toggled' : ''}`}
+            className={`icon icon-text ${showArtistView ? 'toggled' : ''}`}
             title="Toggle Artist / Album view"
             aria-label="Artist / Album view"
             aria-pressed={showArtistView}
             onClick={toggleArtistView}
           >
-            <Icon name="layers" size={16} />
+            <Icon name="layers" size={16} /> Artists
           </button>
           <button
             className="icon icon-text"
             title="Import audio with the tagging wizard"
             aria-label="Import audio"
-            onClick={() => setImportWizardOpen(true)}
+            onClick={() => openImportWizard()}
           >
             <Icon name="plus" size={16} /> Import
           </button>
         </span>
+      </div>
+
+      <div className="kind-hint">{KIND_HINTS[kind]}</div>
+
+      <div className="library-search">
+        <Icon name="search" size={14} className="search-icon" />
+        <input
+          className="search-box"
+          placeholder="Filter library…"
+          aria-label="Filter library"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       {showArtistView ? (
@@ -152,7 +168,9 @@ export function LibraryPane(): JSX.Element {
         </div>
       ) : (
         <>
-          <div className="library-controls">
+          {visible.length > 0 && (
+            <>
+              <div className="library-controls">
             <label className="group-by">
               <span>Group by</span>
               <select value={groupBy} onChange={(e) => setGroupBy(kind, e.target.value)}>
@@ -187,11 +205,14 @@ export function LibraryPane(): JSX.Element {
               })}
             </div>
           ))}
+            </>
+          )}
 
           <div className="pane-body">
             {visible.length === 0 && (
               <div className="muted">
-                No {KIND_LABELS[kind].toLowerCase()} items yet. Use ＋ to import and tag some.
+                No {KIND_LABELS[kind].toLowerCase()} items yet — click <strong>Add audio</strong> in
+                the top bar (or <strong>Import</strong> above) to bring some in.
               </div>
             )}
             {buckets.map(([key, items]) => {
