@@ -26,6 +26,11 @@ const LOW_WATER = BYTES_PER_SEC * 2
 // stream (network hang, removed/blocked video) and fail it instead of buffering forever.
 const FIRST_BYTE_TIMEOUT_MS = 25_000
 
+// Fallback attempts of the initial resolve get a shorter first-byte budget than the first
+// attempt — the URL has already shown it resolves, so a silent hang shouldn't burn another
+// full 25s. Bounds the all-hang worst case to 25 + 12 + 12s instead of 3×25s.
+const FALLBACK_FIRST_BYTE_TIMEOUT_MS = 12_000
+
 // If a looping input respawns this many times in a row producing zero PCM, its source
 // has died mid-session — stop instead of churning yt-dlp/ffmpeg forever.
 const MAX_EMPTY_LOOPS = 2
@@ -202,7 +207,9 @@ export class MixerInput {
       ffmpeg.stdin.on('error', () => {})
       ytdlp.stdout.pipe(ffmpeg.stdin)
       ytdlp.stderr.on('data', (d: Buffer) => {
-        if (ytStderr.length < 4096) ytStderr += d.toString()
+        // Keep the TAIL: yt-dlp prints its decisive ERROR line last (after any traceback),
+        // so capping the front would drop the very line ytdlpFailReason needs.
+        ytStderr = (ytStderr + d.toString()).slice(-4096)
       })
       ytdlp.on('error', (e) => console.error('[mixer:yt-dlp]', e.message))
       // A non-zero exit before any PCM means the fetch failed outright. (A clean exit, or
@@ -219,10 +226,9 @@ export class MixerInput {
     })
 
     ffmpeg.stdout.on('data', (chunk: Buffer) => {
-      if (!this.gotData) {
-        this.gotData = true
-        this.clearWatchdog() // audio is flowing → the resolve succeeded
-      }
+      if (gen !== this.gen) return // a newer attempt is running; ignore this stale child
+      if (this.cycleBytes === 0) this.clearWatchdog() // first byte of this (re)spawn → it's alive
+      this.gotData = true
       this.cycleBytes += chunk.length
       this.chunks.push(chunk)
       this.queued += chunk.length
@@ -234,21 +240,21 @@ export class MixerInput {
     ffmpeg.stdout.on('end', () => {
       if (gen !== this.gen) return // a newer attempt is running; ignore this stale child
       this.closed = true
-      // Ended having produced nothing → the stream was dead from the start. Prefer yt-dlp's
-      // own error (the real cause) over the generic message when we captured one.
-      if (!this.gotData)
-        this.onResolveFailure(ytStderr.trim() ? ytdlpFailReason(ytStderr) : GENERIC_NO_AUDIO)
+      // Ended having produced nothing → the stream was dead from the start. ytdlpFailReason
+      // surfaces yt-dlp's own error, falling back to GENERIC_NO_AUDIO when stderr is empty.
+      if (!this.gotData) this.onResolveFailure(ytdlpFailReason(ytStderr))
     })
 
-    // One-shot watchdog for a hung resolve. This is NOT a mixer clock (gotcha #5 is
-    // about driving frame production) — it just bounds how long we wait for byte 0.
-    if (!this.gotData) {
-      this.clearWatchdog()
-      this.watchdog = setTimeout(
-        () => this.onResolveFailure('timed out resolving audio (no data after 25s)'),
-        FIRST_BYTE_TIMEOUT_MS
-      )
-    }
+    // One-shot watchdog: the first byte of THIS (re)spawn must arrive within the budget. This
+    // is NOT a mixer clock (gotcha #5 is about driving frame production) — it just bounds how
+    // long we wait for byte 0. Armed on every spawn so a looping respawn that hangs open
+    // (never closes, never produces audio) fails instead of stalling silently forever.
+    this.clearWatchdog()
+    const timeoutMs =
+      !this.gotData && this.attemptIdx > 0 ? FALLBACK_FIRST_BYTE_TIMEOUT_MS : FIRST_BYTE_TIMEOUT_MS
+    this.watchdog = setTimeout(() => {
+      if (gen === this.gen) this.onSpawnTimeout(timeoutMs)
+    }, timeoutMs)
   }
 
   /**
@@ -270,6 +276,29 @@ export class MixerInput {
       return
     }
     this.fail(reason)
+  }
+
+  /**
+   * The first-byte watchdog expired for the current (re)spawn. A looping respawn that
+   * connected but produced nothing is counted as an empty cycle (same MAX_EMPTY_LOOPS
+   * accounting as a cleanly-closing loop) so a mid-session source death stops the layer
+   * instead of hanging silently forever. An initial resolve falls through to the next
+   * fetch config (or fails) via onResolveFailure.
+   */
+  private onSpawnTimeout(timeoutMs: number): void {
+    if (this.ended) return
+    const secs = Math.round(timeoutMs / 1000)
+    if (this.opts.loop && this.gotData) {
+      this.emptyLoops++
+      if (this.emptyLoops >= MAX_EMPTY_LOOPS) {
+        this.fail('looping source stopped producing audio')
+        return
+      }
+      this.killProcs()
+      this.spawn(0)
+      return
+    }
+    this.onResolveFailure(`timed out resolving audio (no data after ${secs}s)`)
   }
 
   private clearWatchdog(): void {
