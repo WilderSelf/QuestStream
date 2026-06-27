@@ -30,6 +30,26 @@ const FIRST_BYTE_TIMEOUT_MS = 25_000
 // has died mid-session — stop instead of churning yt-dlp/ffmpeg forever.
 const MAX_EMPTY_LOOPS = 2
 
+const GENERIC_NO_AUDIO = 'no audio produced — the video may be unavailable, private, or region-blocked'
+
+/**
+ * Turn yt-dlp's captured stderr into a concise, actionable failure reason. yt-dlp prints
+ * the true cause (bad/locked cookies, a bot-wall, a removed video) to stderr even under
+ * `--quiet`; without this the renderer only ever sees the generic GENERIC_NO_AUDIO message.
+ */
+export function ytdlpFailReason(stderr: string): string {
+  const lines = stderr.split('\n').map((l) => l.trim()).filter(Boolean)
+  const errLine = [...lines].reverse().find((l) => /^ERROR:/i.test(l)) ?? lines[lines.length - 1] ?? ''
+  const msg = errLine.replace(/^ERROR:\s*/i, '').trim()
+  if (!msg) return GENERIC_NO_AUDIO
+  const brief = msg.length > 180 ? msg.slice(0, 177) + '…' : msg
+  if (/cookies? database|could not find .*cookies|could not copy.*cookie|cookies? file/i.test(msg))
+    return `couldn't read your YouTube cookies — check Settings → YouTube Cookies (${brief})`
+  if (/sign in to confirm|confirm you.?re not a bot|consent/i.test(msg))
+    return `YouTube is gating this with a bot check — set up YouTube cookies in Settings (${brief})`
+  return `yt-dlp couldn't fetch audio: ${brief}`
+}
+
 interface InputOpts {
   gain?: number
   fadeInMs?: number
@@ -129,11 +149,22 @@ export class MixerInput {
     this.ytdlp = ytdlp
     this.ffmpeg = ffmpeg
 
+    // Capture yt-dlp's stderr so a fetch failure (bad/locked cookies, bot-wall, removed
+    // video) surfaces its real cause instead of the generic "no audio produced" message.
+    let ytStderr = ''
     if (ytdlp) {
       ytdlp.stdout.on('error', () => {})
       ffmpeg.stdin.on('error', () => {})
       ytdlp.stdout.pipe(ffmpeg.stdin)
+      ytdlp.stderr.on('data', (d: Buffer) => {
+        if (ytStderr.length < 4096) ytStderr += d.toString()
+      })
       ytdlp.on('error', (e) => console.error('[mixer:yt-dlp]', e.message))
+      // A non-zero exit before any PCM means the fetch failed outright. (A clean exit, or
+      // a SIGTERM/SIGKILL from our own kill(), has code 0/null — don't treat those as errors.)
+      ytdlp.on('close', (code) => {
+        if (code && !this.gotData) this.fail(ytdlpFailReason(ytStderr))
+      })
     }
     ffmpeg.on('error', (e) => console.error('[mixer:ffmpeg]', e.message))
     ffmpeg.stderr.on('data', (d) => {
@@ -156,8 +187,9 @@ export class MixerInput {
     })
     ffmpeg.stdout.on('end', () => {
       this.closed = true
-      // Ended having produced nothing → the stream was dead from the start.
-      if (!this.gotData) this.fail('no audio produced — the video may be unavailable, private, or region-blocked')
+      // Ended having produced nothing → the stream was dead from the start. Prefer yt-dlp's
+      // own error (the real cause) over the generic message when we captured one.
+      if (!this.gotData) this.fail(ytStderr.trim() ? ytdlpFailReason(ytStderr) : GENERIC_NO_AUDIO)
     })
 
     // One-shot watchdog for a hung resolve. This is NOT a mixer clock (gotcha #5 is
