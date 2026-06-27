@@ -47,6 +47,10 @@ export function ytdlpFailReason(stderr: string): string {
     return `couldn't read your YouTube cookies — check Settings → YouTube Cookies (${brief})`
   if (/sign in to confirm|confirm you.?re not a bot|consent/i.test(msg))
     return `YouTube is gating this with a bot check — set up YouTube cookies in Settings (${brief})`
+  // A 403 on the media download (not extraction) is YouTube blocking the unauthenticated
+  // fetch from this IP/session — cookies are by far the most reliable fix.
+  if (/\b403\b|forbidden/i.test(msg))
+    return `YouTube blocked the download (HTTP 403) — set up YouTube cookies in Settings to play from an authenticated session (${brief})`
   return `yt-dlp couldn't fetch audio: ${brief}`
 }
 

@@ -19,6 +19,13 @@ test('bot-wall failure suggests cookies', () => {
   assert.match(ytdlpFailReason(err), /bot check/)
 })
 
+test('HTTP 403 on download points at cookies', () => {
+  const err = 'ERROR: unable to download video data: HTTP Error 403: Forbidden'
+  const r = ytdlpFailReason(err)
+  assert.match(r, /403/)
+  assert.match(r, /cookies/i)
+})
+
 test('other errors surface yt-dlp’s own message', () => {
   const err = 'ERROR: [youtube] xyz: Video unavailable. This video is private'
   const r = ytdlpFailReason(err)
