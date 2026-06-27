@@ -54,6 +54,23 @@ export function ytdlpFailReason(stderr: string): string {
   return `yt-dlp couldn't fetch audio: ${brief}`
 }
 
+/**
+ * The ordered list of yt-dlp fetch configs to try for a source. Non-YouTube sources get a
+ * single attempt (cookies as configured). YouTube gets fallbacks: drop cookies (a video may
+ * only offer DRM/restricted formats to an authenticated session), then switch to the
+ * android_vr player client (beats a PO-token 403 on the default client).
+ */
+export function buildResolveAttempts(
+  sourceType: Song['sourceType'],
+  hasCookies: boolean
+): ResolveAttempt[] {
+  if (sourceType !== 'youtube') return [{ cookies: hasCookies, client: null }]
+  const list: ResolveAttempt[] = [{ cookies: hasCookies, client: null }]
+  if (hasCookies) list.push({ cookies: false, client: null })
+  list.push({ cookies: false, client: 'android_vr' })
+  return list
+}
+
 interface InputOpts {
   gain?: number
   fadeInMs?: number
@@ -61,6 +78,17 @@ interface InputOpts {
   seekSec?: number
   onEnd?: () => void
   onError?: (reason: string) => void
+}
+
+/**
+ * One yt-dlp fetch configuration. On a YouTube initial-resolve failure we fall through a
+ * short list of these before giving up: cookies can make a video expose only DRM/restricted
+ * formats (so we retry without them), and the default player client can 403 for want of a PO
+ * token (so we retry with android_vr, which serves a plain downloadable stream).
+ */
+interface ResolveAttempt {
+  cookies: boolean
+  client: string | null
 }
 
 /**
@@ -85,6 +113,10 @@ export class MixerInput {
   private watchdog: NodeJS.Timeout | null = null
   private cycleBytes = 0 // PCM produced by the current (re)spawn; resets each spawn
   private emptyLoops = 0 // consecutive loop respawns that produced nothing
+  private gen = 0 // increments each (re)spawn; stale child handlers bail on mismatch
+  private lastSeek = 0
+  private attempts: ResolveAttempt[] = [] // YouTube fetch fallbacks, tried in order
+  private attemptIdx = 0
   removeWhenSilent = false
   paused = false
   onEnd?: () => void // reassignable so a prefetched input can be adopted as the current track
@@ -99,6 +131,7 @@ export class MixerInput {
     this.target = this.gain
     this.onEnd = opts.onEnd
     this.onError = opts.onError
+    this.attempts = buildResolveAttempts(song.sourceType, cookieArgs().length > 0)
     this.spawn(opts.seekSec ?? 0)
     if (opts.fadeInMs && opts.fadeInMs > 0) this.setGain(opts.gain ?? 1, opts.fadeInMs)
   }
@@ -108,6 +141,11 @@ export class MixerInput {
     this.flowPaused = false
     this.cycleBytes = 0
     this.realBytes = 0 // reset so a looping input's positionSec restarts each loop (no unbounded growth)
+    this.lastSeek = seekSec
+    // Stale child processes (killed when we fall through to the next attempt) still emit
+    // close/end; their handlers compare this captured gen and bail if we've moved on.
+    const gen = ++this.gen
+    const attempt = this.attempts[this.attemptIdx] ?? { cookies: cookieArgs().length > 0, client: null }
 
     // Local files: ffmpeg reads the path directly (no yt-dlp, no network). This is
     // safe — the static-ffmpeg HTTPS-segfault (HANDOFF §5.1) only affects network
@@ -125,14 +163,17 @@ export class MixerInput {
     }
     let ytdlp: ChildProcessWithoutNullStreams | null = null
     if (!isLocal) {
+      const clientArgs = attempt.client
+        ? ['--extractor-args', `youtube:player_client=${attempt.client}`]
+        : YT_CLIENT_ARGS
       ytdlp = spawn(
         ytDlp(),
         [
           '-f', 'bestaudio/best',
           '-o', '-',
           '--quiet', '--no-warnings', '--no-playlist',
-          ...cookieArgs(),
-          ...YT_CLIENT_ARGS,
+          ...(attempt.cookies ? cookieArgs() : []),
+          ...clientArgs,
           '--', // stop option parsing: a URL can never be misread as a yt-dlp flag (e.g. --exec)
           this.song.url
         ],
@@ -167,7 +208,8 @@ export class MixerInput {
       // A non-zero exit before any PCM means the fetch failed outright. (A clean exit, or
       // a SIGTERM/SIGKILL from our own kill(), has code 0/null — don't treat those as errors.)
       ytdlp.on('close', (code) => {
-        if (code && !this.gotData) this.fail(ytdlpFailReason(ytStderr))
+        if (gen !== this.gen) return // a newer attempt is running; ignore this stale child
+        if (code && !this.gotData) this.onResolveFailure(ytdlpFailReason(ytStderr))
       })
     }
     ffmpeg.on('error', (e) => console.error('[mixer:ffmpeg]', e.message))
@@ -190,10 +232,12 @@ export class MixerInput {
       }
     })
     ffmpeg.stdout.on('end', () => {
+      if (gen !== this.gen) return // a newer attempt is running; ignore this stale child
       this.closed = true
       // Ended having produced nothing → the stream was dead from the start. Prefer yt-dlp's
       // own error (the real cause) over the generic message when we captured one.
-      if (!this.gotData) this.fail(ytStderr.trim() ? ytdlpFailReason(ytStderr) : GENERIC_NO_AUDIO)
+      if (!this.gotData)
+        this.onResolveFailure(ytStderr.trim() ? ytdlpFailReason(ytStderr) : GENERIC_NO_AUDIO)
     })
 
     // One-shot watchdog for a hung resolve. This is NOT a mixer clock (gotcha #5 is
@@ -201,10 +245,31 @@ export class MixerInput {
     if (!this.gotData) {
       this.clearWatchdog()
       this.watchdog = setTimeout(
-        () => this.fail('timed out resolving audio (no data after 25s)'),
+        () => this.onResolveFailure('timed out resolving audio (no data after 25s)'),
         FIRST_BYTE_TIMEOUT_MS
       )
     }
+  }
+
+  /**
+   * An initial resolve produced no audio. For YouTube we fall through to the next fetch
+   * config (no cookies, then android_vr) before surfacing the error — this is what lets a
+   * cookie-poisoned or PO-token-403 video still play. Only reached while !gotData, so it
+   * never fires mid-stream or on a looping respawn (those latch gotData=true).
+   */
+  private onResolveFailure(reason: string): void {
+    if (this.ended) return
+    if (this.attemptIdx < this.attempts.length - 1) {
+      this.attemptIdx++
+      const next = this.attempts[this.attemptIdx]
+      console.error(
+        `[mixer:${this.id}] resolve failed (${reason}); retrying [cookies=${next.cookies}, client=${next.client ?? 'default'}]`
+      )
+      this.killProcs()
+      this.spawn(this.lastSeek)
+      return
+    }
+    this.fail(reason)
   }
 
   private clearWatchdog(): void {
@@ -312,15 +377,22 @@ export class MixerInput {
     if (this.removeWhenSilent && this.isSilent) this.kill()
   }
 
-  kill(): void {
+  /** Tear down the current yt-dlp/ffmpeg pair and drop buffered PCM, WITHOUT ending the
+   *  input — so spawn() can start a fresh attempt over the top. */
+  private killProcs(): void {
     this.clearWatchdog()
-    this.ended = true
     this.ffmpeg?.kill('SIGKILL')
     this.ytdlp?.kill('SIGKILL')
     this.ffmpeg = null
     this.ytdlp = null
     this.chunks = []
     this.queued = 0
+    this.flowPaused = false
+  }
+
+  kill(): void {
+    this.ended = true
+    this.killProcs()
   }
 }
 
