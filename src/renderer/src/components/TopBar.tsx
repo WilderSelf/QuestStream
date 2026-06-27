@@ -16,17 +16,17 @@ export function TopBar(): JSX.Element {
   const search = useStore((s) => s.search)
   const setSearch = useStore((s) => s.setSearch)
   const showNotice = useStore((s) => s.showNotice)
+  const openImportWizard = useStore((s) => s.openImportWizard)
 
   const inChannel = !!bot.activeChannelId
 
-  async function addUrl(): Promise<void> {
+  // The URL box hands off to the import wizard (pre-filled) so every import goes through the
+  // same type/tag step, rather than silently adding a URL as a Music track.
+  function addUrl(): void {
     const clean = url.trim()
     if (!clean) return
-    setBusy(true)
     setUrl('')
-    const res = await window.api.library.addUrl(clean)
-    if (!res.ok) showNotice(res.error ?? 'Could not add that URL', 'error')
-    setBusy(false)
+    openImportWizard(clean)
   }
 
   async function addFiles(): Promise<void> {

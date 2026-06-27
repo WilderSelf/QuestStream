@@ -156,6 +156,7 @@ interface State {
   activeFilters: Record<ItemKind, Record<string, string | null>> // secondary chip filters
   showArtistView: boolean // optional legacy Artist→Album→Song mode
   importWizardOpen: boolean
+  importWizardUrl: string // URL to pre-fill the wizard with (from the top-bar quick-add)
 
   ambience: AmbienceSlot[]
   musicVolume: number
@@ -185,6 +186,7 @@ interface State {
   clearKindFilters: (kind: ItemKind) => void
   toggleArtistView: () => void
   setImportWizardOpen: (open: boolean) => void
+  openImportWizard: (url?: string) => void
 
   addAmbience: (song: Song) => void
   removeAmbience: (slotId: string) => void
@@ -275,6 +277,7 @@ export const useStore = create<State>((set, get) => ({
   activeFilters: { track: {}, ambience: {}, sfx: {} },
   showArtistView: false,
   importWizardOpen: false,
+  importWizardUrl: '',
   ambience: [],
   musicVolume: 1,
   monitorEnabled: false,
@@ -377,7 +380,8 @@ export const useStore = create<State>((set, get) => ({
     })),
   clearKindFilters: (kind) => set((st) => ({ activeFilters: { ...st.activeFilters, [kind]: {} } })),
   toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
-  setImportWizardOpen: (open) => set({ importWizardOpen: open }),
+  setImportWizardOpen: (open) => set({ importWizardOpen: open, ...(open ? {} : { importWizardUrl: '' }) }),
+  openImportWizard: (url) => set({ importWizardOpen: true, importWizardUrl: url ?? '' }),
 
   showNotice: (text, kind = 'info', persistent = false) => {
     // Blocking conditions become a sticky banner (its own slot, so a later transient

@@ -38,7 +38,7 @@ export function LibraryPane(): JSX.Element {
   const clearKindFilters = useStore((s) => s.clearKindFilters)
   const showArtistView = useStore((s) => s.showArtistView)
   const toggleArtistView = useStore((s) => s.toggleArtistView)
-  const setImportWizardOpen = useStore((s) => s.setImportWizardOpen)
+  const openImportWizard = useStore((s) => s.openImportWizard)
   const matching = useMatchingSongIds()
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -137,7 +137,7 @@ export function LibraryPane(): JSX.Element {
             className="icon icon-text"
             title="Import audio with the tagging wizard"
             aria-label="Import audio"
-            onClick={() => setImportWizardOpen(true)}
+            onClick={() => openImportWizard()}
           >
             <Icon name="plus" size={16} /> Import
           </button>
