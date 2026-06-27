@@ -157,6 +157,7 @@ interface State {
   showArtistView: boolean // optional legacy Artist→Album→Song mode
   importWizardOpen: boolean
   importWizardUrl: string // URL to pre-fill the wizard with (from the top-bar quick-add)
+  importWizardSource: 'url' | 'files' // which source the wizard opens on
 
   ambience: AmbienceSlot[]
   musicVolume: number
@@ -186,7 +187,7 @@ interface State {
   clearKindFilters: (kind: ItemKind) => void
   toggleArtistView: () => void
   setImportWizardOpen: (open: boolean) => void
-  openImportWizard: (url?: string) => void
+  openImportWizard: (opts?: { url?: string; source?: 'url' | 'files' }) => void
 
   addAmbience: (song: Song) => void
   removeAmbience: (slotId: string) => void
@@ -278,6 +279,7 @@ export const useStore = create<State>((set, get) => ({
   showArtistView: false,
   importWizardOpen: false,
   importWizardUrl: '',
+  importWizardSource: 'url',
   ambience: [],
   musicVolume: 1,
   monitorEnabled: false,
@@ -380,8 +382,14 @@ export const useStore = create<State>((set, get) => ({
     })),
   clearKindFilters: (kind) => set((st) => ({ activeFilters: { ...st.activeFilters, [kind]: {} } })),
   toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
-  setImportWizardOpen: (open) => set({ importWizardOpen: open, ...(open ? {} : { importWizardUrl: '' }) }),
-  openImportWizard: (url) => set({ importWizardOpen: true, importWizardUrl: url ?? '' }),
+  setImportWizardOpen: (open) =>
+    set({ importWizardOpen: open, ...(open ? {} : { importWizardUrl: '', importWizardSource: 'url' }) }),
+  openImportWizard: (opts) =>
+    set({
+      importWizardOpen: true,
+      importWizardUrl: opts?.url ?? '',
+      importWizardSource: opts?.source ?? 'url'
+    }),
 
   showNotice: (text, kind = 'info', persistent = false) => {
     // Blocking conditions become a sticky banner (its own slot, so a later transient

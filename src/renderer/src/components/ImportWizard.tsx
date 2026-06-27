@@ -88,6 +88,7 @@ export function ImportWizardModal(): JSX.Element | null {
   const songs = useStore((s) => s.library.songs)
   const kindTab = useStore((s) => s.kindTab)
   const prefillUrl = useStore((s) => s.importWizardUrl)
+  const prefillSource = useStore((s) => s.importWizardSource)
   const updateYtdlp = useStore((s) => s.updateYtdlp)
   const updatingYtdlp = useStore((s) => s.updatingYtdlp)
 
@@ -106,7 +107,7 @@ export function ImportWizardModal(): JSX.Element | null {
   // Reset to a clean slate each time the wizard opens.
   useEffect(() => {
     if (open) {
-      setSource('url')
+      setSource(prefillSource)
       setUrl(prefillUrl) // pre-filled when opened from the top-bar quick-add box
       setKind(kindTab)
       setMode('batch')
@@ -117,7 +118,7 @@ export function ImportWizardModal(): JSX.Element | null {
       setPerItem({})
       setError(null)
     }
-  }, [open, kindTab, prefillUrl])
+  }, [open, kindTab, prefillUrl, prefillSource])
 
   // In per-item mode we kick off the import, then wait for the `done` progress event
   // to learn which songs were created so they can be tagged individually.

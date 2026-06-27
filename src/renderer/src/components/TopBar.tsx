@@ -4,7 +4,6 @@ import { Icon } from './Icon'
 
 export function TopBar(): JSX.Element {
   const [url, setUrl] = useState('')
-  const [busy, setBusy] = useState(false)
   const bot = useStore((s) => s.bot)
   const guilds = useStore((s) => s.guilds)
   const channels = useStore((s) => s.channels)
@@ -20,21 +19,13 @@ export function TopBar(): JSX.Element {
 
   const inChannel = !!bot.activeChannelId
 
-  // The URL box hands off to the import wizard (pre-filled) so every import goes through the
-  // same type/tag step, rather than silently adding a URL as a Music track.
+  // Both the URL box and the local-files button hand off to the import wizard so every import
+  // goes through the same type/tag step (the wizard's file picker opens for the 'files' source).
   function addUrl(): void {
     const clean = url.trim()
     if (!clean) return
     setUrl('')
-    openImportWizard(clean)
-  }
-
-  async function addFiles(): Promise<void> {
-    setBusy(true)
-    const res = await window.api.library.addFiles()
-    if (!res.ok) showNotice(res.error ?? 'Could not import files', 'error')
-    else if (res.added > 0) showNotice(`Added ${res.added} local file${res.added > 1 ? 's' : ''}`, 'info')
-    setBusy(false)
+    openImportWizard({ url: clean })
   }
 
   async function joinOrLeave(): Promise<void> {
@@ -81,15 +72,14 @@ export function TopBar(): JSX.Element {
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void addUrl()}
         />
-        <button className="primary" disabled={busy || !url.trim()} onClick={() => void addUrl()}>
-          {busy ? 'Adding…' : 'Add'}
+        <button className="primary" disabled={!url.trim()} onClick={() => addUrl()}>
+          Add
         </button>
         <button
           className="icon"
           title="Add local audio files"
           aria-label="Add local audio files"
-          disabled={busy}
-          onClick={() => void addFiles()}
+          onClick={() => openImportWizard({ source: 'files' })}
         >
           <Icon name="folder" size={16} />
         </button>
