@@ -59,18 +59,13 @@ export function PlaylistsPane(): JSX.Element {
   const recallScene = useStore((s) => s.recallScene)
   const loadedId = useStore((s) => s.loadedPlaylistId)
   const loadedSceneId = useStore((s) => s.loadedSceneId)
-  const clearQueue = useStore((s) => s.clearQueue)
   const queue = useStore((s) => s.queue)
   const ambience = useStore((s) => s.ambience)
   const showNotice = useStore((s) => s.showNotice)
   const collapsed = useStore((s) => s.playlistsCollapsed)
   const toggleCollapsed = useStore((s) => s.togglePlaylistsCollapsed)
 
-  // Both of these replace the whole live mix; guard them when there's unsaved work to lose.
-  function newQueue(): void {
-    if (queue.length === 0 || confirm(`Start a new queue? ${queue.length} track(s) will be cleared.`))
-      clearQueue()
-  }
+  // Recalling replaces the whole live mix; guard it when there's unsaved work to lose.
   function recallSceneConfirmed(id: string): void {
     const dirty = queue.length > 0 || ambience.length > 0
     if (!dirty || loadedSceneId === id || confirm('Replace the current mix with this scene? Unsaved changes will be lost.'))
@@ -143,20 +138,13 @@ export function PlaylistsPane(): JSX.Element {
           >
             <Icon name="download" size={16} />
           </button>
-          <button
-            className="icon"
-            title="Start a new queue (clears the current one)"
-            aria-label="Start a new queue"
-            onClick={newQueue}
-          >
-            <Icon name="plus" size={16} />
-          </button>
         </span>
       </div>
       <div className="pane-body">
         <div className="section-label">
           <Icon name="film" size={13} /> Scenes
         </div>
+        <div className="section-caption">A full snapshot — music, ambience, and volumes.</div>
         {scenes.length === 0 && (
           <div className="muted small">
             Save a full mix (music + ambience + volumes) as a scene, then recall it in one click.
@@ -199,6 +187,7 @@ export function PlaylistsPane(): JSX.Element {
         <div className="section-label">
           <Icon name="music" size={13} /> Playlists
         </div>
+        <div className="section-caption">Just an ordered list of tracks.</div>
         {playlists.length === 0 && (
           <div className="muted small">Build a queue, then “Save as playlist”.</div>
         )}

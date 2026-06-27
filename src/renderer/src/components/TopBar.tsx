@@ -11,6 +11,7 @@ export function TopBar(): JSX.Element {
   const selectChannel = useStore((s) => s.selectChannel)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
   const showNotice = useStore((s) => s.showNotice)
+  const openImportWizard = useStore((s) => s.openImportWizard)
 
   const inChannel = !!bot.activeChannelId
 
@@ -33,15 +34,31 @@ export function TopBar(): JSX.Element {
         ? 'Connecting…'
         : bot.state === 'error'
           ? bot.error ?? 'Error'
-          : 'Offline'
+          : 'Local only'
+
+  const statusTitle =
+    bot.error ??
+    (bot.state === 'ready'
+      ? `Connected as ${bot.username ?? 'bot'}`
+      : bot.state === 'connecting'
+        ? 'Connecting to Discord…'
+        : 'Playing locally on this machine — connect a Discord bot to stream to a voice channel')
 
   return (
     <div className="topbar">
       <span className="brand">♪ QUESTSTREAM</span>
 
+      <button
+        className="primary icon-text add-audio"
+        title="Import audio from a link or local files"
+        onClick={() => openImportWizard()}
+      >
+        <Icon name="plus" size={16} /> Add audio
+      </button>
+
       <div className="spacer" />
 
-      <span className="status-pill" title={bot.error ?? statusLabel}>
+      <span className="status-pill" title={statusTitle}>
         <span className={`dot ${bot.state}`} aria-hidden="true" />
         {statusLabel}
       </span>

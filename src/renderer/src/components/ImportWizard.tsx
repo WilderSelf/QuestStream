@@ -299,7 +299,7 @@ export function ImportWizardModal(): JSX.Element | null {
             <div className="actions">
               <button onClick={() => setOpen(false)}>Cancel</button>
               <button className="primary" disabled={!canStart || busy} onClick={() => void startImport()}>
-                {busy ? 'Importing…' : 'Import'}
+                {busy ? 'Importing…' : source === 'files' ? 'Choose files…' : 'Import'}
               </button>
             </div>
           </>

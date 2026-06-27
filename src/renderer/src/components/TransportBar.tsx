@@ -138,16 +138,20 @@ export function TransportBar(): JSX.Element {
 
       <div className="volume">
         <button
-          className={`icon ${ducking ? 'toggled' : ''}`}
-          title={ducking ? 'Narration duck ON — music lowered' : 'Duck music for narration'}
+          className={`icon icon-text ${ducking ? 'toggled' : ''}`}
+          title={
+            ducking
+              ? 'Narration duck ON — music auto-lowers while a sound plays'
+              : 'Auto-lower the music while a sound plays (narration duck)'
+          }
           aria-label={ducking ? 'Narration duck: on' : 'Narration duck: off'}
           aria-pressed={ducking}
           onClick={() => setDuck(!ducking)}
         >
-          <Icon name="mic" />
+          <Icon name="mic" size={16} /> <span className="ctl-label">Duck</span>
         </button>
         <button
-          className={`icon ${monitorEnabled ? 'toggled' : ''}`}
+          className={`icon icon-text ${monitorEnabled ? 'toggled' : ''}`}
           title={
             monitorEnabled
               ? 'Local output ON — you hear the mix on this machine (mute to avoid doubling when in the call)'
@@ -157,7 +161,8 @@ export function TransportBar(): JSX.Element {
           aria-pressed={monitorEnabled}
           onClick={toggleMonitor}
         >
-          <Icon name={monitorEnabled ? 'headphones' : 'volume-mute'} />
+          <Icon name={monitorEnabled ? 'headphones' : 'volume-mute'} size={16} />{' '}
+          <span className="ctl-label">Monitor</span>
         </button>
         <span className="vol-icon" title="Master volume" aria-hidden="true">
           <Icon name="volume" size={16} />

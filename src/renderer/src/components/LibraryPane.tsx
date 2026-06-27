@@ -4,6 +4,7 @@ import type { Song } from '@shared/types'
 import {
   KIND_ORDER,
   KIND_LABELS,
+  KIND_HINTS,
   dimensionsFor,
   labelForDimension,
   labelForValue,
@@ -127,13 +128,13 @@ export function LibraryPane(): JSX.Element {
         </div>
         <span className="library-head-actions">
           <button
-            className={`icon ${showArtistView ? 'toggled' : ''}`}
+            className={`icon icon-text ${showArtistView ? 'toggled' : ''}`}
             title="Toggle Artist / Album view"
             aria-label="Artist / Album view"
             aria-pressed={showArtistView}
             onClick={toggleArtistView}
           >
-            <Icon name="layers" size={16} />
+            <Icon name="layers" size={16} /> Artists
           </button>
           <button
             className="icon icon-text"
@@ -145,6 +146,8 @@ export function LibraryPane(): JSX.Element {
           </button>
         </span>
       </div>
+
+      <div className="kind-hint">{KIND_HINTS[kind]}</div>
 
       <div className="library-search">
         <Icon name="search" size={14} className="search-icon" />
@@ -165,7 +168,9 @@ export function LibraryPane(): JSX.Element {
         </div>
       ) : (
         <>
-          <div className="library-controls">
+          {visible.length > 0 && (
+            <>
+              <div className="library-controls">
             <label className="group-by">
               <span>Group by</span>
               <select value={groupBy} onChange={(e) => setGroupBy(kind, e.target.value)}>
@@ -200,11 +205,14 @@ export function LibraryPane(): JSX.Element {
               })}
             </div>
           ))}
+            </>
+          )}
 
           <div className="pane-body">
             {visible.length === 0 && (
               <div className="muted">
-                No {KIND_LABELS[kind].toLowerCase()} items yet. Use ＋ to import and tag some.
+                No {KIND_LABELS[kind].toLowerCase()} items yet — click <strong>Add audio</strong> in
+                the top bar (or <strong>Import</strong> above) to bring some in.
               </div>
             )}
             {buckets.map(([key, items]) => {
