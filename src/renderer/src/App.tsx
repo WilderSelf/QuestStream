@@ -35,7 +35,6 @@ export function App(): JSX.Element {
   const enqueueSongs = useStore((s) => s.enqueueSongs)
   const reorderQueue = useStore((s) => s.reorderQueue)
   const addAmbience = useStore((s) => s.addAmbience)
-  const addAmbiencePoolSong = useStore((s) => s.addAmbiencePoolSong)
 
   useEffect(() => {
     void init()
@@ -58,14 +57,9 @@ export function App(): JSX.Element {
       const songId = activeId.slice('song:'.length)
       const song = library.songs.find((s) => s.id === songId)
       if (!song) return
-      // ...onto the ambience area → new looping layer
+      // ...onto the ambience area → its own new layer (each sound is one layer)
       if (overId === 'ambience-drop') {
         addAmbience(song)
-        return
-      }
-      // ...onto an existing layer → add to that layer's random pool
-      if (overId.startsWith('ambslot:')) {
-        addAmbiencePoolSong(overId.slice('ambslot:'.length), song)
         return
       }
       // ...onto the soundboard → new one-shot effect

@@ -678,32 +678,31 @@ textarea {
   min-width: 0;
 }
 
-/* ---- Ambience layers ---- */
-/* The right column splits into two elevated panels: Now Playing (.queue) over Mixer (.mixer).
-   Each balances via flex and scrolls independently — no more magic 42% clamp. */
+/* ---- Right column: Now Playing, Ambience, Soundboard as three stacked panes ---- */
+/* Now Playing and Ambience split the leftover height 50/50 and each scroll independently;
+   the Soundboard is pinned at the bottom, sized 1–3 cards tall, so it's always reachable
+   without scrolling the rail. */
 .right-col {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
 }
-.right-col .queue {
-  flex: 1 1 58%;
+.right-col .queue,
+.right-col .ambience-pane {
+  flex: 1 1 0;
   min-height: 0;
 }
-.mixer {
-  flex: 1 1 42%;
-  min-height: 0;
-  overflow-y: auto;
+.right-col .ambience-pane,
+.right-col .soundboard-pane {
   border-top: 2px solid var(--border-strong);
 }
-.ambience {
+.right-col .soundboard-pane {
+  flex: 0 0 auto;
+}
+.ambience-pane {
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-}
-.ambience + .ambience {
-  border-top: 1px solid var(--border);
 }
 .ambience-header {
   display: flex;
@@ -722,22 +721,32 @@ textarea {
   letter-spacing: 0;
 }
 .ambience-list {
+  flex: 1;
   overflow-y: auto;
-  min-height: 54px;
+  min-height: 0;
 }
 .ambience-list.drop-active {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
   border-radius: var(--radius);
 }
+/* Soundboard body: ~1 row tall when empty, grows to ~3 rows before it scrolls. */
+.soundboard-pane .sfx-grid {
+  max-height: 124px;
+  overflow-y: auto;
+}
 
-/* Each ambience layer is a card (top row + a controls row), mirroring the Now-Playing
-   rows so it reads as "a list of layers, each with its own settings". */
+/* Each ambience layer is ONE compact, wrapping row: play · name · Loop/Random · interval ·
+   volume · remove, with a hairline progress bar pinned to the card's bottom edge. It wraps to
+   a second line only when the rail is too narrow to hold it — keeping cards short on wide
+   displays while staying usable when narrow. */
 .amb-card {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3) 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  padding: 5px 10px 7px;
   border-bottom: 1px solid var(--border-subtle);
 }
 .amb-card.playing {
@@ -747,34 +756,18 @@ textarea {
 .amb-card.paused {
   opacity: 0.6;
 }
-.amb-card.drop-active {
-  outline: 2px dashed var(--accent);
-  outline-offset: -4px;
-  border-radius: var(--radius);
-}
-.amb-card-top {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
 .amb-card .amb-title {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 90px;
+  min-width: 64px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-md);
 }
 .amb-card .amb-vol {
-  width: 96px;
+  flex: 0 1 88px;
+  min-width: 56px;
   accent-color: var(--nord15);
-  flex-shrink: 0;
-}
-.amb-card-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
 }
 /* The mode toggle sizes to its content rather than stretching like the full-width tabs. */
 .amb-mode {
@@ -786,26 +779,30 @@ textarea {
   align-items: center;
   gap: var(--space-1);
 }
-.amb-mode-hint {
-  font-size: var(--text-sm);
-  color: var(--text-dim);
-}
 .amb-interval {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   font-size: var(--text-sm);
   color: var(--text-dim);
+  flex: 0 0 auto;
 }
 .amb-interval input[type='number'] {
-  width: 48px;
+  width: 44px;
   padding: 2px 4px;
   font-size: var(--text-sm);
 }
-.amb-card-hint {
-  font-size: var(--text-xs);
-  color: var(--text-dim);
-  font-style: italic;
+.amb-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--nord3);
+}
+.amb-progress .fill {
+  height: 100%;
+  background: var(--accent);
 }
 .muted.small {
   font-size: var(--text-sm);
@@ -1231,30 +1228,23 @@ textarea {
   border-radius: var(--radius-pill);
   background: var(--accent);
 }
-/* Compact progress bars on the queue/ambience cards — mirror the transport seek bar. */
-.row-seek,
-.amb-progress {
+/* Compact seek bar on the current Now-Playing card — mirrors the transport seek bar. */
+.row-seek {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   width: 100%;
   margin-top: 3px;
 }
-.row-seek .bar,
-.amb-progress .bar {
+.row-seek .bar {
   height: 4px;
 }
-.row-seek .time,
-.amb-progress .time {
+.row-seek .time {
   font-size: var(--text-xs);
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 0;
-}
-/* The ambience bar reports progress, it isn't a seek control. */
-.amb-progress .bar {
-  cursor: default;
 }
 .volume {
   display: flex;

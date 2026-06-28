@@ -139,7 +139,7 @@
       onStatus: noop,
       onEnded: noop
     },
-    ambience: { play: ok, playRandom: ok, stop: ok, setVolume: ok, setPaused: ok },
+    ambience: { play: ok, playRandom: ok, stop: ok, setVolume: ok, setPaused: ok, onStatus: noop },
     monitor: { enable: ok, onPcm: noop },
     remote: {
       onCommand: noop,

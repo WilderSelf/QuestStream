@@ -39,11 +39,10 @@ export interface Notice {
 }
 export interface AmbienceSlot {
   id: string
-  song: Song // representative track (first of the pool)
+  song: Song // exactly one sound per layer
   volume: number
   playing: boolean
-  mode: AmbienceMode // 'loop' (default) or 'random' one-shots
-  pool: Song[] // tracks that can fire in 'random' mode (includes `song`)
+  mode: AmbienceMode // 'loop' (continuous) or 'random' (fire this sound every min–max sec)
   minSec: number
   maxSec: number
 }
@@ -114,14 +113,15 @@ function handleRemoteCommand(s: State, c: RemoteCommand): void {
   }
 }
 
-/** Push an ambience slot's current mode/pool/volume to the audio engine. */
+/** Push an ambience slot's current mode/volume to the audio engine. */
 function applyAmbience(slot: AmbienceSlot): void {
   if (!slot.playing) {
     void window.api.ambience.stop(slot.id)
     return
   }
   if (slot.mode === 'random') {
-    void window.api.ambience.playRandom(slot.id, slot.pool, slot.volume, slot.minSec, slot.maxSec)
+    // One sound per layer: fire just this layer's sound at the chosen interval.
+    void window.api.ambience.playRandom(slot.id, [slot.song], slot.volume, slot.minSec, slot.maxSec)
   } else {
     void window.api.ambience.play(slot.id, slot.song, slot.volume)
   }
@@ -210,7 +210,6 @@ interface State {
   toggleAmbience: (slotId: string) => void
   setAmbienceVolume: (slotId: string, volume: number) => void
   setAmbienceMode: (slotId: string, mode: AmbienceMode) => void
-  addAmbiencePoolSong: (slotId: string, song: Song) => void
   setAmbienceInterval: (slotId: string, minSec: number, maxSec: number) => void
   triggerSfx: (soundboardId: string) => void
   setDuck: (on: boolean) => void
@@ -688,7 +687,6 @@ export const useStore = create<State>((set, get) => ({
       volume: 0.5,
       playing: true,
       mode: 'loop',
-      pool: [song],
       minSec: 20,
       maxSec: 60
     }
@@ -727,14 +725,6 @@ export const useStore = create<State>((set, get) => ({
     const next = { ...slot, mode }
     set((st) => ({ ambience: st.ambience.map((a) => (a.id === slotId ? next : a)) }))
     applyAmbience(next)
-  },
-
-  addAmbiencePoolSong: (slotId, song) => {
-    const slot = get().ambience.find((a) => a.id === slotId)
-    if (!slot || slot.pool.some((s) => s.id === song.id)) return
-    const next = { ...slot, pool: [...slot.pool, song] }
-    set((st) => ({ ambience: st.ambience.map((a) => (a.id === slotId ? next : a)) }))
-    if (next.mode === 'random' && next.playing) applyAmbience(next)
   },
 
   setAmbienceInterval: (slotId, minSec, maxSec) => {
@@ -818,12 +808,14 @@ export const useStore = create<State>((set, get) => ({
       songIds: queue.map((q) => q.song.id),
       musicVolume,
       currentIndex,
+      // One sound per layer now — persist a single-song pool (kept for back-compat with
+      // scenes/packs that still read `pool`).
       ambience: ambience.map((a) => ({
         songId: a.song.id,
         volume: a.volume,
         playing: a.playing,
         mode: a.mode,
-        pool: a.pool.map((s) => s.id),
+        pool: [a.song.id],
         minIntervalSec: a.minSec,
         maxIntervalSec: a.maxSec
       }))
@@ -843,25 +835,21 @@ export const useStore = create<State>((set, get) => ({
       .filter((s): s is Song => !!s)
       .map((song) => ({ uid: newUid(), song }))
 
-    // Swap ambience: stop the current layers, build the scene's
+    // Swap ambience: stop the current layers, build the scene's. A legacy multi-song pool
+    // expands into one single-sound layer per song (one sound per layer is the current model).
     for (const slot of get().ambience) void window.api.ambience.stop(slot.id)
-    const ambSlots: AmbienceSlot[] = scene.ambience
-      .map((a) => {
-        const song = byId.get(a.songId)
-        if (!song) return null
-        const pool = (a.pool ?? [a.songId]).map((id) => byId.get(id)).filter((s): s is Song => !!s)
-        return {
-          id: newSlotId(),
-          song,
-          volume: a.volume,
-          playing: a.playing,
-          mode: a.mode ?? 'loop',
-          pool: pool.length ? pool : [song],
-          minSec: a.minIntervalSec ?? 20,
-          maxSec: a.maxIntervalSec ?? 60
-        }
-      })
-      .filter((s): s is AmbienceSlot => !!s)
+    const ambSlots: AmbienceSlot[] = scene.ambience.flatMap((a) => {
+      const songs = (a.pool ?? [a.songId]).map((id) => byId.get(id)).filter((s): s is Song => !!s)
+      return songs.map((song) => ({
+        id: newSlotId(),
+        song,
+        volume: a.volume,
+        playing: a.playing,
+        mode: a.mode ?? 'loop',
+        minSec: a.minIntervalSec ?? 20,
+        maxSec: a.maxIntervalSec ?? 60
+      }))
+    })
 
     set({
       queue: items,
