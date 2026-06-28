@@ -14,6 +14,8 @@
   },
   "scripts": {
     "dev": "electron-vite dev",
+    "dev:fresh": "bash scripts/wipe-profile.sh && electron-vite dev",
+    "wipe": "bash scripts/wipe-profile.sh",
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
