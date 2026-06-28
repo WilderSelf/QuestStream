@@ -10,6 +10,7 @@ import {
   VoiceConnectionStatus,
   entersState,
   NoSubscriberBehavior,
+  generateDependencyReport,
   type VoiceConnection,
   type AudioPlayer,
   type AudioResource
@@ -57,6 +58,7 @@ export class DiscordBot extends EventEmitter {
   private mixSource: Readable | null = null
 
   private status: BotStatus = { state: 'disconnected' }
+  private daveChecked = false // DAVE/E2EE dependency self-check runs once
   private volume = 0.8
   private musicVolume = 1
   private currentSong: Song | null = null
@@ -116,7 +118,38 @@ export class DiscordBot extends EventEmitter {
 
   // ---------------------------------------------------------------- connection
 
+  /**
+   * Discord enforces the DAVE end-to-end-encryption protocol on all non-stage voice calls
+   * (since 2026-03-01); a client that can't do DAVE is rejected with voice close code 4017.
+   * The capability is delegated to @discordjs/voice ≥0.19 + a loadable @snazzah/davey native
+   * binary — but in a packaged build that native .node can fail to unpack, which would only
+   * surface as a cryptic mid-session join failure. Verify once at connect time and raise a
+   * persistent banner up front instead. Logs the full report either way for diagnostics.
+   */
+  private verifyDaveSupport(): void {
+    if (this.daveChecked) return
+    this.daveChecked = true
+    let report = ''
+    try {
+      report = generateDependencyReport()
+    } catch (err) {
+      console.error('[voice] dependency report failed:', (err as Error).message)
+    }
+    console.log('[voice] @discordjs/voice dependency report:\n' + report)
+    const hasDave = /DAVE Libraries[\s\S]*@snazzah\/davey:\s*\d/.test(report)
+    if (!hasDave) {
+      this.emit('notice', {
+        message:
+          'Discord voice encryption (DAVE / @snazzah/davey) is missing — voice will be rejected ' +
+          '(close code 4017). Reinstall QuestStream or rebuild so the native library is bundled.',
+        kind: 'error',
+        persistent: true // a missing library is a standing condition, not a passing event
+      })
+    }
+  }
+
   async connect(token: string): Promise<BotStatus> {
+    this.verifyDaveSupport() // surface a missing DAVE/E2EE library before a join can 4017
     if (!token) {
       this.setStatus({ state: 'error', error: 'No bot token configured' })
       return this.status

@@ -95,7 +95,7 @@ function handleRemoteCommand(s: State, c: RemoteCommand): void {
     case 'next': void s.playNext(); break
     case 'prev': void s.playPrev(); break
     case 'seek': void s.seekTo(c.seconds); break
-    case 'setVolume': s.setMasterVolume(c.volume); break
+    case 'setVolume': s.setMasterVolume(c.volume); break // controls the Discord SEND level only, never the GM's local monitor
     case 'duck': s.setDuck(c.on); break
     case 'recallScene': s.recallScene(c.id); break
     case 'triggerSfx': s.triggerSfx(c.id); break
@@ -163,6 +163,8 @@ interface State {
   ambience: AmbienceSlot[]
   musicVolume: number
   monitorEnabled: boolean
+  monitorVolume: number // independent local-monitor level (the Discord SEND level lives in player.volume)
+  outputDeviceId: string // chosen local output device ('' = system default)
   ducking: boolean
   remoteActive: boolean // is the LAN remote enabled (gates state pushes)
 
@@ -201,7 +203,9 @@ interface State {
   triggerSfx: (soundboardId: string) => void
   setDuck: (on: boolean) => void
   setMusicVolume: (volume: number) => void
-  setMasterVolume: (volume: number) => void
+  setMasterVolume: (volume: number) => void // Discord SEND level (what remote players hear)
+  setMonitorVolume: (volume: number) => void // local MONITOR level (what the GM hears on this machine)
+  setOutputDevice: (deviceId: string) => void
   setMonitor: (on: boolean) => void
   toggleMonitor: () => void
 
@@ -292,6 +296,21 @@ export const useStore = create<State>((set, get) => ({
   ambience: [],
   musicVolume: 1,
   monitorEnabled: false,
+  monitorVolume: ((): number => {
+    try {
+      const v = parseFloat(localStorage.getItem('qs.monitorVolume') ?? '')
+      return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.8
+    } catch {
+      return 0.8
+    }
+  })(),
+  outputDeviceId: ((): string => {
+    try {
+      return localStorage.getItem('qs.outputDeviceId') ?? ''
+    } catch {
+      return ''
+    }
+  })(),
   ducking: false,
   remoteActive: false,
 
@@ -695,18 +714,44 @@ export const useStore = create<State>((set, get) => ({
   },
 
   setMasterVolume: (volume) => {
+    // The Discord SEND level only (what remote players hear). The local monitor has its own
+    // independent level via setMonitorVolume — the two are no longer coupled.
     // Optimistic: update the slider immediately instead of waiting for the playerStatus
     // round-trip (keeps the control consistent with every other store-driven action).
     set((st) => ({ player: { ...st.player, volume } }))
-    localMonitor.setVolume(volume) // local jukebox path (the bot resource handles Discord)
     void window.api.player.setVolume(volume)
+  },
+
+  setMonitorVolume: (volume) => {
+    set({ monitorVolume: volume })
+    localMonitor.setVolume(volume)
+    try {
+      localStorage.setItem('qs.monitorVolume', String(volume))
+    } catch {
+      /* localStorage unavailable — preference just won't persist */
+    }
+  },
+
+  setOutputDevice: (deviceId) => {
+    set({ outputDeviceId: deviceId })
+    void localMonitor.setSinkId(deviceId)
+    try {
+      localStorage.setItem('qs.outputDeviceId', deviceId)
+    } catch {
+      /* localStorage unavailable — preference just won't persist */
+    }
   },
 
   setMonitor: (on) => {
     if (get().monitorEnabled === on) return
     set({ monitorEnabled: on })
-    if (on) void localMonitor.start()
-    else localMonitor.stop()
+    if (on) {
+      // Apply the saved monitor level + output device BEFORE start so the GainNode and sink
+      // come up correct (the monitor restarts on every Discord join/leave).
+      localMonitor.setVolume(get().monitorVolume)
+      void localMonitor.setSinkId(get().outputDeviceId)
+      void localMonitor.start()
+    } else localMonitor.stop()
     void window.api.monitor.enable(on)
   },
 

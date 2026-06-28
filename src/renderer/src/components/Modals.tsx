@@ -269,6 +269,59 @@ function DesktopIntegrationSettings(): JSX.Element | null {
   )
 }
 
+function OutputDeviceSettings(): JSX.Element {
+  const outputDeviceId = useStore((s) => s.outputDeviceId)
+  const setOutputDevice = useStore((s) => s.setOutputDevice)
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    // Device labels are blank until media permission is granted; main grants it silently
+    // (see setupMediaPermissions in src/main/index.ts) so real names show with no prompt.
+    const refresh = async (): Promise<void> => {
+      try {
+        const all = await navigator.mediaDevices.enumerateDevices()
+        if (!cancelled) setDevices(all.filter((d) => d.kind === 'audiooutput'))
+      } catch {
+        /* enumeration unavailable — leave the list empty (System default still works) */
+      }
+    }
+    void refresh()
+    navigator.mediaDevices.addEventListener('devicechange', refresh)
+    return () => {
+      cancelled = true
+      navigator.mediaDevices.removeEventListener('devicechange', refresh)
+    }
+  }, [])
+
+  return (
+    <>
+      <hr className="modal-sep" />
+      <div className="field">
+        <h3 className="field-label">Local output device</h3>
+        <p className="muted small" style={{ padding: 0 }}>
+          Which speakers or headphones the local monitor plays to. Only affects local playback —
+          Discord streaming always uses the bot’s voice connection.
+        </p>
+        <div className="cookies-row">
+          <select
+            value={outputDeviceId}
+            aria-label="Local audio output device"
+            onChange={(e) => setOutputDevice(e.target.value)}
+          >
+            <option value="">System default</option>
+            {devices.map((d) => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label || `Output ${d.deviceId.slice(0, 6)}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function SettingsModal(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
   const setOpen = useStore((s) => s.setSettingsOpen)
@@ -324,6 +377,7 @@ export function SettingsModal(): JSX.Element | null {
           <p style={{ color: 'var(--nord14)' }}>✓ Connected as {bot.username}</p>
         )}
         <DesktopIntegrationSettings />
+        <OutputDeviceSettings />
         <details className="settings-advanced">
           <summary>Advanced — playback tools, YouTube cookies, remote</summary>
           <div className="settings-advanced-body">

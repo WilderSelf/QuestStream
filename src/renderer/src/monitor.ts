@@ -66,11 +66,15 @@ class PCMRing extends AudioWorkletProcessor {
 registerProcessor('pcm-ring', PCMRing)
 `
 
+/** AudioContext.setSinkId is shipping in Electron's Chromium but not yet in the TS DOM lib. */
+type SinkCapableContext = AudioContext & { setSinkId?: (id: string) => Promise<void> }
+
 export class LocalMonitor {
   private ctx: AudioContext | null = null
   private node: AudioWorkletNode | null = null
   private gain: GainNode | null = null
-  private masterVolume = 0.8 // master volume for the LOCAL path (mirrors player.volume)
+  private localVolume = 0.8 // independent volume for the LOCAL monitor path (NOT the Discord send level)
+  private sinkId = '' // chosen output device ('' = system default)
   private starting = false
 
   async start(): Promise<void> {
@@ -106,7 +110,7 @@ export class LocalMonitor {
       // GainNode scales the whole mix before the speakers. (The Discord path applies the
       // same master volume via the AudioResource; the monitor taps the mix before that,
       // so without this node the master slider had no effect on local playback.)
-      const gain = new GainNode(ctx, { gain: this.masterVolume })
+      const gain = new GainNode(ctx, { gain: this.localVolume })
       node.connect(gain)
       gain.connect(ctx.destination)
       this.gain = gain
@@ -124,6 +128,9 @@ export class LocalMonitor {
       this.ctx = ctx
       this.node = node
       await ctx.resume()
+      // Re-target the chosen output device on (re)start. The monitor stops/starts on every
+      // Discord join/leave, so a device picked once must be re-applied each time.
+      if (this.sinkId) await this.applySink(ctx)
     } catch (err) {
       console.error('[monitor] failed to start:', err)
     } finally {
@@ -140,11 +147,31 @@ export class LocalMonitor {
     this.gain = null
   }
 
-  /** Master volume for local playback (0..1), ramped to avoid zipper noise. */
+  /** Volume for local playback (0..1), independent of the Discord send level. Ramped to avoid zipper noise. */
   setVolume(v: number): void {
-    this.masterVolume = Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0
+    this.localVolume = Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0
     if (this.gain && this.ctx) {
-      this.gain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.015)
+      this.gain.gain.setTargetAtTime(this.localVolume, this.ctx.currentTime, 0.015)
+    }
+  }
+
+  /**
+   * Choose which output device the local monitor plays to ('' = system default).
+   * Applied immediately if running, and re-applied on the next start(). deviceId strings
+   * can rotate across reboots/unplugs, so a stale id just falls back to default (the catch).
+   */
+  async setSinkId(deviceId: string): Promise<void> {
+    this.sinkId = deviceId || ''
+    if (this.ctx) await this.applySink(this.ctx)
+  }
+
+  private async applySink(ctx: AudioContext): Promise<void> {
+    const c = ctx as SinkCapableContext
+    if (typeof c.setSinkId !== 'function') return
+    try {
+      await c.setSinkId(this.sinkId)
+    } catch (err) {
+      console.warn('[monitor] setSinkId failed (device gone?) — falling back to default:', err)
     }
   }
 

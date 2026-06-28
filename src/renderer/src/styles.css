@@ -876,6 +876,12 @@ textarea {
 .sfx .sfx-duck.on {
   color: var(--nord13);
 }
+.sfx .sfx-gain {
+  width: 52px;
+  flex: 0 0 auto;
+  margin: 0 2px;
+  cursor: pointer;
+}
 
 /* ---- Playlists / scenes sidebar ---- */
 .playlist-row {

@@ -18,6 +18,8 @@ export function TransportBar(): JSX.Element {
   const setDuck = useStore((s) => s.setDuck)
   const seekTo = useStore((s) => s.seekTo)
   const setMasterVolume = useStore((s) => s.setMasterVolume)
+  const monitorVolume = useStore((s) => s.monitorVolume)
+  const setMonitorVolume = useStore((s) => s.setMonitorVolume)
 
   const current = queue.find((q) => q.uid === currentUid)?.song
   const duration = current?.duration ?? player.durationSec ?? 0
@@ -164,7 +166,20 @@ export function TransportBar(): JSX.Element {
           <Icon name={monitorEnabled ? 'headphones' : 'volume-mute'} size={16} />{' '}
           <span className="ctl-label">Monitor</span>
         </button>
-        <span className="vol-icon" title="Master volume" aria-hidden="true">
+        <span className="vol-icon" title="Local monitor volume — what you hear on this machine" aria-hidden="true">
+          <Icon name="headphones" size={16} />
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          aria-label="Local monitor volume"
+          title="Local monitor volume — what you hear on this machine"
+          value={monitorVolume}
+          onChange={(e) => setMonitorVolume(parseFloat(e.target.value))}
+        />
+        <span className="vol-icon" title="Discord send volume — what remote players hear" aria-hidden="true">
           <Icon name="volume" size={16} />
         </span>
         <input
@@ -172,7 +187,8 @@ export function TransportBar(): JSX.Element {
           min={0}
           max={1}
           step={0.01}
-          aria-label="Master volume"
+          aria-label="Discord send volume"
+          title="Discord send volume — what remote players hear"
           value={player.volume}
           onChange={(e) => setMasterVolume(parseFloat(e.target.value))}
         />

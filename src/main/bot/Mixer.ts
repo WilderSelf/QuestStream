@@ -1,5 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { isAbsolute } from 'node:path'
+import { performance } from 'node:perf_hooks'
 import { ytDlp, cookieArgs, FFMPEG, YT_CLIENT_ARGS, SPAWN_ENV } from './binaries'
 import { buildAfChain } from './effects'
 import { clamp01 } from '../../shared/num'
@@ -435,13 +436,29 @@ export class Mixer {
   onFrame: ((frame: Buffer) => void) | null = null
   private inputs = new Map<string, MixerInput>()
   private acc = new Int32Array(INT16_PER_FRAME)
+  // Frame-cadence diagnostics (A3): the AudioPlayer pulls a frame every ~20ms. A pull that
+  // arrives much later means the producer/event loop fell behind — the root cause of the
+  // "audio slows / pitch-shifts under CPU load" class of bug. We count late pulls so it's
+  // diagnosable instead of an invisible artifact.
+  private lastFrameAt = 0
+  private underruns = 0
+  private framesProduced = 0
 
   get size(): number {
     return this.inputs.size
   }
 
+  /** Frame-cadence diagnostics — see the underruns/lastFrameAt fields. */
+  getStats(): { framesProduced: number; underruns: number } {
+    return { framesProduced: this.framesProduced, underruns: this.underruns }
+  }
+
   /** Advance every input by one 20ms frame and return the mixed PCM (silence if idle). */
   produceFrame(): Buffer {
+    const now = performance.now()
+    if (this.lastFrameAt && now - this.lastFrameAt > FRAME_MS * 2) this.underruns++
+    this.lastFrameAt = now
+    this.framesProduced++
     this.acc.fill(0)
     for (const input of this.inputs.values()) {
       if (input.done) {

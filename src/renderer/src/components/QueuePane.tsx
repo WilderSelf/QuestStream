@@ -272,6 +272,17 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
       >
         <Icon name="volume-low" size={16} />
       </button>
+      <input
+        type="range"
+        className="sfx-gain"
+        min={0}
+        max={1}
+        step={0.05}
+        value={item.gain ?? 1}
+        title="Sound volume"
+        aria-label={`Volume for ${song?.title ?? 'sound'}`}
+        onChange={(e) => void window.api.soundboard.update(item.id, { gain: parseFloat(e.target.value) })}
+      />
       <button
         className="remove-btn"
         title="Remove"

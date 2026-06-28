@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, session } from 'electron'
 import { join } from 'node:path'
 import { IPC } from '../shared/ipc'
 import type { AppNotice } from '../shared/types'
@@ -21,6 +21,17 @@ let mainWindow: BrowserWindow | null = null
 let bot: DiscordBot | null = null
 let store: LibraryStore | null = null
 let ipcHandle: { dispose: () => void } | null = null
+
+// Silently allow ONLY the `media` permission so the renderer's enumerateDevices() exposes
+// real output-device NAMES for the "Local output device" picker. Chromium hides device labels
+// until a media permission is granted; the app never records audio — this just unlocks the
+// labels without a visible prompt. Every other permission is denied. The window is locked to
+// our own origin (see the will-navigate guard), so remote content can't reach this.
+function setupMediaPermissions(): void {
+  const ses = session.defaultSession
+  ses.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'media'))
+  ses.setPermissionCheckHandler((_wc, permission) => permission === 'media')
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -107,6 +118,7 @@ app.whenReady().then(() => {
   // Apply the saved yt-dlp cookie source (if any) before the first import/playback.
   setCookieArgs(buildCookieArgs({ mode: config.cookiesMode, browser: config.cookiesBrowser, userData }))
   bot = new DiscordBot(mediaDir)
+  setupMediaPermissions() // unlock output-device labels for the local-output picker (media only)
 
   ipcHandle = registerIpc({
     store,
