@@ -21,7 +21,8 @@
     "pack:icon": "node scripts/gen-icon.mjs",
     "pack:binaries": "bash scripts/fetch-binaries.sh",
     "pack:appimage": "npm run build && electron-builder --linux AppImage",
-    "pack:flatpak": "npm run build && electron-builder --linux flatpak"
+    "pack:flatpak": "npm run build && electron-builder --linux flatpak",
+    "release": "bash scripts/release.sh"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",

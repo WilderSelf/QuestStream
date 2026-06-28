@@ -55,14 +55,33 @@ each release uploads **both** the `.AppImage` and `latest-linux.yml` as release 
 
 ### Cutting a release
 
-1. Bump `version` in `package.json` (the in-app version comes from it via `app.getVersion()`).
-2. Pin the bundled-tool versions for a reproducible build:
-   `YTDLP_VERSION=2025.xx.xx DENO_VERSION=v2.x.x FFMPEG_VERSION=7.0.2 npm run pack:binaries`
-3. `npm run typecheck && npm test`, then `npm run pack:appimage`.
-4. Smoke-test the AppImage on a clean machine (first-run disclaimer → add-to-menu → local +
-   URL import → cookies file → scene → soundboard/duck → DSP → pack import → Discord voice).
-5. Create the GitHub Release for the tag and **upload both `dist/QuestStream-<v>-x86_64.AppImage`
-   and `dist/latest-linux.yml`** (the second is what makes auto-update work).
+One command does the whole thing — bump + gate + build + upload **both** assets to a GitHub
+Release (the upload is electron-builder's, so the `.AppImage` and `latest-linux.yml` are always
+in sync — uploading only the AppImage silently breaks auto-update):
+
+Call the script directly — `npm run` swallows flags like `--dry-run` for itself, so either
+invoke `./scripts/release.sh` or put your args after `npm run release --`:
+
+```bash
+export GH_TOKEN="$(gh auth token)"      # or a PAT with repo scope
+./scripts/release.sh 0.1.1              # explicit version…
+./scripts/release.sh patch             # …or bump patch/minor/major from package.json
+./scripts/release.sh 0.1.1 --dry-run   # build + show what would upload, publish nothing (no token needed)
+./scripts/release.sh 0.1.1 --draft     # upload as a draft (won't auto-update until published)
+npm run release -- 0.1.1 --dry-run     # equivalent via npm — note the `--`
+```
+
+See `scripts/release.sh` for all flags. It refuses on a dirty tree, runs typecheck + tests
+before building, and creates + pushes the `vX.Y.Z` commit/tag right before the upload so the
+release points at the right commit. `--dry-run` is read-only (reverts the version bump).
+
+To pin the bundled-tool versions for a reproducible build, run `pack:binaries` with the env
+vars first (the release script reuses an existing `bin/` and won't re-fetch):
+`YTDLP_VERSION=2025.xx.xx DENO_VERSION=v2.x.x FFMPEG_VERSION=7.0.2 npm run pack:binaries`
+
+**Testing auto-update end-to-end** needs two releases at increasing versions: cut `0.1.0`,
+install and run that build, then cut `0.1.1` — the running app detects it within a minute
+(autoDownload is on; see `src/main/appUpdater.ts`) and offers to install.
 
 ---
 
