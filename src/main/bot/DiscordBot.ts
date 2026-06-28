@@ -22,6 +22,7 @@ import type {
   VoiceChannelInfo,
   BotStatus,
   PlayerStatus,
+  AmbienceLayerStatus,
   Song,
   AppNotice
 } from '../../shared/types'
@@ -30,6 +31,7 @@ export declare interface DiscordBot {
   on(event: 'botStatus', l: (s: BotStatus) => void): this
   on(event: 'playerStatus', l: (s: PlayerStatus) => void): this
   on(event: 'ended', l: (songId: string) => void): this
+  on(event: 'ambienceStatus', l: (layers: AmbienceLayerStatus[]) => void): this
   on(event: 'monitorPcm', l: (pcm: Buffer) => void): this
   on(event: 'notice', l: (n: AppNotice) => void): this
 }
@@ -43,6 +45,8 @@ interface RandomLayer {
   timer: NodeJS.Timeout | null
   counter: number
   activeShots: Set<string>
+  delayMs: number // the currently-scheduled interval until the next shot
+  nextFireAt: number // Date.now() timestamp the next shot is due (drives the countdown bar)
 }
 
 // Cap how many one-shots a single random layer may have playing at once, so a short
@@ -82,6 +86,9 @@ export class DiscordBot extends EventEmitter {
   // it does NOT drive mixer frames (that's the AudioPlayer's job; see §5.3). Driving
   // frames off a timer is the forbidden thing; scheduling a trigger is fine.
   private randomLayers = new Map<string, RandomLayer>()
+  // Slot ids of the looping ambience layers, so the heartbeat can report each one's
+  // loop position (the mixer input is keyed `amb:<slotId>`).
+  private loopSlots = new Set<string>()
 
   /** @param mediaDir absolute path of the app's local-media folder; local songs must live under it. */
   constructor(private readonly mediaDir: string) {
@@ -521,6 +528,7 @@ export class DiscordBot extends EventEmitter {
       return
     }
     this.clearRandomLayer(slotId) // switching a slot from random → loop
+    this.loopSlots.add(slotId)
     this.mixer.addInput(`amb:${slotId}`, song, {
       gain: clamp01(volume),
       fadeInMs: 800,
@@ -548,6 +556,7 @@ export class DiscordBot extends EventEmitter {
 
   stopAmbience(slotId: string): void {
     this.mixer?.removeInput(`amb:${slotId}`, 600)
+    this.loopSlots.delete(slotId)
     this.clearRandomLayer(slotId)
   }
 
@@ -565,6 +574,7 @@ export class DiscordBot extends EventEmitter {
       return
     }
     this.mixer.removeInput(`amb:${slotId}`, 200) // a slot is either loop OR random, never both
+    this.loopSlots.delete(slotId)
     this.clearRandomLayer(slotId)
     this.randomLayers.set(slotId, {
       songs: playable,
@@ -574,7 +584,9 @@ export class DiscordBot extends EventEmitter {
       paused: false,
       timer: null,
       counter: 0,
-      activeShots: new Set()
+      activeShots: new Set(),
+      delayMs: 0,
+      nextFireAt: 0
     })
     this.scheduleRandom(slotId)
   }
@@ -582,6 +594,9 @@ export class DiscordBot extends EventEmitter {
   private scheduleRandom(slotId: string): void {
     const layer = this.randomLayers.get(slotId)
     if (!layer || layer.paused) return
+    const delay = pickNextDelay(layer.minSec, layer.maxSec)
+    layer.delayMs = delay
+    layer.nextFireAt = Date.now() + delay
     layer.timer = setTimeout(() => {
       const l = this.randomLayers.get(slotId)
       if (!l || l.paused) return
@@ -598,7 +613,7 @@ export class DiscordBot extends EventEmitter {
         })
       }
       this.scheduleRandom(slotId) // queue the next shot
-    }, pickNextDelay(layer.minSec, layer.maxSec))
+    }, delay)
   }
 
   private cancelRandomTimer(layer: RandomLayer): void {
@@ -658,8 +673,13 @@ export class DiscordBot extends EventEmitter {
     if (!advanced) this.emit('ended', songId)
   }
 
-  /** 500ms heartbeat: report position and trigger a crossfade near track end. */
+  /** 500ms heartbeat: report music + ambience position, trigger a crossfade near track end. */
   private tick(): void {
+    this.tickMusic()
+    this.emitAmbienceStatus()
+  }
+
+  private tickMusic(): void {
     if (!this.currentMusicId || !this.currentSong) return
     const input = this.mixer.getInput(this.currentMusicId)
     if (!input) return
@@ -676,6 +696,28 @@ export class DiscordBot extends EventEmitter {
       }
     }
     this.emitPlayerStatus()
+  }
+
+  /**
+   * Emit each live ambience layer's progress for its card's bar. Loop layers report the
+   * mixer input's loop position; random layers report a countdown to the next one-shot
+   * (elapsed of the chosen interval). Only emits when at least one layer is live, so an
+   * idle mixer stays quiet.
+   */
+  private emitAmbienceStatus(): void {
+    const layers: AmbienceLayerStatus[] = []
+    for (const slotId of this.loopSlots) {
+      const input = this.mixer.getInput(`amb:${slotId}`)
+      if (input) layers.push({ slotId, positionSec: input.positionSec, durationSec: input.song.duration })
+    }
+    const now = Date.now()
+    for (const [slotId, layer] of this.randomLayers) {
+      const total = layer.delayMs / 1000
+      const remaining = Math.max(0, (layer.nextFireAt - now) / 1000)
+      const elapsed = layer.paused ? 0 : Math.max(0, total - remaining)
+      layers.push({ slotId, positionSec: elapsed, durationSec: total })
+    }
+    if (layers.length) this.emit('ambienceStatus', layers)
   }
 
   private emitPlayerStatus(state?: PlayerStatus['state']): void {
@@ -701,6 +743,7 @@ export class DiscordBot extends EventEmitter {
   dispose(): void {
     if (this.statusTimer) clearInterval(this.statusTimer)
     for (const slotId of [...this.randomLayers.keys()]) this.clearRandomLayer(slotId)
+    this.loopSlots.clear()
     this.player.stop(true)
     this.mixSource?.push(null)
     this.mixer.destroy()

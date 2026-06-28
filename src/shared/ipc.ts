@@ -10,6 +10,7 @@ import type {
   VoiceChannelInfo,
   BotStatus,
   PlayerStatus,
+  AmbienceLayerStatus,
   Song,
   AppNotice,
   RemoteCommand,
@@ -111,6 +112,7 @@ export const IPC = {
   ambienceStop: 'ambience:stop',
   ambienceSetVolume: 'ambience:setVolume',
   ambienceSetPaused: 'ambience:setPaused',
+  ambienceStatus: 'ambience:status', // main -> renderer event (per-layer progress heartbeat)
 
   // local monitoring
   monitorEnable: 'monitor:enable',
@@ -135,6 +137,7 @@ export const EVENT_CHANNELS: readonly string[] = [
   IPC.discordStatus,
   IPC.playerStatus,
   IPC.playerEnded,
+  IPC.ambienceStatus,
   IPC.monitorPcm,
   IPC.remoteCommand,
   IPC.notice,
@@ -229,6 +232,7 @@ export interface RendererApi {
     stop(slotId: string): Promise<void>
     setVolume(slotId: string, volume: number): Promise<void>
     setPaused(slotId: string, paused: boolean): Promise<void>
+    onStatus(cb: (layers: AmbienceLayerStatus[]) => void): () => void
   }
   monitor: {
     enable(on: boolean): Promise<void>

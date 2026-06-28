@@ -30,6 +30,7 @@ export function registerIpc(deps: Deps): { dispose: () => void } {
   ctx.bot.on('botStatus', (s) => ctx.send(IPC.discordStatus, s))
   ctx.bot.on('playerStatus', (s) => ctx.send(IPC.playerStatus, s))
   ctx.bot.on('ended', (songId) => ctx.send(IPC.playerEnded, songId))
+  ctx.bot.on('ambienceStatus', (layers) => ctx.send(IPC.ambienceStatus, layers))
   ctx.bot.on('monitorPcm', (pcm) => ctx.send(IPC.monitorPcm, pcm))
   ctx.bot.on('notice', (n) => ctx.send(IPC.notice, n))
 

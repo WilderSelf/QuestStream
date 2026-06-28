@@ -9,6 +9,7 @@ import type {
   VoiceChannelInfo,
   ImportProgress,
   AmbienceMode,
+  AmbienceLayerStatus,
   RemoteCommand,
   RemoteState,
   ItemKind,
@@ -16,9 +17,19 @@ import type {
 } from '@shared/types'
 import { defaultGroupBy } from '@shared/taxonomy'
 
+/**
+ * Per-track loop, set on the queue card:
+ * - 'off'  — play through, then advance (default).
+ * - 'on'   — loop this track forever (until changed or skipped).
+ * - 'once' — on natural end, replay once more, then continue to the next track.
+ * Takes precedence over the global `repeat` mode when a track ends on its own.
+ */
+export type LoopMode = 'off' | 'on' | 'once'
+
 export interface QueueItem {
   uid: string
   song: Song
+  loop?: LoopMode // undefined → 'off'
 }
 
 export type RepeatMode = 'off' | 'all' | 'one'
@@ -161,6 +172,7 @@ interface State {
   importWizardSource: 'url' | 'files' // which source the wizard opens on
 
   ambience: AmbienceSlot[]
+  ambienceProgress: Record<string, { positionSec: number; durationSec: number }> // per-slot, from the heartbeat
   musicVolume: number
   monitorEnabled: boolean
   monitorVolume: number // independent local-monitor level (the Discord SEND level lives in player.volume)
@@ -211,6 +223,7 @@ interface State {
 
   enqueueSongs: (songs: Song[], atIndex?: number) => void
   removeFromQueue: (uid: string) => void
+  cycleQueueLoop: (uid: string) => void
   reorderQueue: (from: number, to: number) => void
   clearQueue: () => void
   loadPlaylist: (playlistId: string) => void
@@ -294,6 +307,7 @@ export const useStore = create<State>((set, get) => ({
   importWizardUrl: '',
   importWizardSource: 'url',
   ambience: [],
+  ambienceProgress: {},
   musicVolume: 1,
   monitorEnabled: false,
   monitorVolume: ((): number => {
@@ -356,6 +370,11 @@ export const useStore = create<State>((set, get) => ({
       if (s.state === 'playing') set({ playbackFailures: 0, suggestYtdlpUpdate: false })
     })
     window.api.player.onEnded(() => void get().playNext(true))
+    window.api.ambience.onStatus((layers: AmbienceLayerStatus[]) => {
+      const progress: Record<string, { positionSec: number; durationSec: number }> = {}
+      for (const l of layers) progress[l.slotId] = { positionSec: l.positionSec, durationSec: l.durationSec }
+      set({ ambienceProgress: progress })
+    })
     window.api.monitor.onPcm((pcm) => {
       if (get().monitorEnabled) localMonitor.feed(pcm)
     })
@@ -506,6 +525,17 @@ export const useStore = create<State>((set, get) => ({
     }))
   },
 
+  // Per-track loop: off → on (loop forever) → once (loop one more time) → off.
+  cycleQueueLoop: (uid) =>
+    set((st) => ({
+      queue: st.queue.map((q) => {
+        if (q.uid !== uid) return q
+        const cur = q.loop ?? 'off'
+        const next: LoopMode = cur === 'off' ? 'on' : cur === 'on' ? 'once' : 'off'
+        return { ...q, loop: next }
+      })
+    })),
+
   selectQueueItem: (uid) => {
     set({ selectedUid: uid })
     // Warm up the selected track so hitting play is instant.
@@ -584,6 +614,24 @@ export const useStore = create<State>((set, get) => ({
   playNext: async (auto = false) => {
     const { queue, currentUid, shuffle, repeat } = get()
     if (queue.length === 0) return
+
+    // Per-track loop wins over the global repeat mode, but only on a natural finish.
+    if (auto && currentUid) {
+      const cur = queue.find((q) => q.uid === currentUid)
+      const loop = cur?.loop ?? 'off'
+      if (loop === 'on') {
+        await get().playUid(currentUid)
+        return
+      }
+      if (loop === 'once') {
+        // Consume the one-shot loop, then replay; the next natural end advances normally.
+        set((st) => ({
+          queue: st.queue.map((q) => (q.uid === currentUid ? { ...q, loop: 'off' as LoopMode } : q))
+        }))
+        await get().playUid(currentUid)
+        return
+      }
+    }
 
     // Repeat-one only auto-repeats when a track finishes on its own.
     if (auto && repeat === 'one' && currentUid) {

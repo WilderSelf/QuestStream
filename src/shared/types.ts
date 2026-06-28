@@ -147,6 +147,19 @@ export interface PlayerStatus {
   volume: number // 0..1
 }
 
+/**
+ * Per-layer ambience progress, emitted on the heartbeat so each layer card can draw a
+ * progress bar that mirrors the music transport:
+ * - 'loop'   layers: position within the current loop (resets each cycle).
+ * - 'random' layers: a countdown to the next one-shot — positionSec rises toward
+ *            durationSec (the chosen interval), then resets when the shot fires.
+ */
+export interface AmbienceLayerStatus {
+  slotId: string
+  positionSec: number
+  durationSec: number
+}
+
 // ---- App notices (main → renderer toast) ----
 export interface AppNotice {
   message: string

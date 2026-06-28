@@ -85,7 +85,8 @@ const api: RendererApi = {
       ipcRenderer.invoke(IPC.ambiencePlayRandom, slotId, songs, volume, minSec, maxSec),
     stop: (slotId) => ipcRenderer.invoke(IPC.ambienceStop, slotId),
     setVolume: (slotId, volume) => ipcRenderer.invoke(IPC.ambienceSetVolume, slotId, volume),
-    setPaused: (slotId, paused) => ipcRenderer.invoke(IPC.ambienceSetPaused, slotId, paused)
+    setPaused: (slotId, paused) => ipcRenderer.invoke(IPC.ambienceSetPaused, slotId, paused),
+    onStatus: (cb) => subscribe(IPC.ambienceStatus, cb)
   },
   monitor: {
     enable: (on) => ipcRenderer.invoke(IPC.monitorEnable, on),

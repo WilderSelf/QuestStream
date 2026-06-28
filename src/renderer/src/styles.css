@@ -627,6 +627,33 @@ textarea {
 .play-btn:hover {
   color: var(--nord8);
 }
+/* Per-track loop toggle: dim when off, accent when looping; "1" badge = loop-once. */
+.loop-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  opacity: 0.55;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+.loop-btn:hover,
+.loop-btn:focus-visible {
+  opacity: 1;
+  color: var(--text);
+}
+.loop-btn.on {
+  opacity: 1;
+  color: var(--accent);
+}
+.loop-btn .loop-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
+}
 .row:hover .remove-btn,
 .row:focus-within .remove-btn,
 .queue-item:hover .remove-btn,
@@ -1203,6 +1230,31 @@ textarea {
   bottom: 0;
   border-radius: var(--radius-pill);
   background: var(--accent);
+}
+/* Compact progress bars on the queue/ambience cards — mirror the transport seek bar. */
+.row-seek,
+.amb-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: 3px;
+}
+.row-seek .bar,
+.amb-progress .bar {
+  height: 4px;
+}
+.row-seek .time,
+.amb-progress .time {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* The ambience bar reports progress, it isn't a seek control. */
+.amb-progress .bar {
+  cursor: default;
 }
 .volume {
   display: flex;

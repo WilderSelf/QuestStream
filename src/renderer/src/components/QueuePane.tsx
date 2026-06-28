@@ -10,14 +10,23 @@ import type { SoundboardItem } from '@shared/types'
 import { useStore, fmtTime, type QueueItem, type AmbienceSlot } from '../store'
 import { Icon } from './Icon'
 
+const LOOP_LABEL: Record<NonNullable<QueueItem['loop']>, string> = {
+  off: 'Loop: off',
+  on: 'Loop this track',
+  once: 'Loop once more, then continue'
+}
+
 function QueueRow({ item }: { item: QueueItem }): JSX.Element {
   const currentUid = useStore((s) => s.currentUid)
   const selectedUid = useStore((s) => s.selectedUid)
   const playerState = useStore((s) => s.player.state)
+  const positionSec = useStore((s) => s.player.positionSec)
   const playUid = useStore((s) => s.playUid)
   const togglePlayUid = useStore((s) => s.togglePlayUid)
   const selectQueueItem = useStore((s) => s.selectQueueItem)
   const removeFromQueue = useStore((s) => s.removeFromQueue)
+  const cycleQueueLoop = useStore((s) => s.cycleQueueLoop)
+  const seekTo = useStore((s) => s.seekTo)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.uid
@@ -26,10 +35,38 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
   const isSelected = selectedUid === item.uid
   // 'buffering' counts as active (track is starting) — matches the transport bar.
   const isActive = isCurrent && (playerState === 'playing' || playerState === 'buffering')
+  const loop = item.loop ?? 'off'
+  const duration = item.song.duration
+  const pct = isCurrent && duration > 0 ? Math.min(100, (positionSec / duration) * 100) : 0
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1
+  }
+
+  // Seek by clicking the current card's bar — mirrors the transport. Stop propagation so the
+  // click/double-click doesn't also re-select or restart the track.
+  function seek(e: React.MouseEvent<HTMLDivElement>): void {
+    if (!isCurrent || duration <= 0) return
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+    void seekTo(frac * duration)
+  }
+  function seekKey(e: React.KeyboardEvent<HTMLDivElement>): void {
+    if (!isCurrent || duration <= 0) return
+    const step =
+      e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -5 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 5 : 0
+    if (step) {
+      e.preventDefault()
+      void seekTo(Math.min(duration, Math.max(0, positionSec + step)))
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      void seekTo(0)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      void seekTo(duration)
+    }
   }
 
   return (
@@ -64,8 +101,42 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
       ) : null}
       <div className="title">
         <div className="title">{item.song.title}</div>
-        <div className="sub">{fmtTime(item.song.duration)}</div>
+        {isCurrent ? (
+          <div className="row-seek" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+            <span className="time">{fmtTime(positionSec)}</span>
+            <div
+              className="bar"
+              role="slider"
+              tabIndex={0}
+              aria-label="Seek"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(duration)}
+              aria-valuenow={Math.round(positionSec)}
+              aria-valuetext={`${fmtTime(positionSec)} of ${fmtTime(duration)}`}
+              onClick={seek}
+              onKeyDown={seekKey}
+            >
+              <div className="fill" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="time">{fmtTime(duration)}</span>
+          </div>
+        ) : (
+          <div className="sub">{fmtTime(duration)}</div>
+        )}
       </div>
+      <button
+        className={`loop-btn ${loop !== 'off' ? 'on' : ''}`}
+        title={LOOP_LABEL[loop]}
+        aria-label={LOOP_LABEL[loop]}
+        aria-pressed={loop !== 'off'}
+        onClick={(e) => {
+          e.stopPropagation()
+          cycleQueueLoop(item.uid)
+        }}
+      >
+        <Icon name="repeat" size={14} />
+        {loop === 'once' && <sup className="loop-badge">1</sup>}
+      </button>
       <button
         className="remove-btn"
         title="Remove"
@@ -87,9 +158,14 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
   // A per-slot drop target: dragging a song onto a layer adds it to that layer's
   // random pool (only meaningful in random mode, but harmless otherwise).
   const { setNodeRef, isOver } = useDroppable({ id: `ambslot:${slot.id}` })
+  const progress = useStore((s) => s.ambienceProgress[slot.id])
   const random = slot.mode === 'random'
   const playing = slot.playing
   const poolCount = slot.pool.length
+  // loop layers report loop position; random layers report a countdown to the next shot.
+  const dur = progress?.durationSec ?? 0
+  const pos = progress?.positionSec ?? 0
+  const pct = dur > 0 ? Math.min(100, (pos / dur) * 100) : 0
   return (
     <div
       ref={setNodeRef}
@@ -183,6 +259,19 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
           <span className="amb-mode-hint">Continuous loop</span>
         )}
       </div>
+      {playing && dur > 0 && (
+        <div
+          className="amb-progress"
+          title={random ? 'Time until the next random sound' : 'Loop position'}
+        >
+          <div className="bar" aria-hidden="true">
+            <div className="fill" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="time">
+            {random ? `next ${fmtTime(Math.max(0, dur - pos))}` : fmtTime(pos)}
+          </span>
+        </div>
+      )}
       {random && <div className="amb-card-hint">Drag tracks here to grow the pool.</div>}
     </div>
   )
