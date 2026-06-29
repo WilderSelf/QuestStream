@@ -627,14 +627,19 @@ textarea {
 .play-btn:hover {
   color: var(--nord8);
 }
-/* Per-track loop toggle: dim when off, accent when looping; "1" badge = loop-once. */
+/* Per-track loop toggle. Off = a dim, icon-only affordance. When looping it adopts the
+   amber "toggled-on" language used everywhere else (shuffle/repeat) and grows a label
+   pill — so a track set to repeat reads unmistakably in the Now-Playing list. */
 .loop-btn {
-  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
   color: var(--text-dim);
   opacity: 0.55;
-  padding: 4px 6px;
+  padding: 3px 6px;
   flex-shrink: 0;
 }
 .loop-btn:hover,
@@ -644,15 +649,17 @@ textarea {
 }
 .loop-btn.on {
   opacity: 1;
-  color: var(--accent);
+  color: var(--active);
+  background: var(--active-tint);
+  border-color: var(--active);
+  padding-right: 8px;
 }
-.loop-btn .loop-badge {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  font-size: var(--text-xs);
+.loop-btn .loop-text {
+  font-size: var(--text-2xs);
   font-weight: 700;
-  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 .row:hover .remove-btn,
 .row:focus-within .remove-btn,

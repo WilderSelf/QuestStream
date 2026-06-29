@@ -135,7 +135,8 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
         }}
       >
         <Icon name="repeat" size={14} />
-        {loop === 'once' && <sup className="loop-badge">1</sup>}
+        {loop === 'on' && <span className="loop-text">Loop</span>}
+        {loop === 'once' && <span className="loop-text">Loop 1×</span>}
       </button>
       <button
         className="remove-btn"
