@@ -112,6 +112,21 @@ export function buildPlaylistPack(snap: LibrarySnapshot, playlistId: string): Pl
 // Coerce an untrusted value through the shared clamp (non-numbers → 0, via Number.isFinite).
 const clampVol = (n: unknown): number => clamp01(n as number)
 
+// Bounds on untrusted pack input. A shared .questpack is attacker-controllable, and the 8 MB
+// file cap alone still allows tens of thousands of entries / multi-MB strings — enough to block
+// the main thread for ~14s on import and bloat library.json permanently. These caps make a
+// hostile pack cheap to reject while staying far above any realistic scene/playlist.
+const MAX_PACK_SONGS = 5000 // songs carried by one pack (reject above — fail fast, no big alloc)
+const MAX_PACK_SONGIDS = 10000 // id reference list length (deduped to songs on import)
+const MAX_PACK_AMBIENCE = 64 // ambience layers in a scene
+const MAX_PACK_POOL = 256 // random-pool entries per layer
+const MAX_PACK_TAGS = 32 // matches LibraryStore.normalizeTags
+const MAX_PACK_STR = 2048 // per-string field cap (titles/urls/names) — far above any real value
+
+/** Coerce to a string and bound its length (an untrusted field could be multi-MB). */
+const clampStr = (v: unknown, fallback: string): string =>
+  typeof v === 'string' ? v.slice(0, MAX_PACK_STR) : fallback
+
 function validatePackSong(raw: unknown): PackSong {
   if (!raw || typeof raw !== 'object') throw new Error('pack: invalid song entry')
   const r = raw as Record<string, unknown>
@@ -119,16 +134,18 @@ function validatePackSong(raw: unknown): PackSong {
   const st = r.sourceType
   const k = r.kind
   return {
-    videoId: r.videoId,
-    url: r.url,
-    title: typeof r.title === 'string' ? r.title : 'Untitled',
-    artistName: typeof r.artistName === 'string' ? r.artistName : 'Unknown Artist',
-    albumTitle: typeof r.albumTitle === 'string' ? r.albumTitle : 'Singles',
+    videoId: r.videoId.slice(0, MAX_PACK_STR),
+    url: r.url.slice(0, MAX_PACK_STR),
+    title: clampStr(r.title, 'Untitled'),
+    artistName: clampStr(r.artistName, 'Unknown Artist'),
+    albumTitle: clampStr(r.albumTitle, 'Singles'),
     duration: typeof r.duration === 'number' && Number.isFinite(r.duration) ? r.duration : 0,
-    thumbnail: typeof r.thumbnail === 'string' ? r.thumbnail : undefined,
-    tags: Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === 'string') : [],
+    thumbnail: typeof r.thumbnail === 'string' ? r.thumbnail.slice(0, MAX_PACK_STR) : undefined,
+    tags: Array.isArray(r.tags)
+      ? r.tags.filter((t): t is string => typeof t === 'string').slice(0, MAX_PACK_TAGS)
+      : [],
     sourceType: st === 'local' || st === 'url' || st === 'youtube' ? st : 'youtube',
-    effect: typeof r.effect === 'string' ? r.effect : undefined,
+    effect: typeof r.effect === 'string' ? r.effect.slice(0, MAX_PACK_STR) : undefined,
     kind: k === 'ambience' || k === 'sfx' || k === 'track' ? k : 'track'
   }
 }
@@ -142,21 +159,27 @@ export function validatePack(raw: unknown): Pack {
   const r = raw as Record<string, unknown>
   if (r.kind !== 'scene' && r.kind !== 'playlist') throw new Error('Unknown pack type')
   if (!Array.isArray(r.songs)) throw new Error('Pack has no songs')
+  if (r.songs.length > MAX_PACK_SONGS)
+    throw new Error(`Pack has too many songs (${r.songs.length}); the limit is ${MAX_PACK_SONGS}`)
   const songs = r.songs.map(validatePackSong)
-  const songIds = Array.isArray(r.songIds) ? r.songIds.filter((s): s is string => typeof s === 'string') : []
+  const songIds = Array.isArray(r.songIds)
+    ? r.songIds.filter((s): s is string => typeof s === 'string').slice(0, MAX_PACK_SONGIDS)
+    : []
   const name = typeof r.name === 'string' && r.name.trim() ? r.name : 'Imported'
   if (r.kind === 'playlist') {
     return { kind: 'playlist', version: PACK_VERSION, name, songIds, songs }
   }
-  const ambienceRaw = Array.isArray(r.ambience) ? r.ambience : []
+  const ambienceRaw = Array.isArray(r.ambience) ? r.ambience.slice(0, MAX_PACK_AMBIENCE) : []
   const ambience: SceneAmbience[] = ambienceRaw
     .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')
     .map((a) => ({
-      songId: typeof a.songId === 'string' ? a.songId : '',
+      songId: typeof a.songId === 'string' ? a.songId.slice(0, MAX_PACK_STR) : '',
       volume: clampVol(a.volume),
       playing: a.playing !== false,
       mode: (a.mode === 'random' ? 'random' : 'loop') as AmbienceMode,
-      pool: Array.isArray(a.pool) ? a.pool.filter((p): p is string => typeof p === 'string') : undefined,
+      pool: Array.isArray(a.pool)
+        ? a.pool.filter((p): p is string => typeof p === 'string').slice(0, MAX_PACK_POOL)
+        : undefined,
       minIntervalSec: typeof a.minIntervalSec === 'number' ? a.minIntervalSec : undefined,
       maxIntervalSec: typeof a.maxIntervalSec === 'number' ? a.maxIntervalSec : undefined
     }))

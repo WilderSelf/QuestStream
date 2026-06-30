@@ -120,6 +120,52 @@ test('validatePack rejects malformed input', () => {
   assert.throws(() => validatePack({ kind: 'playlist', songs: [{ title: 'no videoId' }] }))
 })
 
+test('validatePack bounds hostile input (DoS caps)', () => {
+  // Too many songs → rejected fast (before building anything large).
+  assert.throws(
+    () => validatePack({ kind: 'playlist', name: 'X', songIds: [], songs: Array(5001).fill({ videoId: 'v', url: 'https://y' }) }),
+    /too many songs/
+  )
+
+  // Within the song cap, the per-entry lists/strings are truncated, not rejected.
+  const huge = 'x'.repeat(5000)
+  const pack = validatePack({
+    kind: 'scene',
+    name: 'X',
+    songIds: Array.from({ length: 20000 }, (_, i) => `id${i}`),
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: [
+      { songId: 'v1', volume: 1, pool: Array.from({ length: 10000 }, (_, i) => `p${i}`) },
+      ...Array.from({ length: 200 }, () => ({ songId: 'v1', volume: 1 })) // 201 layers
+    ],
+    songs: [{ videoId: huge, url: huge, title: huge, artistName: huge, tags: Array(1000).fill('t') }]
+  }) as Extract<ReturnType<typeof validatePack>, { kind: 'scene' }>
+
+  assert.equal(pack.songIds.length, 10000) // MAX_PACK_SONGIDS
+  assert.ok(pack.ambience.length <= 64) // MAX_PACK_AMBIENCE
+  assert.equal(pack.ambience[0].pool!.length, 256) // MAX_PACK_POOL
+  assert.equal(pack.songs[0].videoId.length, 2048) // MAX_PACK_STR
+  assert.equal(pack.songs[0].title.length, 2048)
+  assert.equal(pack.songs[0].tags.length, 32) // MAX_PACK_TAGS
+})
+
+test('a hostile pack imports quickly instead of hanging the main thread', () => {
+  // Pre-cap, ~50k songs blocked import for >10s; the song cap keeps a hostile pack cheap.
+  const b = newStore()
+  assert.throws(() => validatePack({
+    kind: 'playlist', name: 'flood', songIds: [],
+    songs: Array.from({ length: 80000 }, (_, i) => ({ videoId: `v${i}`, url: `https://e/${i}` }))
+  }), /too many songs/)
+  // A pack at the cap still imports in well under a second.
+  const pack = validatePack({
+    kind: 'playlist', name: 'big', songIds: [],
+    songs: Array.from({ length: 5000 }, (_, i) => ({ videoId: `v${i}`, url: `https://e/${i}` }))
+  })
+  importPack(b, pack)
+  assert.equal(b.snapshot().songs.length, 5000)
+})
+
 test('validatePack clamps volumes and defaults fields', () => {
   const pack = validatePack({
     kind: 'scene',
