@@ -16,6 +16,8 @@ import type {
   DesktopStatus
 } from '@shared/types'
 import { defaultGroupBy } from '@shared/taxonomy'
+import { clamp01 } from '@shared/num'
+import { DEFAULT_VOLUME } from '@shared/constants'
 
 /**
  * Per-track loop, set on the queue card:
@@ -49,6 +51,16 @@ export interface AmbienceSlot {
 
 let uidSeq = 0
 const newUid = (): string => `q${Date.now()}_${uidSeq++}`
+
+/** Read a persisted preference, falling back if the key is missing or localStorage throws. */
+function readLocal<T>(key: string, parse: (raw: string) => T, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw === null ? fallback : parse(raw)
+  } catch {
+    return fallback
+  }
+}
 let initialized = false // guard against React StrictMode double-invoking init() (double IPC subs)
 let noticeSeq = 0
 let slotSeq = 0
@@ -259,7 +271,7 @@ const IDLE_PLAYER: PlayerStatus = {
   state: 'idle',
   positionSec: 0,
   durationSec: 0,
-  volume: 0.8
+  volume: DEFAULT_VOLUME
 }
 
 export const useStore = create<State>((set, get) => ({
@@ -295,13 +307,7 @@ export const useStore = create<State>((set, get) => ({
   groupBy: { track: defaultGroupBy('track'), ambience: defaultGroupBy('ambience'), sfx: defaultGroupBy('sfx') },
   activeFilters: { track: {}, ambience: {}, sfx: {} },
   showArtistView: false,
-  playlistsCollapsed: ((): boolean => {
-    try {
-      return localStorage.getItem('qs.playlistsCollapsed') === '1'
-    } catch {
-      return false
-    }
-  })(),
+  playlistsCollapsed: readLocal('qs.playlistsCollapsed', (s) => s === '1', false),
   importWizardOpen: false,
   importWizardUrl: '',
   importWizardSource: 'url',
@@ -309,21 +315,12 @@ export const useStore = create<State>((set, get) => ({
   ambienceProgress: {},
   musicVolume: 1,
   monitorEnabled: false,
-  monitorVolume: ((): number => {
-    try {
-      const v = parseFloat(localStorage.getItem('qs.monitorVolume') ?? '')
-      return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.8
-    } catch {
-      return 0.8
-    }
-  })(),
-  outputDeviceId: ((): string => {
-    try {
-      return localStorage.getItem('qs.outputDeviceId') ?? ''
-    } catch {
-      return ''
-    }
-  })(),
+  monitorVolume: readLocal(
+    'qs.monitorVolume',
+    (s) => (Number.isFinite(parseFloat(s)) ? clamp01(parseFloat(s)) : DEFAULT_VOLUME),
+    DEFAULT_VOLUME
+  ),
+  outputDeviceId: readLocal('qs.outputDeviceId', (s) => s, ''),
   ducking: false,
   remoteActive: false,
 

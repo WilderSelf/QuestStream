@@ -15,6 +15,7 @@ import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
 import { useStore } from '../store'
 import { Modal } from './Modal'
 import { TagPicker } from './ImportWizard'
+import { SegmentedControl } from './SegmentedControl'
 
 function RemoteSettings(): JSX.Element {
   const [info, setInfo] = useState<RemoteInfo | null>(null)
@@ -166,29 +167,17 @@ function CookiesSettings(): JSX.Element {
         your signed-in browser. Use a cookies file (works everywhere, incl. the Flatpak) or read them
         straight from a browser (only when running unsandboxed).
       </p>
-      <div className="kind-tabs">
-        <button
-          className={`seg ${mode === 'none' ? 'active' : ''}`}
-          aria-pressed={mode === 'none'}
-          onClick={() => void setMode('none')}
-        >
-          Off
-        </button>
-        <button
-          className={`seg ${mode === 'file' ? 'active' : ''}`}
-          aria-pressed={mode === 'file'}
-          onClick={() => void setMode('file')}
-        >
-          Cookies file
-        </button>
-        <button
-          className={`seg ${mode === 'browser' ? 'active' : ''}`}
-          aria-pressed={mode === 'browser'}
-          onClick={() => void setMode('browser', status?.browser ?? 'firefox')}
-        >
-          From browser
-        </button>
-      </div>
+      <SegmentedControl<CookiesMode>
+        value={mode}
+        onChange={(m) =>
+          void (m === 'browser' ? setMode('browser', status?.browser ?? 'firefox') : setMode(m))
+        }
+        options={[
+          { value: 'none', label: 'Off' },
+          { value: 'file', label: 'Cookies file' },
+          { value: 'browser', label: 'From browser' }
+        ]}
+      />
 
       {mode === 'file' && (
         <div className="cookies-row">

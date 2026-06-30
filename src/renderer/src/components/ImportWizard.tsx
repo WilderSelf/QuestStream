@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { Modal } from './Modal'
 import { Icon } from './Icon'
+import { SegmentedControl } from './SegmentedControl'
 import type { ItemKind, Song } from '@shared/types'
 import {
   KIND_ORDER,
@@ -196,22 +197,14 @@ export function ImportWizardModal(): JSX.Element | null {
 
             <div className="field">
               <div className="field-label">Source</div>
-              <div className="kind-tabs">
-                <button
-                  className={`seg ${source === 'url' ? 'active' : ''}`}
-                  aria-pressed={source === 'url'}
-                  onClick={() => setSource('url')}
-                >
-                  Link (YouTube / SoundCloud / …)
-                </button>
-                <button
-                  className={`seg ${source === 'files' ? 'active' : ''}`}
-                  aria-pressed={source === 'files'}
-                  onClick={() => setSource('files')}
-                >
-                  Local files
-                </button>
-              </div>
+              <SegmentedControl
+                value={source}
+                onChange={setSource}
+                options={[
+                  { value: 'url', label: 'Link (YouTube / SoundCloud / …)' },
+                  { value: 'files', label: 'Local files' }
+                ]}
+              />
               {source === 'url' ? (
                 <input
                   autoFocus
@@ -229,38 +222,23 @@ export function ImportWizardModal(): JSX.Element | null {
 
             <div className="field">
               <div className="field-label">Type</div>
-              <div className="kind-tabs">
-                {KIND_ORDER.map((k) => (
-                  <button
-                    key={k}
-                    className={`seg ${kind === k ? 'active' : ''}`}
-                    aria-pressed={kind === k}
-                    onClick={() => setKind(k)}
-                  >
-                    {KIND_LABELS[k]}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                value={kind}
+                onChange={setKind}
+                options={KIND_ORDER.map((k) => ({ value: k, label: KIND_LABELS[k] }))}
+              />
             </div>
 
             <div className="field">
               <div className="field-label">Tagging</div>
-              <div className="kind-tabs">
-                <button
-                  className={`seg ${mode === 'batch' ? 'active' : ''}`}
-                  aria-pressed={mode === 'batch'}
-                  onClick={() => setMode('batch')}
-                >
-                  All at once
-                </button>
-                <button
-                  className={`seg ${mode === 'peritem' ? 'active' : ''}`}
-                  aria-pressed={mode === 'peritem'}
-                  onClick={() => setMode('peritem')}
-                >
-                  One by one
-                </button>
-              </div>
+              <SegmentedControl
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: 'batch', label: 'All at once' },
+                  { value: 'peritem', label: 'One by one' }
+                ]}
+              />
               <p className="muted small" style={{ padding: 0 }}>
                 {mode === 'batch'
                   ? 'Apply the type and tags below to every imported item — fast for a whole playlist.'

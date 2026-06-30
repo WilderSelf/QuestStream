@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { readFileSync, existsSync, renameSync } from 'node:fs'
+import { atomicWriteFile } from '../fsutil'
 import type {
   LibrarySnapshot,
   Artist,
@@ -94,10 +94,7 @@ export class LibraryStore {
   /** Atomic write (write to temp then rename). */
   private writeNow(): void {
     try {
-      mkdirSync(dirname(this.path), { recursive: true })
-      const tmp = `${this.path}.tmp`
-      writeFileSync(tmp, JSON.stringify(this.db, null, 2), 'utf8')
-      renameSync(tmp, this.path)
+      atomicWriteFile(this.path, JSON.stringify(this.db, null, 2))
     } catch (err) {
       console.error('[library] failed to persist:', err)
     }
@@ -239,7 +236,7 @@ export class LibraryStore {
   }
 
   retag(songId: string, payload: RetagPayload): void {
-    const song = this.db.songs.find((s) => s.id === songId)
+    const song = this.getSong(songId)
     if (!song) return
     if (payload.title !== undefined) song.title = payload.title.trim() || song.title
     if (payload.tags !== undefined) song.tags = this.normalizeTags(payload.tags)
@@ -264,7 +261,7 @@ export class LibraryStore {
 
   /** Set (or clear, with null) a song's DSP effect preset key. */
   setEffect(songId: string, effect: string | null): void {
-    const song = this.db.songs.find((s) => s.id === songId)
+    const song = this.getSong(songId)
     if (!song) return
     if (effect) song.effect = effect
     else delete song.effect
@@ -298,7 +295,7 @@ export class LibraryStore {
   }
 
   updateSoundboardItem(id: string, patch: Partial<Omit<SoundboardItem, 'id'>>): void {
-    const item = this.db.soundboard.find((s) => s.id === id)
+    const item = this.getSoundboardItem(id)
     if (!item) return
     // A hotkey is unique across the board — clear it from any other item first.
     if (patch.hotkey) {

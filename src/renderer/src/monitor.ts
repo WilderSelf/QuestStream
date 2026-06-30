@@ -10,6 +10,9 @@
  * (not just 48kHz ones). The buffer just absorbs IPC jitter; under/overflow are
  * handled discretely and counted so a real clock drift would still be visible.
  */
+import { clamp01 } from '@shared/num'
+import { DEFAULT_VOLUME } from '@shared/constants'
+
 const WORKLET_SRC = `
 class PCMRing extends AudioWorkletProcessor {
   constructor() {
@@ -73,7 +76,7 @@ export class LocalMonitor {
   private ctx: AudioContext | null = null
   private node: AudioWorkletNode | null = null
   private gain: GainNode | null = null
-  private localVolume = 0.8 // independent volume for the LOCAL monitor path (NOT the Discord send level)
+  private localVolume = DEFAULT_VOLUME // independent volume for the LOCAL monitor path (NOT the Discord send level)
   private sinkId = '' // chosen output device ('' = system default)
   private starting = false
 
@@ -149,7 +152,7 @@ export class LocalMonitor {
 
   /** Volume for local playback (0..1), independent of the Discord send level. Ramped to avoid zipper noise. */
   setVolume(v: number): void {
-    this.localVolume = Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0
+    this.localVolume = clamp01(v)
     if (this.gain && this.ctx) {
       this.gain.gain.setTargetAtTime(this.localVolume, this.ctx.currentTime, 0.015)
     }

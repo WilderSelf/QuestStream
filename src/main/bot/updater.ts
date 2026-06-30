@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { chmodSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ToolUpdateResult } from '../../shared/types'
 import { setDownloadedYtDlp, SPAWN_ENV } from './binaries'
+import { atomicWriteFile } from '../fsutil'
 
 const RELEASE_BASE = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
 
@@ -75,12 +75,8 @@ export async function updateYtDlp(toolsDir: string): Promise<ToolUpdateResult> {
     const got = createHash('sha256').update(bytes).digest('hex')
     if (got !== want) return { ok: false, error: 'checksum mismatch — refusing to install' }
 
-    mkdirSync(toolsDir, { recursive: true })
     const dest = join(toolsDir, localName())
-    const tmp = `${dest}.download`
-    writeFileSync(tmp, bytes)
-    chmodSync(tmp, 0o755)
-    renameSync(tmp, dest)
+    atomicWriteFile(dest, bytes, { mode: 0o755 })
 
     const version = await probeVersion(dest)
     if (!version) return { ok: false, error: 'downloaded yt-dlp did not run' }

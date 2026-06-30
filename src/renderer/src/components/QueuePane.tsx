@@ -9,6 +9,8 @@ import { CSS } from '@dnd-kit/utilities'
 import type { SoundboardItem } from '@shared/types'
 import { useStore, fmtTime, type QueueItem, type AmbienceSlot } from '../store'
 import { Icon } from './Icon'
+import { SeekBar } from './SeekBar'
+import { VolumeSlider } from './VolumeSlider'
 
 const LOOP_LABEL: Record<NonNullable<QueueItem['loop']>, string> = {
   off: 'Loop: off',
@@ -37,36 +39,10 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
   const isActive = isCurrent && (playerState === 'playing' || playerState === 'buffering')
   const loop = item.loop ?? 'off'
   const duration = item.song.duration
-  const pct = isCurrent && duration > 0 ? Math.min(100, (positionSec / duration) * 100) : 0
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1
-  }
-
-  // Seek by clicking the current card's bar — mirrors the transport. Stop propagation so the
-  // click/double-click doesn't also re-select or restart the track.
-  function seek(e: React.MouseEvent<HTMLDivElement>): void {
-    if (!isCurrent || duration <= 0) return
-    e.stopPropagation()
-    const rect = e.currentTarget.getBoundingClientRect()
-    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-    void seekTo(frac * duration)
-  }
-  function seekKey(e: React.KeyboardEvent<HTMLDivElement>): void {
-    if (!isCurrent || duration <= 0) return
-    const step =
-      e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -5 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 5 : 0
-    if (step) {
-      e.preventDefault()
-      void seekTo(Math.min(duration, Math.max(0, positionSec + step)))
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      void seekTo(0)
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      void seekTo(duration)
-    }
   }
 
   return (
@@ -102,24 +78,13 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
       <div className="title">
         <div className="title">{item.song.title}</div>
         {isCurrent ? (
-          <div className="row-seek" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-            <span className="time">{fmtTime(positionSec)}</span>
-            <div
-              className="bar"
-              role="slider"
-              tabIndex={0}
-              aria-label="Seek"
-              aria-valuemin={0}
-              aria-valuemax={Math.round(duration)}
-              aria-valuenow={Math.round(positionSec)}
-              aria-valuetext={`${fmtTime(positionSec)} of ${fmtTime(duration)}`}
-              onClick={seek}
-              onKeyDown={seekKey}
-            >
-              <div className="fill" style={{ width: `${pct}%` }} />
-            </div>
-            <span className="time">{fmtTime(duration)}</span>
-          </div>
+          <SeekBar
+            className="row-seek"
+            positionSec={positionSec}
+            duration={duration}
+            onSeek={(sec) => void seekTo(sec)}
+            stopPropagation
+          />
         ) : (
           <div className="sub">{fmtTime(duration)}</div>
         )}
@@ -225,16 +190,12 @@ function AmbienceRow({ slot }: { slot: AmbienceSlot }): JSX.Element {
           <span className="amb-interval-label">s</span>
         </label>
       )}
-      <input
-        type="range"
+      <VolumeSlider
         className="amb-vol"
-        min={0}
-        max={1}
-        step={0.01}
         value={slot.volume}
         title="Layer volume"
-        aria-label={`Volume for ${slot.song.title}`}
-        onChange={(e) => setAmbienceVolume(slot.id, parseFloat(e.target.value))}
+        ariaLabel={`Volume for ${slot.song.title}`}
+        onChange={(v) => setAmbienceVolume(slot.id, v)}
       />
       <button
         className="remove-btn"
@@ -343,16 +304,13 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
       >
         <Icon name="volume-low" size={16} />
       </button>
-      <input
-        type="range"
+      <VolumeSlider
         className="sfx-gain"
-        min={0}
-        max={1}
         step={0.05}
         value={item.gain ?? 1}
         title="Sound volume"
-        aria-label={`Volume for ${song?.title ?? 'sound'}`}
-        onChange={(e) => void window.api.soundboard.update(item.id, { gain: parseFloat(e.target.value) })}
+        ariaLabel={`Volume for ${song?.title ?? 'sound'}`}
+        onChange={(v) => void window.api.soundboard.update(item.id, { gain: v })}
       />
       <button
         className="remove-btn"
@@ -445,15 +403,7 @@ export function QueuePane(): JSX.Element {
         <span className="vol-icon" aria-hidden="true">
           <Icon name="music" size={16} />
         </span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          aria-label="Music layer volume"
-          value={musicVolume}
-          onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
-        />
+        <VolumeSlider ariaLabel="Music layer volume" value={musicVolume} onChange={setMusicVolume} />
       </div>
 
       <div className="pane-body" ref={setNodeRef}>

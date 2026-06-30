@@ -9,6 +9,8 @@
 // resources, and every dynamic value (titles, scene/soundboard labels) is HTML-escaped
 // via esc()/textContent before insertion, so there is no injection surface.
 
+import { DEFAULT_VOLUME } from '../../shared/constants'
+
 export const REMOTE_PAGE = `<!doctype html>
 <html lang="en">
 <head>
@@ -80,7 +82,7 @@ export const REMOTE_PAGE = `<!doctype html>
       document.getElementById('title').textContent = s.title || 'Nothing playing';
       document.getElementById('sub').textContent = (s.paused?'Paused':s.playing?'Playing':'Idle');
       ducking = !!s.ducking; document.getElementById('duck').classList.toggle('on', ducking);
-      if(!dragging) document.getElementById('vol').value = s.volume!=null? s.volume : 0.8;
+      if(!dragging) document.getElementById('vol').value = s.volume!=null? s.volume : ${DEFAULT_VOLUME};
       btns('scenes', (s.scenes||[]).map(function(x){return {id:x.id,label:'🎬 '+x.name};}), function(it){ cmd({action:'recallScene',id:it.id}); });
       btns('sfx', (s.soundboard||[]).map(function(x){return {id:x.id,label:x.label+(x.hotkey?' ['+x.hotkey+']':'')};}), function(it){ cmd({action:'triggerSfx',id:it.id}); });
       btns('queue', (s.queue||[]).map(function(x){return {id:x.uid,label:x.title};}), function(it){ cmd({action:'playQueueItem',uid:it.id}); }, (s.queue.find(function(q){return q.current;})||{}).uid);

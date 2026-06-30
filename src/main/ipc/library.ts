@@ -22,6 +22,17 @@ import type { IpcContext } from './context'
 
 const MAX_PACK_BYTES = 8 * 1024 * 1024 // a metadata-only pack is KBs; reject anything absurd
 
+/** Run an IPC op, turning a thrown error into the uniform { ok:false, error } result. */
+async function guarded<T extends { ok: boolean }>(
+  fn: () => Promise<T>
+): Promise<T | { ok: false; error: string }> {
+  try {
+    return await fn()
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
 /**
  * Library + content IPC: import (URL & local files), tagging, soundboard, playlists,
  * scenes, and shareable packs. All of these mutate the store and re-broadcast it.
@@ -73,7 +84,7 @@ export function registerLibraryIpc(ctx: IpcContext): void {
       filters: [{ name: 'Cookies (Netscape txt)', extensions: ['txt'] }]
     })
     if (res.canceled || !res.filePaths[0]) return { ok: true } // cancelled — no change
-    try {
+    return guarded(async () => {
       const src = res.filePaths[0]
       const content = readFileSync(src, 'utf8')
       // A Netscape cookies file has the header and/or data lines of 7 tab-separated fields.
@@ -90,9 +101,7 @@ export function registerLibraryIpc(ctx: IpcContext): void {
       config.setCookies('file')
       applyCookies()
       return { ok: true, status: cookieStatus() }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    })
   })
 
   // ---- desktop integration (AppImage → applications menu) ----
@@ -270,13 +279,12 @@ export function registerLibraryIpc(ctx: IpcContext): void {
       defaultPath: `${suggested.replace(/[^\w.-]+/g, '_')}.questpack`,
       filters: [{ name: 'QuestStream pack', extensions: ['questpack', 'json'] }]
     })
-    if (res.canceled || !res.filePath) return { ok: true }
-    try {
-      writeFileSync(res.filePath, JSON.stringify(pack, null, 2), 'utf8')
+    const { filePath } = res
+    if (res.canceled || !filePath) return { ok: true }
+    return guarded(async () => {
+      writeFileSync(filePath, JSON.stringify(pack, null, 2), 'utf8')
       return { ok: true }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    })
   }
   handle(IPC.sceneExport, (_e, id: string) =>
     exportPack(buildScenePack(store.view(), id), store.view().scenes.find((s) => s.id === id)?.name ?? 'scene')
@@ -291,15 +299,13 @@ export function registerLibraryIpc(ctx: IpcContext): void {
       filters: [{ name: 'QuestStream pack', extensions: ['questpack', 'json'] }]
     })
     if (res.canceled || res.filePaths.length === 0) return { ok: true }
-    try {
+    return guarded(async () => {
       const file = res.filePaths[0]
       if (statSync(file).size > MAX_PACK_BYTES) return { ok: false, error: 'That file is too large to be a pack.' }
       const pack = validatePack(JSON.parse(readFileSync(file, 'utf8')))
       const created = importPack(store, pack)
       broadcastLibrary()
       return { ok: true, kind: created.kind, name: created.name }
-    } catch (err) {
-      return { ok: false, error: (err as Error).message }
-    }
+    })
   })
 }

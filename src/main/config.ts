@@ -1,7 +1,7 @@
 import { safeStorage } from 'electron'
 import { randomBytes } from 'node:crypto'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { readFileSync, existsSync } from 'node:fs'
+import { atomicWriteFile } from './fsutil'
 
 interface ConfigShape {
   discordToken?: string // legacy plaintext (migrated to discordTokenEnc on next save)
@@ -94,7 +94,6 @@ export class Config {
   }
 
   private save(): void {
-    mkdirSync(dirname(this.path), { recursive: true })
     const out: ConfigShape = {
       remoteEnabled: this.remoteEnabled_,
       remotePort: this.remotePort_,
@@ -113,7 +112,7 @@ export class Config {
       if (canEncrypt) out.remoteTokenEnc = safeStorage.encryptString(this.remoteToken_).toString('base64')
       else out.remoteToken = this.remoteToken_
     }
-    writeFileSync(this.path, JSON.stringify(out, null, 2), 'utf8')
+    atomicWriteFile(this.path, JSON.stringify(out, null, 2))
   }
 
   get token(): string {

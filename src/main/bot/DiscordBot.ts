@@ -26,6 +26,7 @@ import type {
   Song,
   AppNotice
 } from '../../shared/types'
+import { DEFAULT_VOLUME } from '../../shared/constants'
 
 export declare interface DiscordBot {
   on(event: 'botStatus', l: (s: BotStatus) => void): this
@@ -63,7 +64,7 @@ export class DiscordBot extends EventEmitter {
 
   private status: BotStatus = { state: 'disconnected' }
   private daveChecked = false // DAVE/E2EE dependency self-check runs once
-  private volume = 0.8
+  private volume = DEFAULT_VOLUME
   private musicVolume = 1
   private currentSong: Song | null = null
   private currentMusicId: string | null = null

@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { timingSafeEqual, randomBytes } from 'node:crypto'
 import { networkInterfaces } from 'node:os'
 import type { RemoteState, RemoteCommand } from '../../shared/types'
+import { clampNum } from '../../shared/num'
 import { REMOTE_PAGE } from './page'
 
 /** Constant-time string compare (avoids leaking the token via timing). */
@@ -40,9 +41,6 @@ function readBody(req: IncomingMessage, limit: number): Promise<string> {
     req.on('error', reject)
   })
 }
-
-const clampNum = (n: unknown, lo: number, hi: number): number =>
-  typeof n === 'number' && Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo
 
 /** Validate untrusted JSON into a typed RemoteCommand, or null if not recognized. */
 export function parseCommand(raw: unknown): RemoteCommand | null {

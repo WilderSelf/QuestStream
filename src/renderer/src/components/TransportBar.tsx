@@ -1,5 +1,7 @@
-import { useStore, fmtTime } from '../store'
+import { useStore } from '../store'
 import { Icon } from './Icon'
+import { SeekBar } from './SeekBar'
+import { VolumeSlider } from './VolumeSlider'
 
 export function TransportBar(): JSX.Element {
   const player = useStore((s) => s.player)
@@ -23,32 +25,8 @@ export function TransportBar(): JSX.Element {
 
   const current = queue.find((q) => q.uid === currentUid)?.song
   const duration = current?.duration ?? player.durationSec ?? 0
-  const pct = duration > 0 ? Math.min(100, (player.positionSec / duration) * 100) : 0
   // Treat buffering as "active" so the control shows ⏸ (the subtext shows "Buffering…").
   const isPlaying = player.state === 'playing' || player.state === 'buffering'
-
-  function seek(e: React.MouseEvent<HTMLDivElement>): void {
-    if (!current || duration <= 0) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-    void seekTo(frac * duration)
-  }
-
-  // Keyboard seeking: arrows nudge ±5s, Home/End jump to start/end.
-  function seekKey(e: React.KeyboardEvent<HTMLDivElement>): void {
-    if (!current || duration <= 0) return
-    const step = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -5 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 5 : 0
-    if (step) {
-      e.preventDefault()
-      void seekTo(Math.min(duration, Math.max(0, player.positionSec + step)))
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      void seekTo(0)
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      void seekTo(duration)
-    }
-  }
 
   return (
     <div className="transport">
@@ -118,24 +96,12 @@ export function TransportBar(): JSX.Element {
             {repeat === 'one' && <sup className="rep-badge">1</sup>}
           </button>
         </div>
-        <div className="seek">
-          <span className="time">{fmtTime(player.positionSec)}</span>
-          <div
-            className="bar"
-            role="slider"
-            tabIndex={current ? 0 : -1}
-            aria-label="Seek"
-            aria-valuemin={0}
-            aria-valuemax={Math.round(duration)}
-            aria-valuenow={Math.round(player.positionSec)}
-            aria-valuetext={`${fmtTime(player.positionSec)} of ${fmtTime(duration)}`}
-            onClick={seek}
-            onKeyDown={seekKey}
-          >
-            <div className="fill" style={{ width: `${pct}%` }} />
-          </div>
-          <span className="time">{fmtTime(duration)}</span>
-        </div>
+        <SeekBar
+          positionSec={player.positionSec}
+          duration={duration}
+          enabled={!!current}
+          onSeek={(sec) => void seekTo(sec)}
+        />
       </div>
 
       <div className="volume">
@@ -169,28 +135,20 @@ export function TransportBar(): JSX.Element {
         <span className="vol-icon" title="Local monitor volume — what you hear on this machine" aria-hidden="true">
           <Icon name="headphones" size={16} />
         </span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          aria-label="Local monitor volume"
+        <VolumeSlider
+          ariaLabel="Local monitor volume"
           title="Local monitor volume — what you hear on this machine"
           value={monitorVolume}
-          onChange={(e) => setMonitorVolume(parseFloat(e.target.value))}
+          onChange={setMonitorVolume}
         />
         <span className="vol-icon" title="Discord send volume — what remote players hear" aria-hidden="true">
           <Icon name="volume" size={16} />
         </span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          aria-label="Discord send volume"
+        <VolumeSlider
+          ariaLabel="Discord send volume"
           title="Discord send volume — what remote players hear"
           value={player.volume}
-          onChange={(e) => setMasterVolume(parseFloat(e.target.value))}
+          onChange={setMasterVolume}
         />
       </div>
     </div>
