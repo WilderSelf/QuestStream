@@ -25,6 +25,9 @@ export const EFFECTS: Record<string, string> = {
  * (identical to the original behaviour), so this is safe for every existing song.
  */
 export function buildAfChain(effect?: string): string {
-  const extra = effect ? EFFECTS[effect] : undefined
+  // Own-key lookup only: an attacker-influenced `effect` (e.g. from an imported pack)
+  // naming an inherited member like "toString"/"constructor" must NOT leak that member's
+  // source into the ffmpeg -af argument — fall back to loudnorm for any non-preset key.
+  const extra = effect && Object.hasOwn(EFFECTS, effect) ? EFFECTS[effect] : undefined
   return extra ? `${LOUDNORM},${extra}` : LOUDNORM
 }
