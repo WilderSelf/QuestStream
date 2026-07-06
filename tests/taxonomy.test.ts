@@ -9,6 +9,7 @@ import {
   labelForValue,
   labelForDimension,
   valuesPresent,
+  remapLegacyTag,
   KIND_ORDER,
   TAXONOMY
 } from '../src/shared/taxonomy.ts'
@@ -36,7 +37,38 @@ test('normalizeTag lowercases namespaced tags, preserves legacy case', () => {
 test('defaultGroupBy returns each kind first dimension', () => {
   assert.equal(defaultGroupBy('track'), 'genre')
   assert.equal(defaultGroupBy('ambience'), 'location')
-  assert.equal(defaultGroupBy('sfx'), 'category')
+  assert.equal(defaultGroupBy('sfx'), 'activity')
+})
+
+test('all kinds share the four unified dimensions', () => {
+  const dims = (k: 'track' | 'ambience' | 'sfx'): string[] =>
+    dimensionsFor(k)
+      .map((d) => d.key)
+      .sort()
+  const four = ['activity', 'genre', 'location', 'mood']
+  assert.deepEqual(dims('track'), four)
+  assert.deepEqual(dims('ambience'), four)
+  assert.deepEqual(dims('sfx'), four)
+})
+
+test('remapLegacyTag rewrites retired dims, passes everything else through', () => {
+  // clean equivalent → rewritten
+  assert.equal(remapLegacyTag('category:combat'), 'activity:combat')
+  assert.equal(remapLegacyTag('Category:Combat'), 'activity:combat') // normalized first
+  // no clean equivalent → left as a searchable free/non-curated tag
+  assert.equal(remapLegacyTag('category:magic'), 'category:magic')
+  assert.equal(remapLegacyTag('weather:rain'), 'weather:rain')
+  // already-migrated / unrelated tags are untouched (idempotent)
+  assert.equal(remapLegacyTag('activity:combat'), 'activity:combat')
+  assert.equal(remapLegacyTag('genre:fantasy'), 'genre:fantasy')
+  assert.equal(remapLegacyTag('LoFi'), 'LoFi')
+})
+
+test('preserved legacy slugs still resolve to their curated labels', () => {
+  // slugs saved by older versions must keep matching curated chips (no fragmentation)
+  assert.equal(labelForValue('genre', 'scifi'), 'Sci-Fi / Space')
+  assert.equal(labelForValue('mood', 'peace'), 'Peaceful')
+  assert.equal(labelForValue('location', 'woods'), 'Woods')
 })
 
 test('every kind has at least one dimension and KIND_ORDER covers them', () => {

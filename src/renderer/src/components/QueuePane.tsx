@@ -10,6 +10,7 @@ import type { SoundboardItem } from '@shared/types'
 import { useStore, fmtTime, type QueueItem, type AmbienceSlot } from '../store'
 import { Icon } from './Icon'
 import { SeekBar } from './SeekBar'
+import { TagDots } from './TagDots'
 import { VolumeSlider } from './VolumeSlider'
 
 const LOOP_LABEL: Record<NonNullable<QueueItem['loop']>, string> = {
@@ -88,6 +89,7 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
         ) : (
           <div className="sub">{fmtTime(duration)}</div>
         )}
+        <TagDots tags={item.song.tags ?? []} />
       </div>
       <button
         className={`loop-btn ${loop !== 'off' ? 'on' : ''}`}

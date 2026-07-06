@@ -27,104 +27,113 @@ export interface Dimension {
 
 const v = (value: string, label: string): TagValue => ({ value, label })
 
+// The four shared dimensions. Every kind (track / ambience / sfx) is tagged from the
+// SAME four axes so a GM tags one way everywhere; only the default grouping axis differs
+// per kind (see TAXONOMY below). Existing slugs are preserved verbatim (e.g. 'scifi',
+// 'peace', 'woods') so tags saved by earlier versions keep matching their curated chip —
+// new values are only ever appended. See remapLegacyTag for the one-time migration of the
+// retired 'weather' / 'category' dimensions.
+const GENRE: Dimension = {
+  key: 'genre',
+  label: 'Genre / Setting',
+  values: [
+    v('fantasy', 'Fantasy'),
+    v('scifi', 'Sci-Fi / Space'),
+    v('cyberpunk', 'Cyberpunk'),
+    v('horror', 'Horror'),
+    v('modern', 'Modern'),
+    v('historical', 'Historical'),
+    v('western', 'Western'),
+    v('steampunk', 'Steampunk'),
+    v('post-apocalyptic', 'Post-Apocalyptic')
+  ]
+}
+
+const LOCATION: Dimension = {
+  key: 'location',
+  label: 'Location',
+  values: [
+    v('tavern', 'Tavern'),
+    v('town', 'Town / City'),
+    v('woods', 'Woods'),
+    v('wilderness', 'Wilderness'),
+    v('docks', 'Docks'),
+    v('dungeon', 'Dungeon'),
+    v('cave', 'Cave'),
+    v('ship', 'Ship'),
+    v('castle', 'Castle'),
+    v('temple', 'Temple'),
+    v('swamp', 'Swamp'),
+    v('underground', 'Underground'),
+    v('desert', 'Desert'),
+    v('mountains', 'Mountains'),
+    v('graveyard', 'Graveyard'),
+    v('market', 'Market'),
+    v('camp', 'Camp')
+  ]
+}
+
+const MOOD: Dimension = {
+  key: 'mood',
+  label: 'Mood',
+  values: [
+    v('tense', 'Tense'),
+    v('peace', 'Peaceful'),
+    v('somber', 'Somber'),
+    v('triumphant', 'Triumphant'),
+    v('mysterious', 'Mysterious'),
+    v('eerie', 'Eerie'),
+    v('whimsical', 'Whimsical'),
+    v('epic', 'Epic'),
+    v('melancholy', 'Melancholy'),
+    v('romantic', 'Romantic'),
+    v('foreboding', 'Foreboding')
+  ]
+}
+
+const ACTIVITY: Dimension = {
+  key: 'activity',
+  label: 'Activity',
+  values: [
+    v('combat', 'Combat'),
+    v('boss', 'Boss'),
+    v('travel', 'Travel'),
+    v('exploration', 'Exploration'),
+    v('social', 'Social'),
+    v('celebration', 'Celebration'),
+    v('shopping', 'Shopping'),
+    v('stealth', 'Stealth'),
+    v('chase', 'Chase'),
+    v('investigation', 'Investigation'),
+    v('ritual', 'Ritual'),
+    v('downtime', 'Downtime')
+  ]
+}
+
 /**
- * Curated dimensions per kind. The FIRST dimension of each kind is its default
- * grouping axis in the browser.
+ * The dimensions offered per kind. All kinds share the same four axes; the ORDER differs
+ * so each kind groups by its most natural axis first (the FIRST dimension is the default
+ * grouping axis in the browser): music → genre, ambience → location, soundboard → activity.
  */
 export const TAXONOMY: Record<ItemKind, Dimension[]> = {
-  track: [
-    {
-      key: 'genre',
-      label: 'Genre / Setting',
-      values: [
-        v('fantasy', 'Fantasy'),
-        v('scifi', 'Sci-Fi / Space'),
-        v('cyberpunk', 'Cyberpunk'),
-        v('horror', 'Horror'),
-        v('modern', 'Modern'),
-        v('historical', 'Historical'),
-        v('western', 'Western'),
-        v('steampunk', 'Steampunk')
-      ]
-    },
-    {
-      key: 'activity',
-      label: 'Activity',
-      values: [
-        v('combat', 'Combat'),
-        v('boss', 'Boss'),
-        v('travel', 'Travel'),
-        v('exploration', 'Exploration'),
-        v('social', 'Social'),
-        v('celebration', 'Celebration'),
-        v('shopping', 'Shopping'),
-        v('stealth', 'Stealth')
-      ]
-    },
-    {
-      key: 'mood',
-      label: 'Mood',
-      values: [
-        v('tense', 'Tense'),
-        v('peace', 'Peaceful'),
-        v('somber', 'Somber'),
-        v('triumphant', 'Triumphant'),
-        v('mysterious', 'Mysterious'),
-        v('eerie', 'Eerie'),
-        v('whimsical', 'Whimsical'),
-        v('epic', 'Epic')
-      ]
-    }
-  ],
-  ambience: [
-    {
-      key: 'location',
-      label: 'Location',
-      values: [
-        v('tavern', 'Tavern'),
-        v('town', 'Town / City'),
-        v('woods', 'Woods'),
-        v('docks', 'Docks'),
-        v('dungeon', 'Dungeon'),
-        v('cave', 'Cave'),
-        v('ship', 'Ship'),
-        v('castle', 'Castle'),
-        v('temple', 'Temple'),
-        v('wilderness', 'Wilderness'),
-        v('swamp', 'Swamp'),
-        v('underground', 'Underground')
-      ]
-    },
-    {
-      key: 'weather',
-      label: 'Weather / Element',
-      values: [
-        v('rain', 'Rain'),
-        v('storm', 'Storm'),
-        v('wind', 'Wind'),
-        v('fire', 'Fire'),
-        v('water', 'Water'),
-        v('night', 'Night'),
-        v('crowd', 'Crowd')
-      ]
-    }
-  ],
-  sfx: [
-    {
-      key: 'category',
-      label: 'Category',
-      values: [
-        v('combat', 'Combat'),
-        v('magic', 'Magic'),
-        v('creature', 'Creature'),
-        v('door', 'Door / Trap'),
-        v('sting', 'Sting / Dramatic'),
-        v('ui', 'UI / Bell'),
-        v('ambient', 'Ambient Hit'),
-        v('voice', 'Voice / Crowd')
-      ]
-    }
-  ]
+  track: [GENRE, ACTIVITY, MOOD, LOCATION],
+  ambience: [LOCATION, MOOD, GENRE, ACTIVITY],
+  sfx: [ACTIVITY, MOOD, GENRE, LOCATION]
+}
+
+/**
+ * One-time migration of tags saved under the two dimensions retired when the taxonomy was
+ * unified to genre/location/mood/activity. Only mappings with a clean equivalent are
+ * rewritten; everything else (including the old `weather:*` beds and the non-combat
+ * `category:*` sfx) is returned unchanged so it stays searchable as a free tag and the user
+ * can retag at leisure. Pure + idempotent: a tag already in the new scheme passes through.
+ */
+const LEGACY_TAG_REMAP: Record<string, string> = {
+  'category:combat': 'activity:combat'
+}
+
+export function remapLegacyTag(tag: string): string {
+  return LEGACY_TAG_REMAP[normalizeTag(tag)] ?? tag
 }
 
 export const KIND_LABELS: Record<ItemKind, string> = {

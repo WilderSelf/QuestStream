@@ -423,9 +423,29 @@ textarea {
   background: var(--nord3);
 }
 .tag-chip.active {
-  background: var(--nord15);
-  border-color: var(--nord15);
+  /* --tag-color is set inline per chip; fall back to the old purple if absent. */
+  background: var(--tag-color, var(--nord15));
+  border-color: var(--tag-color, var(--nord15));
   color: var(--nord0);
+}
+/* A filter chip and its colour-dot recolour button sit in one pill-shaped group. */
+.tag-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.tag-dot-btn {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.tag-dot-btn:hover {
+  transform: scale(1.15);
 }
 .tag-count {
   opacity: 0.6;
@@ -433,9 +453,127 @@ textarea {
 }
 .song-tags {
   font-size: var(--text-xs);
-  color: var(--nord15);
+  color: var(--text-dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+.song-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+/* ---- Now Playing tag dots (collapsed circle → hover/focus pill) ---- */
+.tag-dots {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.tag-dots-item {
+  display: inline-flex;
+  align-items: center;
+  height: 12px;
+  width: 12px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  background: var(--tag-color);
+  color: var(--nord0);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: default;
+  transition:
+    width 0.16s ease,
+    padding 0.16s ease;
+}
+.tag-dots-item:hover,
+.tag-dots-item:focus-visible {
+  width: auto;
+  padding: 0 7px;
+  outline: none;
+}
+.tag-dots-label {
+  max-width: 0;
+  opacity: 0;
+  transition:
+    max-width 0.16s ease,
+    opacity 0.16s ease;
+}
+.tag-dots-item:hover .tag-dots-label,
+.tag-dots-item:focus-visible .tag-dots-label {
+  max-width: 140px;
+  opacity: 1;
+}
+.tag-dots-more {
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  align-self: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-dots-item,
+  .tag-dots-label {
+    transition: none;
+  }
+}
+
+/* ---- Tag colour picker ---- */
+.tag-color-modal {
+  width: 320px;
+}
+.tag-color-title {
+  font-size: var(--text-md);
+  margin: 0 0 12px;
+}
+.tag-color-name {
+  font-weight: 600;
+}
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.swatch {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.swatch.active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.tag-color-custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.tag-color-custom input[type='color'] {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+.tag-color-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 .tag-edit {
   display: flex;

@@ -13,7 +13,10 @@ import type {
   SourceType,
   ItemKind
 } from '../../shared/types'
-import { normalizeTag } from '../../shared/taxonomy'
+import { normalizeTag, remapLegacyTag } from '../../shared/taxonomy'
+
+/** Bump when a new one-time tag migration must run against existing libraries. */
+const TAGS_SCHEMA = 1
 
 interface DbShape {
   artists: Artist[]
@@ -22,6 +25,8 @@ interface DbShape {
   playlists: Playlist[]
   scenes: Scene[]
   soundboard: SoundboardItem[]
+  /** Highest tag-migration schema already applied to this file (see migrateTagsOnce). */
+  tagsSchema?: number
 }
 
 const EMPTY: DbShape = {
@@ -46,6 +51,24 @@ export class LibraryStore {
 
   constructor(private readonly path: string) {
     this.db = this.load()
+    this.migrateTagsOnce()
+  }
+
+  /**
+   * Remap tags saved under retired taxonomy dimensions to the unified scheme, exactly once
+   * per library (guarded by the persisted `tagsSchema` marker). Idempotent by construction
+   * — remapLegacyTag passes through anything already migrated — but the marker also avoids
+   * re-scanning the whole library on every launch and re-touching tags the user may have
+   * deliberately re-created. Writes synchronously so the marker survives even if the app
+   * quits before the next mutation.
+   */
+  private migrateTagsOnce(): void {
+    if ((this.db.tagsSchema ?? 0) >= TAGS_SCHEMA) return
+    for (const s of this.db.songs) {
+      s.tags = this.normalizeTags((s.tags ?? []).map(remapLegacyTag))
+    }
+    this.db.tagsSchema = TAGS_SCHEMA
+    this.writeNow()
   }
 
   private load(): DbShape {
