@@ -327,30 +327,55 @@ const UI_SCALE_PRESETS = [
   { value: '1.5', label: '150%' }
 ]
 
-/** Whole-UI scale (renderer zoom) with quick presets. Applies live and persists. */
+/** Match a live scale to its preset value for the segmented control's selected state. */
+function presetFor(scale: number): string {
+  return UI_SCALE_PRESETS.find((p) => parseFloat(p.value) === scale)?.value ?? '1'
+}
+
+/** Display prefs: whole-UI zoom and a separate text-only scale. Both apply live and persist. */
 function DisplaySettings(): JSX.Element {
   const uiScale = useStore((s) => s.uiScale)
   const setUiScale = useStore((s) => s.setUiScale)
-  // Match the live scale to a preset value for the segmented control's selected state.
-  const current = UI_SCALE_PRESETS.find((p) => parseFloat(p.value) === uiScale)?.value ?? '1'
+  const textScale = useStore((s) => s.textScale)
+  const setTextScale = useStore((s) => s.setTextScale)
   return (
-    <div className="field">
-      <h3 className="field-label">Interface size</h3>
-      <p className="muted small" style={{ padding: 0 }}>
-        Scale the whole interface — handy for reading from across the table or on a high-DPI
-        display.
-      </p>
-      <SegmentedControl
-        value={current}
-        onChange={(v) => setUiScale(parseFloat(v))}
-        options={UI_SCALE_PRESETS}
-      />
-      <div className="cookies-row">
-        <button className="link-btn" onClick={() => setUiScale(1)}>
-          Reset to 100%
-        </button>
+    <>
+      <div className="field">
+        <h3 className="field-label">Interface size</h3>
+        <p className="muted small" style={{ padding: 0 }}>
+          Scale the whole interface — controls, text, and spacing together — for reading from
+          across the table or on a high-DPI display.
+        </p>
+        <SegmentedControl
+          value={presetFor(uiScale)}
+          onChange={(v) => setUiScale(parseFloat(v))}
+          options={UI_SCALE_PRESETS}
+        />
+        <div className="cookies-row">
+          <button className="link-btn" onClick={() => setUiScale(1)}>
+            Reset to 100%
+          </button>
+        </div>
       </div>
-    </div>
+      <hr className="modal-sep" />
+      <div className="field">
+        <h3 className="field-label">Text size</h3>
+        <p className="muted small" style={{ padding: 0 }}>
+          Enlarge just the text without resizing the layout — independent of the interface size
+          above.
+        </p>
+        <SegmentedControl
+          value={presetFor(textScale)}
+          onChange={(v) => setTextScale(parseFloat(v))}
+          options={UI_SCALE_PRESETS}
+        />
+        <div className="cookies-row">
+          <button className="link-btn" onClick={() => setTextScale(1)}>
+            Reset to 100%
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
 

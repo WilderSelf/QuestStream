@@ -43,9 +43,12 @@ export function App(): JSX.Element {
     void init()
   }, [init])
 
-  // webFrame.setZoomFactor is per-session, so re-apply the persisted UI scale once on launch.
+  // Re-apply the persisted display prefs once on launch: webFrame zoom is per-session, and the
+  // text-scale CSS var must be seeded onto :root.
   useEffect(() => {
-    window.api.app.setZoomFactor(useStore.getState().uiScale)
+    const { uiScale, textScale } = useStore.getState()
+    window.api.app.setZoomFactor(uiScale)
+    document.documentElement.style.setProperty('--text-scale', String(textScale))
   }, [])
 
   const sensors = useSensors(

@@ -73,14 +73,18 @@
   --radius-lg: 10px;
   --radius-pill: 999px;
 
-  /* Type scale — real steps (size+weight carry hierarchy; uppercase no longer does). */
-  --text-2xs: 10px; /* micro: counts/badges */
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 13px; /* body */
-  --text-md: 15px; /* row/emphasis */
-  --text-lg: 18px; /* now-playing title, section heads */
-  --text-xl: 22px; /* modal headings */
+  /* Type scale — real steps (size+weight carry hierarchy; uppercase no longer does).
+     Each is multiplied by --text-scale (set on :root from the Display setting) so text can be
+     enlarged for readability WITHOUT resizing the layout — distinct from the whole-UI zoom.
+     Unitless line-heights scale with the font automatically; hardcoded icon px stay put. */
+  --text-scale: 1;
+  --text-2xs: calc(10px * var(--text-scale)); /* micro: counts/badges */
+  --text-xs: calc(11px * var(--text-scale));
+  --text-sm: calc(12px * var(--text-scale));
+  --text-base: calc(13px * var(--text-scale)); /* body */
+  --text-md: calc(15px * var(--text-scale)); /* row/emphasis */
+  --text-lg: calc(18px * var(--text-scale)); /* now-playing title, section heads */
+  --text-xl: calc(22px * var(--text-scale)); /* modal headings */
   --lh-tight: 1.25;
   --lh: 1.45;
 

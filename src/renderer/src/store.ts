@@ -69,6 +69,10 @@ const UI_SCALE_MIN = 0.8
 const UI_SCALE_MAX = 1.5
 const clampScale = (v: number): number =>
   Number.isFinite(v) ? Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, v)) : 1
+/** Apply the text-only scale as a CSS var on :root (multiplies the --text-* tokens). */
+const applyTextScale = (scale: number): void => {
+  document.documentElement.style.setProperty('--text-scale', String(scale))
+}
 /** Parse a persisted split fraction, throwing on a non-finite value so readLocal uses its default. */
 const parseSplit = (s: string): number => {
   const n = parseFloat(s)
@@ -207,6 +211,7 @@ interface State {
   settingsOpen: boolean
   settingsTab: SettingsTab
   uiScale: number // renderer zoom factor (whole-UI scale), 0.8–1.5
+  textScale: number // text-only multiplier over the --text-* tokens (layout unchanged), 0.8–1.5
   savePromptOpen: boolean
   saveScenePromptOpen: boolean
   loadedSceneId: string | null
@@ -302,6 +307,7 @@ interface State {
   setSettingsOpen: (open: boolean) => void
   openSettings: (tab?: SettingsTab) => void
   setUiScale: (scale: number) => void
+  setTextScale: (scale: number) => void
   setSavePromptOpen: (open: boolean) => void
   setSaveScenePromptOpen: (open: boolean) => void
   saveScene: (name: string, id?: string) => Promise<void>
@@ -350,6 +356,7 @@ export const useStore = create<State>((set, get) => ({
   settingsOpen: false,
   settingsTab: 'general',
   uiScale: readLocal('qs.uiScale', (s) => clampScale(parseFloat(s)), 1),
+  textScale: readLocal('qs.textScale', (s) => clampScale(parseFloat(s)), 1),
   savePromptOpen: false,
   saveScenePromptOpen: false,
   loadedSceneId: null,
@@ -933,6 +940,12 @@ export const useStore = create<State>((set, get) => ({
     persistJson('qs.uiScale', uiScale)
     window.api.app.setZoomFactor(uiScale)
     set({ uiScale })
+  },
+  setTextScale: (scale) => {
+    const textScale = clampScale(scale)
+    persistJson('qs.textScale', textScale)
+    applyTextScale(textScale)
+    set({ textScale })
   },
   setSavePromptOpen: (open) => set({ savePromptOpen: open }),
   setSaveScenePromptOpen: (open) => set({ saveScenePromptOpen: open }),
