@@ -472,6 +472,63 @@ textarea {
   flex-shrink: 0;
 }
 
+/* ---- Now Playing tag dots (collapsed circle → hover/focus pill) ---- */
+.tag-dots {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.tag-dots-item {
+  display: inline-flex;
+  align-items: center;
+  height: 12px;
+  width: 12px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  background: var(--tag-color);
+  color: var(--nord0);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: default;
+  transition:
+    width 0.16s ease,
+    padding 0.16s ease;
+}
+.tag-dots-item:hover,
+.tag-dots-item:focus-visible {
+  width: auto;
+  padding: 0 7px;
+  outline: none;
+}
+.tag-dots-label {
+  max-width: 0;
+  opacity: 0;
+  transition:
+    max-width 0.16s ease,
+    opacity 0.16s ease;
+}
+.tag-dots-item:hover .tag-dots-label,
+.tag-dots-item:focus-visible .tag-dots-label {
+  max-width: 140px;
+  opacity: 1;
+}
+.tag-dots-more {
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  align-self: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-dots-item,
+  .tag-dots-label {
+    transition: none;
+  }
+}
+
 /* ---- Tag colour picker ---- */
 .tag-color-modal {
   width: 320px;
