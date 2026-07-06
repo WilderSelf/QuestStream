@@ -15,7 +15,7 @@ import type {
   ItemKind,
   DesktopStatus
 } from '@shared/types'
-import { defaultGroupBy } from '@shared/taxonomy'
+import { defaultGroupBy, normalizeTag } from '@shared/taxonomy'
 import { clamp01 } from '@shared/num'
 import { DEFAULT_VOLUME } from '@shared/constants'
 
@@ -61,6 +61,15 @@ function readLocal<T>(key: string, parse: (raw: string) => T, fallback: T): T {
     return fallback
   }
 }
+/** Persist the tag-colour override map (a no-op if localStorage is unavailable). */
+function persistTagColors(colors: Record<string, string>): void {
+  try {
+    localStorage.setItem('qs.tagColors', JSON.stringify(colors))
+  } catch {
+    /* localStorage unavailable — preference just won't persist */
+  }
+}
+
 let initialized = false // guard against React StrictMode double-invoking init() (double IPC subs)
 let noticeSeq = 0
 let slotSeq = 0
@@ -179,6 +188,7 @@ interface State {
   activeFilters: Record<ItemKind, Record<string, string | null>> // secondary chip filters
   showArtistView: boolean // optional legacy Artist→Album→Song mode
   playlistsCollapsed: boolean // Scenes/Playlists rail collapsed to a slim icon strip
+  tagColors: Record<string, string> // user colour overrides, keyed by normalized tag
   importWizardOpen: boolean
   importWizardUrl: string // URL to pre-fill the wizard with (from the top-bar quick-add)
   importWizardSource: 'url' | 'files' // which source the wizard opens on
@@ -228,6 +238,8 @@ interface State {
   setMusicVolume: (volume: number) => void
   setMasterVolume: (volume: number) => void // Discord SEND level (what remote players hear)
   setMonitorVolume: (volume: number) => void // local MONITOR level (what the GM hears on this machine)
+  setTagColor: (tag: string, hex: string) => void // override a tag's colour
+  resetTagColor: (tag: string) => void // clear an override, reverting to the default
   setOutputDevice: (deviceId: string) => void
   setMonitor: (on: boolean) => void
   toggleMonitor: () => void
@@ -308,6 +320,14 @@ export const useStore = create<State>((set, get) => ({
   activeFilters: { track: {}, ambience: {}, sfx: {} },
   showArtistView: false,
   playlistsCollapsed: readLocal('qs.playlistsCollapsed', (s) => s === '1', false),
+  tagColors: readLocal<Record<string, string>>(
+    'qs.tagColors',
+    (raw) => {
+      const parsed = JSON.parse(raw) as unknown
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {}
+    },
+    {}
+  ),
   importWizardOpen: false,
   importWizardUrl: '',
   importWizardSource: 'url',
@@ -765,6 +785,19 @@ export const useStore = create<State>((set, get) => ({
     } catch {
       /* localStorage unavailable — preference just won't persist */
     }
+  },
+
+  setTagColor: (tag, hex) => {
+    const next = { ...get().tagColors, [normalizeTag(tag)]: hex }
+    set({ tagColors: next })
+    persistTagColors(next)
+  },
+
+  resetTagColor: (tag) => {
+    const next = { ...get().tagColors }
+    delete next[normalizeTag(tag)]
+    set({ tagColors: next })
+    persistTagColors(next)
   },
 
   setOutputDevice: (deviceId) => {

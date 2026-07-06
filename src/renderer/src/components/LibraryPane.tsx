@@ -8,9 +8,11 @@ import {
   dimensionsFor,
   labelForDimension,
   labelForValue,
+  makeTag,
   parseTag,
   valuesPresent
 } from '@shared/taxonomy'
+import { colorForTag } from '@shared/tagColors'
 import {
   SongRow,
   useMatchingSongIds,
@@ -19,6 +21,7 @@ import {
   SongsPane
 } from './Browser'
 import { Icon } from './Icon'
+import { TagColorPicker } from './TagColorPicker'
 
 const UNTAGGED = '__untagged__'
 
@@ -43,6 +46,8 @@ export function LibraryPane(): JSX.Element {
   const search = useStore((s) => s.search)
   const setSearch = useStore((s) => s.setSearch)
   const matching = useMatchingSongIds()
+  const tagColors = useStore((s) => s.tagColors)
+  const [colorEditTag, setColorEditTag] = useState<string | null>(null)
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const toggleSection = (key: string): void =>
@@ -193,14 +198,25 @@ export function LibraryPane(): JSX.Element {
               <span className="filter-label">{labelForDimension(dim)}</span>
               {values.map((v) => {
                 const on = filters[dim] === v.value
+                const tag = makeTag(dim, v.value)
+                const color = colorForTag(tag, tagColors)
                 return (
-                  <button
-                    key={v.value}
-                    className={`tag-chip ${on ? 'active' : ''}`}
-                    onClick={() => setKindFilter(kind, dim, on ? null : v.value)}
-                  >
-                    {v.label}
-                  </button>
+                  <span className="tag-chip-wrap" key={v.value}>
+                    <button
+                      className="tag-dot-btn"
+                      style={{ background: color }}
+                      title={`Change colour for ${v.label}`}
+                      aria-label={`Change colour for ${v.label}`}
+                      onClick={() => setColorEditTag(tag)}
+                    />
+                    <button
+                      className={`tag-chip ${on ? 'active' : ''}`}
+                      style={{ '--tag-color': color } as React.CSSProperties}
+                      onClick={() => setKindFilter(kind, dim, on ? null : v.value)}
+                    >
+                      {v.label}
+                    </button>
+                  </span>
                 )
               })}
             </div>
@@ -237,6 +253,9 @@ export function LibraryPane(): JSX.Element {
             })}
           </div>
         </>
+      )}
+      {colorEditTag && (
+        <TagColorPicker tag={colorEditTag} onClose={() => setColorEditTag(null)} />
       )}
     </div>
   )

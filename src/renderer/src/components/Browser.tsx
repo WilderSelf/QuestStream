@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { useStore, fmtTime } from '../store'
 import type { Song } from '@shared/types'
 import { parseTag, labelForValue } from '@shared/taxonomy'
+import { colorForTag } from '@shared/tagColors'
 import { Icon } from './Icon'
 
 /** Spread onto a clickable non-button row so keyboard users can activate it (Enter/Space). */
@@ -326,6 +327,7 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
   const enqueueSongs = useStore((s) => s.enqueueSongs)
   const addAmbience = useStore((s) => s.addAmbience)
   const setEditSong = useStore((s) => s.setEditSong)
+  const tagColors = useStore((s) => s.tagColors)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `song:${song.id}`,
     data: { song }
@@ -367,7 +369,14 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
       <div className="title">
         <div className="title">{song.title}</div>
         {song.tags && song.tags.length > 0 && (
-          <div className="song-tags">{song.tags.map(tagLabel).join(' · ')}</div>
+          <div className="song-tags">
+            {song.tags.map((t) => (
+              <span className="song-tag" key={t}>
+                <span className="tag-dot" style={{ background: colorForTag(t, tagColors) }} aria-hidden="true" />
+                {tagLabel(t)}
+              </span>
+            ))}
+          </div>
         )}
       </div>
       <span className="duration">{fmtTime(song.duration)}</span>
