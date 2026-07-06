@@ -63,6 +63,11 @@ const MIX_SPLIT_DEFAULT = 0.5 // Now Playing's share of NowPlaying+Ambience
 const SPLIT_MIN = 0.2
 const SPLIT_MAX = 0.8
 const clampSplit = (v: number): number => Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, v))
+// Scenes/Playlists rail width in px (when expanded); the collapsed 48px strip is CSS-driven.
+const RAIL_WIDTH_DEFAULT = 200
+const RAIL_MIN = 140
+const RAIL_MAX = 360
+const clampRail = (v: number): number => Math.max(RAIL_MIN, Math.min(RAIL_MAX, v))
 
 // UI scale (webFrame zoom factor). Bounds enclose the Display-tab presets (90–150%).
 const UI_SCALE_MIN = 0.8
@@ -228,6 +233,7 @@ interface State {
   showArtistView: boolean // optional legacy Artist→Album→Song mode
   browserSplit: number // Library's fraction of the Library+Mix columns (draggable divider)
   mixSplit: number // Now Playing's fraction of the NowPlaying+Ambience rows (draggable divider)
+  railWidth: number // Scenes/Playlists rail width in px when expanded (draggable divider)
   playlistsCollapsed: boolean // Scenes/Playlists rail collapsed to a slim icon strip
   tagColors: Record<string, string> // user colour overrides, keyed by normalized tag
   importWizardOpen: boolean
@@ -265,6 +271,7 @@ interface State {
   clearKindFilters: (kind: ItemKind) => void
   setBrowserSplit: (frac: number) => void
   setMixSplit: (frac: number) => void
+  setRailWidth: (px: number) => void
   toggleArtistView: () => void
   togglePlaylistsCollapsed: () => void
   setImportWizardOpen: (open: boolean) => void
@@ -397,6 +404,15 @@ export const useStore = create<State>((set, get) => ({
   showArtistView: false,
   browserSplit: readLocal('qs.browserSplit', (s) => parseSplit(s), BROWSER_SPLIT_DEFAULT),
   mixSplit: readLocal('qs.mixSplit', (s) => parseSplit(s), MIX_SPLIT_DEFAULT),
+  railWidth: readLocal(
+    'qs.railWidth',
+    (s) => {
+      const n = parseFloat(s)
+      if (!Number.isFinite(n)) throw new Error('invalid rail width')
+      return clampRail(n)
+    },
+    RAIL_WIDTH_DEFAULT
+  ),
   playlistsCollapsed: readLocal('qs.playlistsCollapsed', (s) => s === '1', false),
   tagColors: readLocal<Record<string, string>>(
     'qs.tagColors',
@@ -549,6 +565,11 @@ export const useStore = create<State>((set, get) => ({
     const mixSplit = clampSplit(frac)
     persistJson('qs.mixSplit', mixSplit)
     set({ mixSplit })
+  },
+  setRailWidth: (px) => {
+    const railWidth = clampRail(px)
+    persistJson('qs.railWidth', railWidth)
+    set({ railWidth })
   },
   toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
   togglePlaylistsCollapsed: () =>

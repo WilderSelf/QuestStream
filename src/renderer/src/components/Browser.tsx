@@ -65,6 +65,7 @@ export function PlaylistsPane(): JSX.Element {
   const showNotice = useStore((s) => s.showNotice)
   const collapsed = useStore((s) => s.playlistsCollapsed)
   const toggleCollapsed = useStore((s) => s.togglePlaylistsCollapsed)
+  const railWidth = useStore((s) => s.railWidth)
 
   // Recalling replaces the whole live mix; guard it when there's unsaved work to lose.
   function recallSceneConfirmed(id: string): void {
@@ -117,7 +118,7 @@ export function PlaylistsPane(): JSX.Element {
   }
 
   return (
-    <div className="pane scenes-pane">
+    <div className="pane scenes-pane" style={{ width: railWidth }}>
       <div className="pane-header">
         <span className="pane-title">
           <button

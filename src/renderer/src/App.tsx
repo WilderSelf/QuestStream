@@ -38,6 +38,9 @@ export function App(): JSX.Element {
   const addAmbience = useStore((s) => s.addAmbience)
   const browserSplit = useStore((s) => s.browserSplit)
   const setBrowserSplit = useStore((s) => s.setBrowserSplit)
+  const railWidth = useStore((s) => s.railWidth)
+  const setRailWidth = useStore((s) => s.setRailWidth)
+  const playlistsCollapsed = useStore((s) => s.playlistsCollapsed)
 
   useEffect(() => {
     void init()
@@ -106,9 +109,24 @@ export function App(): JSX.Element {
           <AlertBanner />
           <div
             className="browser"
-            style={{ gridTemplateColumns: `auto ${browserSplit}fr 6px ${1 - browserSplit}fr` }}
+            style={{
+              // The rail's 6px handle track only exists while the rail is expanded.
+              gridTemplateColumns: playlistsCollapsed
+                ? `auto ${browserSplit}fr 6px ${1 - browserSplit}fr`
+                : `auto 6px ${browserSplit}fr 6px ${1 - browserSplit}fr`
+            }}
           >
             <PlaylistsPane />
+            {!playlistsCollapsed && (
+              <Splitter
+                orientation="vertical"
+                mode="pixel"
+                value={railWidth}
+                onChange={setRailWidth}
+                onReset={() => setRailWidth(200)}
+                ariaLabel="Resize the scenes and playlists rail"
+              />
+            )}
             <LibraryPane />
             <Splitter
               orientation="vertical"
