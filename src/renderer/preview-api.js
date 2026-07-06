@@ -149,6 +149,6 @@
       getToken: () => Promise.resolve('preview-token'),
       resetToken: () => Promise.resolve({ enabled: false, port: 8723, url: '', error: undefined })
     },
-    app: { onNotice: noop }
+    app: { onNotice: noop, setZoomFactor: () => {} }
   }
 })()

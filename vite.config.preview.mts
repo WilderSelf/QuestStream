@@ -15,6 +15,19 @@ export default defineConfig({
       '@shared': resolve(process.cwd(), 'src/shared')
     }
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      // The Preview MCP opens `/`, but the mocked entry is preview.html (index.html is the real
+      // Electron entry with no window.api mock). Rewrite `/` → preview.html so screenshots work.
+      name: 'serve-preview-entry',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === '/' || req.url === '/index.html') req.url = '/preview.html'
+          next()
+        })
+      }
+    }
+  ],
   server: { port: 5199, strictPort: true }
 })
