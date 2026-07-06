@@ -313,10 +313,46 @@ function OutputDeviceSettings(): JSX.Element {
 
 const SETTINGS_TABS: { id: SettingsTab; label: string; icon: IconName }[] = [
   { id: 'general', label: 'General', icon: 'settings' },
+  { id: 'display', label: 'Display', icon: 'layers' },
   { id: 'audio', label: 'Audio', icon: 'volume' },
   { id: 'remote', label: 'Remote', icon: 'wifi' },
   { id: 'advanced', label: 'Advanced', icon: 'info' }
 ]
+
+const UI_SCALE_PRESETS = [
+  { value: '0.9', label: '90%' },
+  { value: '1', label: '100%' },
+  { value: '1.1', label: '110%' },
+  { value: '1.25', label: '125%' },
+  { value: '1.5', label: '150%' }
+]
+
+/** Whole-UI scale (renderer zoom) with quick presets. Applies live and persists. */
+function DisplaySettings(): JSX.Element {
+  const uiScale = useStore((s) => s.uiScale)
+  const setUiScale = useStore((s) => s.setUiScale)
+  // Match the live scale to a preset value for the segmented control's selected state.
+  const current = UI_SCALE_PRESETS.find((p) => parseFloat(p.value) === uiScale)?.value ?? '1'
+  return (
+    <div className="field">
+      <h3 className="field-label">Interface size</h3>
+      <p className="muted small" style={{ padding: 0 }}>
+        Scale the whole interface — handy for reading from across the table or on a high-DPI
+        display.
+      </p>
+      <SegmentedControl
+        value={current}
+        onChange={(v) => setUiScale(parseFloat(v))}
+        options={UI_SCALE_PRESETS}
+      />
+      <div className="cookies-row">
+        <button className="link-btn" onClick={() => setUiScale(1)}>
+          Reset to 100%
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export function SettingsModal(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
@@ -406,6 +442,7 @@ export function SettingsModal(): JSX.Element | null {
             <DesktopIntegrationSettings />
           </>
         )}
+        {tab === 'display' && <DisplaySettings />}
         {tab === 'audio' && <OutputDeviceSettings />}
         {tab === 'remote' && <RemoteSettings />}
         {tab === 'advanced' && (

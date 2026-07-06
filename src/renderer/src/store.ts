@@ -38,7 +38,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
-export type SettingsTab = 'general' | 'audio' | 'remote' | 'advanced'
+export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
   text: string
   kind: 'info' | 'error'
@@ -63,6 +63,12 @@ const MIX_SPLIT_DEFAULT = 0.5 // Now Playing's share of NowPlaying+Ambience
 const SPLIT_MIN = 0.2
 const SPLIT_MAX = 0.8
 const clampSplit = (v: number): number => Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, v))
+
+// UI scale (webFrame zoom factor). Bounds enclose the Display-tab presets (90–150%).
+const UI_SCALE_MIN = 0.8
+const UI_SCALE_MAX = 1.5
+const clampScale = (v: number): number =>
+  Number.isFinite(v) ? Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, v)) : 1
 /** Parse a persisted split fraction, throwing on a non-finite value so readLocal uses its default. */
 const parseSplit = (s: string): number => {
   const n = parseFloat(s)
@@ -200,6 +206,7 @@ interface State {
   suggestYtdlpUpdate: boolean // after repeated failures, offer an "Update yt-dlp" banner
   settingsOpen: boolean
   settingsTab: SettingsTab
+  uiScale: number // renderer zoom factor (whole-UI scale), 0.8–1.5
   savePromptOpen: boolean
   saveScenePromptOpen: boolean
   loadedSceneId: string | null
@@ -294,6 +301,7 @@ interface State {
 
   setSettingsOpen: (open: boolean) => void
   openSettings: (tab?: SettingsTab) => void
+  setUiScale: (scale: number) => void
   setSavePromptOpen: (open: boolean) => void
   setSaveScenePromptOpen: (open: boolean) => void
   saveScene: (name: string, id?: string) => Promise<void>
@@ -341,6 +349,7 @@ export const useStore = create<State>((set, get) => ({
   suggestYtdlpUpdate: false,
   settingsOpen: false,
   settingsTab: 'general',
+  uiScale: readLocal('qs.uiScale', (s) => clampScale(parseFloat(s)), 1),
   savePromptOpen: false,
   saveScenePromptOpen: false,
   loadedSceneId: null,
@@ -919,6 +928,12 @@ export const useStore = create<State>((set, get) => ({
   // Open Settings, optionally jumping to a specific tab (the top-bar Remote button passes 'remote').
   // With no arg it just opens, preserving whatever tab was last shown.
   openSettings: (tab) => set(tab ? { settingsOpen: true, settingsTab: tab } : { settingsOpen: true }),
+  setUiScale: (scale) => {
+    const uiScale = clampScale(scale)
+    persistJson('qs.uiScale', uiScale)
+    window.api.app.setZoomFactor(uiScale)
+    set({ uiScale })
+  },
   setSavePromptOpen: (open) => set({ savePromptOpen: open }),
   setSaveScenePromptOpen: (open) => set({ saveScenePromptOpen: open }),
 

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webFrame } from 'electron'
 import { IPC, type RendererApi } from '../shared/ipc'
 
 function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -101,7 +101,9 @@ const api: RendererApi = {
     resetToken: () => ipcRenderer.invoke(IPC.remoteResetToken)
   },
   app: {
-    onNotice: (cb) => subscribe(IPC.notice, cb)
+    onNotice: (cb) => subscribe(IPC.notice, cb),
+    // Zoom the whole renderer frame (UI scale). Acts on this frame directly — no main-process round-trip.
+    setZoomFactor: (factor) => webFrame.setZoomFactor(factor)
   }
 }
 

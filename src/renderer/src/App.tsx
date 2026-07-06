@@ -43,6 +43,11 @@ export function App(): JSX.Element {
     void init()
   }, [init])
 
+  // webFrame.setZoomFactor is per-session, so re-apply the persisted UI scale once on launch.
+  useEffect(() => {
+    window.api.app.setZoomFactor(useStore.getState().uiScale)
+  }, [])
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     // Keyboard alternative to dragging: focus a grip/row, Space to pick up, arrows to move.

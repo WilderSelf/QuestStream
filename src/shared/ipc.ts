@@ -248,5 +248,6 @@ export interface RendererApi {
   }
   app: {
     onNotice(cb: (n: AppNotice) => void): () => void
+    setZoomFactor(factor: number): void
   }
 }
