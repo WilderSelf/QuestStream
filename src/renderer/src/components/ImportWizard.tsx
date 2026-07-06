@@ -13,6 +13,7 @@ import {
   parseTag,
   labelForValue
 } from '@shared/taxonomy'
+import { colorForTag } from '@shared/tagColors'
 
 /** Pick namespaced tags for one item, grouped by the kind's dimensions, + a custom field. */
 export function TagPicker({
@@ -25,6 +26,7 @@ export function TagPicker({
   onChange: (tags: string[]) => void
 }): JSX.Element {
   const [custom, setCustom] = useState('')
+  const tagColors = useStore((s) => s.tagColors)
   const has = (tag: string): boolean => value.some((t) => t.toLowerCase() === tag.toLowerCase())
   const toggle = (tag: string): void =>
     onChange(has(tag) ? value.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...value, tag])
@@ -46,6 +48,7 @@ export function TagPicker({
               <button
                 key={v.value}
                 className={`tag-chip ${has(tag) ? 'active' : ''}`}
+                style={{ '--tag-color': colorForTag(tag, tagColors) } as React.CSSProperties}
                 onClick={() => toggle(tag)}
               >
                 {v.label}
@@ -57,7 +60,12 @@ export function TagPicker({
       <div className="filter-row">
         <span className="filter-label">Custom</span>
         {free.map((t) => (
-          <span key={t} className="tag-chip active tag-removable" onClick={() => toggle(t)}>
+          <span
+            key={t}
+            className="tag-chip active tag-removable"
+            style={{ '--tag-color': colorForTag(t, tagColors) } as React.CSSProperties}
+            onClick={() => toggle(t)}
+          >
             {t} <Icon name="x" size={11} />
           </span>
         ))}

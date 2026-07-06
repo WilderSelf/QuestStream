@@ -410,42 +410,26 @@ textarea {
 }
 .tag-chip {
   font-size: var(--text-sm);
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: var(--radius-pill);
-  background: var(--nord0);
-  border: 1px solid var(--border);
-  color: var(--text);
+  /* The chip is coloured by its own tag colour so each reads at a glance without a separate
+     dot: tinted fill, colour-matched border and text. --tag-color is set inline per chip,
+     falling back to the old purple if absent. */
+  background: color-mix(in srgb, var(--tag-color, var(--nord15)) 16%, var(--nord0));
+  border: 1px solid color-mix(in srgb, var(--tag-color, var(--nord15)) 55%, transparent);
+  color: color-mix(in srgb, var(--tag-color, var(--nord15)) 60%, var(--text));
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .tag-chip:hover {
-  background: var(--nord3);
+  background: color-mix(in srgb, var(--tag-color, var(--nord15)) 30%, var(--nord0));
 }
 .tag-chip.active {
-  /* --tag-color is set inline per chip; fall back to the old purple if absent. */
+  /* Selected chips fill solid with their colour; the tint darkens to dark-on-colour text. */
   background: var(--tag-color, var(--nord15));
   border-color: var(--tag-color, var(--nord15));
   color: var(--nord0);
-}
-/* A filter chip and its colour-dot recolour button sit in one pill-shaped group. */
-.tag-chip-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.tag-dot-btn {
-  width: 12px;
-  height: 12px;
-  padding: 0;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.tag-dot-btn:hover {
-  transform: scale(1.15);
 }
 .tag-count {
   opacity: 0.6;

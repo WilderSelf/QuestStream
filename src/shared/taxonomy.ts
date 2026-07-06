@@ -33,43 +33,35 @@ const v = (value: string, label: string): TagValue => ({ value, label })
 // 'peace', 'woods') so tags saved by earlier versions keep matching their curated chip —
 // new values are only ever appended. See remapLegacyTag for the one-time migration of the
 // retired 'weather' / 'category' dimensions.
+// Curated starter values are trimmed to the handful a GM reaches for most in a typical
+// tabletop session — the quick-pick chips stay scannable, and any retired value keeps
+// working (valuesPresent unions in whatever the library actually uses, so a user who
+// tagged 'swamp' or 'steampunk' still sees that chip). Slugs are never renamed.
 const GENRE: Dimension = {
   key: 'genre',
   label: 'Genre / Setting',
+  // The five settings that cover the vast majority of tabletop campaigns.
   values: [
     v('fantasy', 'Fantasy'),
     v('scifi', 'Sci-Fi / Space'),
-    v('cyberpunk', 'Cyberpunk'),
     v('horror', 'Horror'),
-    v('modern', 'Modern'),
-    v('historical', 'Historical'),
-    v('western', 'Western'),
-    v('steampunk', 'Steampunk'),
-    v('post-apocalyptic', 'Post-Apocalyptic')
+    v('cyberpunk', 'Cyberpunk'),
+    v('modern', 'Modern')
   ]
 }
 
 const LOCATION: Dimension = {
   key: 'location',
   label: 'Location',
+  // The places a party spends most of its time: the tavern, the settlement, the road,
+  // and the three classic dungeon-crawl environments.
   values: [
     v('tavern', 'Tavern'),
     v('town', 'Town / City'),
-    v('woods', 'Woods'),
     v('wilderness', 'Wilderness'),
-    v('docks', 'Docks'),
     v('dungeon', 'Dungeon'),
     v('cave', 'Cave'),
-    v('ship', 'Ship'),
-    v('castle', 'Castle'),
-    v('temple', 'Temple'),
-    v('swamp', 'Swamp'),
-    v('underground', 'Underground'),
-    v('desert', 'Desert'),
-    v('mountains', 'Mountains'),
-    v('graveyard', 'Graveyard'),
-    v('market', 'Market'),
-    v('camp', 'Camp')
+    v('castle', 'Castle')
   ]
 }
 
@@ -79,33 +71,24 @@ const MOOD: Dimension = {
   values: [
     v('tense', 'Tense'),
     v('peace', 'Peaceful'),
-    v('somber', 'Somber'),
-    v('triumphant', 'Triumphant'),
     v('mysterious', 'Mysterious'),
-    v('eerie', 'Eerie'),
-    v('whimsical', 'Whimsical'),
     v('epic', 'Epic'),
-    v('melancholy', 'Melancholy'),
-    v('romantic', 'Romantic'),
-    v('foreboding', 'Foreboding')
+    v('eerie', 'Eerie'),
+    v('somber', 'Somber')
   ]
 }
 
 const ACTIVITY: Dimension = {
   key: 'activity',
   label: 'Activity',
+  // The recurring beats of a session: the fight, the big fight, the crawl, the roleplay,
+  // the journey between, and the rest afterwards.
   values: [
     v('combat', 'Combat'),
     v('boss', 'Boss'),
-    v('travel', 'Travel'),
     v('exploration', 'Exploration'),
     v('social', 'Social'),
-    v('celebration', 'Celebration'),
-    v('shopping', 'Shopping'),
-    v('stealth', 'Stealth'),
-    v('chase', 'Chase'),
-    v('investigation', 'Investigation'),
-    v('ritual', 'Ritual'),
+    v('travel', 'Travel'),
     v('downtime', 'Downtime')
   ]
 }

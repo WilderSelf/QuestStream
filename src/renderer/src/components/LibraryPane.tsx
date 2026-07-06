@@ -61,7 +61,6 @@ export function LibraryPane(): JSX.Element {
   const dims = dimensionsFor(kind)
   const groupBy = groupByMap[kind]
   const filters = filtersMap[kind]
-  const otherDims = dims.filter((d) => d.key !== groupBy)
 
   // Songs of this kind, passing the search and every active secondary filter.
   const visible = useMemo(() => {
@@ -104,14 +103,15 @@ export function LibraryPane(): JSX.Element {
     return ordered
   }, [visible, kind, groupBy])
 
-  // Secondary-filter chip rows: the present values for each non-grouping dimension. Memoized
-  // so we don't re-scan every visible song per dimension on each render (e.g. on filter toggle).
+  // Secondary-filter chip rows: the present values for every dimension (including the one we
+  // group by — its chips act as a quick "collapse to a single value"). Memoized so we don't
+  // re-scan every visible song per dimension on each render (e.g. on filter toggle).
   const filterRows = useMemo(
     () =>
-      otherDims
+      dims
         .map((d) => ({ dim: d.key, values: valuesPresent(visible, kind, d.key) }))
         .filter((r) => r.values.length > 0),
-    [visible, kind, groupBy] // otherDims is derived from (kind, groupBy)
+    [visible, kind, dims]
   )
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length
@@ -200,23 +200,21 @@ export function LibraryPane(): JSX.Element {
                 const on = filters[dim] === v.value
                 const tag = makeTag(dim, v.value)
                 const color = colorForTag(tag, tagColors)
+                // The chip carries its own colour; left-click filters, right-click recolours.
                 return (
-                  <span className="tag-chip-wrap" key={v.value}>
-                    <button
-                      className="tag-dot-btn"
-                      style={{ background: color }}
-                      title={`Change colour for ${v.label}`}
-                      aria-label={`Change colour for ${v.label}`}
-                      onClick={() => setColorEditTag(tag)}
-                    />
-                    <button
-                      className={`tag-chip ${on ? 'active' : ''}`}
-                      style={{ '--tag-color': color } as React.CSSProperties}
-                      onClick={() => setKindFilter(kind, dim, on ? null : v.value)}
-                    >
-                      {v.label}
-                    </button>
-                  </span>
+                  <button
+                    key={v.value}
+                    className={`tag-chip ${on ? 'active' : ''}`}
+                    style={{ '--tag-color': color } as React.CSSProperties}
+                    title={`${v.label} — right-click to recolour`}
+                    onClick={() => setKindFilter(kind, dim, on ? null : v.value)}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setColorEditTag(tag)
+                    }}
+                  >
+                    {v.label}
+                  </button>
                 )
               })}
             </div>
