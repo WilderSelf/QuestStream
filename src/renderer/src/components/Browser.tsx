@@ -371,8 +371,11 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
         {song.tags && song.tags.length > 0 && (
           <div className="song-tags">
             {song.tags.map((t) => (
-              <span className="song-tag" key={t}>
-                <span className="tag-dot" style={{ background: colorForTag(t, tagColors) }} aria-hidden="true" />
+              <span
+                className="song-tag"
+                key={t}
+                style={{ '--tag-color': colorForTag(t, tagColors) } as React.CSSProperties}
+              >
                 {tagLabel(t)}
               </span>
             ))}

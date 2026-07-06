@@ -440,20 +440,17 @@ textarea {
   color: var(--text-dim);
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   overflow: hidden;
 }
+/* The tag word itself carries the colour (no dot). The 60% mix toward body text keeps every
+   palette colour above WCAG AA (4.5:1) on the row background — raw pastels like red/deep-blue
+   fail otherwise. Weight 500 aids legibility at this small size, and the wider gap plus distinct
+   colours keep adjacent tags visually separate now that the dots are gone. */
 .song-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   white-space: nowrap;
-}
-.tag-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill);
-  flex-shrink: 0;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--tag-color, var(--text-dim)) 60%, var(--text));
 }
 
 /* ---- Now Playing tag dots (collapsed circle → hover/focus pill) ---- */
