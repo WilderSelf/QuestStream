@@ -35,6 +35,10 @@ export interface QueueItem {
 }
 
 export type RepeatMode = 'off' | 'all' | 'one'
+
+/** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
+ *  the modal straight to the Remote tab. */
+export type SettingsTab = 'general' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
   text: string
   kind: 'info' | 'error'
@@ -173,6 +177,7 @@ interface State {
   playbackFailures: number // consecutive track failures (reset on a successful play)
   suggestYtdlpUpdate: boolean // after repeated failures, offer an "Update yt-dlp" banner
   settingsOpen: boolean
+  settingsTab: SettingsTab
   savePromptOpen: boolean
   saveScenePromptOpen: boolean
   loadedSceneId: string | null
@@ -262,6 +267,7 @@ interface State {
   cycleRepeat: () => void
 
   setSettingsOpen: (open: boolean) => void
+  openSettings: (tab?: SettingsTab) => void
   setSavePromptOpen: (open: boolean) => void
   setSaveScenePromptOpen: (open: boolean) => void
   saveScene: (name: string, id?: string) => Promise<void>
@@ -308,6 +314,7 @@ export const useStore = create<State>((set, get) => ({
   playbackFailures: 0,
   suggestYtdlpUpdate: false,
   settingsOpen: false,
+  settingsTab: 'general',
   savePromptOpen: false,
   saveScenePromptOpen: false,
   loadedSceneId: null,
@@ -826,6 +833,9 @@ export const useStore = create<State>((set, get) => ({
   toggleMonitor: () => get().setMonitor(!get().monitorEnabled),
 
   setSettingsOpen: (open) => set({ settingsOpen: open }),
+  // Open Settings, optionally jumping to a specific tab (the top-bar Remote button passes 'remote').
+  // With no arg it just opens, preserving whatever tab was last shown.
+  openSettings: (tab) => set(tab ? { settingsOpen: true, settingsTab: tab } : { settingsOpen: true }),
   setSavePromptOpen: (open) => set({ savePromptOpen: open }),
   setSaveScenePromptOpen: (open) => set({ saveScenePromptOpen: open }),
 

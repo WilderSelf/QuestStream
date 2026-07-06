@@ -12,10 +12,11 @@ import type {
 } from '@shared/types'
 import { COOKIE_BROWSERS } from '@shared/types'
 import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
-import { useStore } from '../store'
+import { useStore, type SettingsTab } from '../store'
 import { Modal } from './Modal'
 import { TagPicker } from './ImportWizard'
 import { SegmentedControl } from './SegmentedControl'
+import { Icon, type IconName } from './Icon'
 
 function RemoteSettings(): JSX.Element {
   const [info, setInfo] = useState<RemoteInfo | null>(null)
@@ -285,7 +286,6 @@ function OutputDeviceSettings(): JSX.Element {
 
   return (
     <>
-      <hr className="modal-sep" />
       <div className="field">
         <h3 className="field-label">Local output device</h3>
         <p className="muted small" style={{ padding: 0 }}>
@@ -311,9 +311,19 @@ function OutputDeviceSettings(): JSX.Element {
   )
 }
 
+const SETTINGS_TABS: { id: SettingsTab; label: string; icon: IconName }[] = [
+  { id: 'general', label: 'General', icon: 'settings' },
+  { id: 'audio', label: 'Audio', icon: 'volume' },
+  { id: 'remote', label: 'Remote', icon: 'wifi' },
+  { id: 'advanced', label: 'Advanced', icon: 'info' }
+]
+
 export function SettingsModal(): JSX.Element | null {
   const open = useStore((s) => s.settingsOpen)
   const setOpen = useStore((s) => s.setSettingsOpen)
+  const tab = useStore((s) => s.settingsTab)
+  // openSettings(tab) sets the tab; the modal is already open here, so it just switches panels.
+  const setTab = useStore((s) => s.openSettings)
   const bot = useStore((s) => s.bot)
   const [token, setToken] = useState('')
   const [hasToken, setHasToken] = useState(false)
@@ -331,62 +341,85 @@ export function SettingsModal(): JSX.Element | null {
   async function save(): Promise<void> {
     setSaving(true)
     // The real token never leaves the main process; only write a new one if entered,
-    // otherwise just (re)connect with the stored token.
+    // otherwise just (re)connect with the stored token. Stays open so the status flips inline.
     if (token.trim()) await window.api.discord.setToken(token.trim())
     await window.api.discord.connect()
     setSaving(false)
-    setOpen(false)
   }
 
   return (
     <Modal onClose={() => setOpen(false)} className="settings" labelledBy="settings-title">
-        <h2 id="settings-title">Discord Bot Settings</h2>
-        <p>
-          Paste your bot token from the{' '}
-          <a href="https://discord.com/developers/applications" target="_blank" rel="noreferrer">
-            Discord Developer Portal
-          </a>
-          . Enable the bot, invite it to your server, then connect. The token is stored locally on
-          this machine only.
-        </p>
-        <div className="field">
-          <label htmlFor="bot-token">Bot Token</label>
-          <input
-            id="bot-token"
-            type="password"
-            value={token}
-            placeholder={hasToken ? '•••••••• saved — type to replace' : 'MTrase…'}
-            onChange={(e) => setToken(e.target.value)}
-          />
-        </div>
-        {bot.state === 'error' && (
-          <p style={{ color: 'var(--nord11)' }}>⚠ {bot.error}</p>
+      <h2 id="settings-title">Settings</h2>
+
+      <div className="settings-tabs kind-tabs" role="group" aria-label="Settings sections">
+        {SETTINGS_TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`seg ${tab === t.id ? 'active' : ''}`}
+            aria-pressed={tab === t.id}
+            aria-controls="settings-panel"
+            onClick={() => setTab(t.id)}
+          >
+            <Icon name={t.icon} size={15} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div id="settings-panel" className="settings-panel">
+        {tab === 'general' && (
+          <>
+            <p>
+              Paste your bot token from the{' '}
+              <a
+                href="https://discord.com/developers/applications"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Discord Developer Portal
+              </a>
+              . Enable the bot, invite it to your server, then connect. The token is stored locally
+              on this machine only.
+            </p>
+            <div className="field">
+              <label htmlFor="bot-token">Bot Token</label>
+              <input
+                id="bot-token"
+                type="password"
+                value={token}
+                placeholder={hasToken ? '•••••••• saved — type to replace' : 'MTrase…'}
+                onChange={(e) => setToken(e.target.value)}
+              />
+              <div className="cookies-row">
+                <button
+                  className="primary"
+                  disabled={saving || (!token.trim() && !hasToken)}
+                  onClick={() => void save()}
+                >
+                  {saving ? 'Connecting…' : hasToken && !token.trim() ? 'Connect' : 'Save & Connect'}
+                </button>
+              </div>
+            </div>
+            {bot.state === 'error' && <p style={{ color: 'var(--nord11)' }}>⚠ {bot.error}</p>}
+            {bot.state === 'ready' && (
+              <p style={{ color: 'var(--nord14)' }}>✓ Connected as {bot.username}</p>
+            )}
+            <DesktopIntegrationSettings />
+          </>
         )}
-        {bot.state === 'ready' && (
-          <p style={{ color: 'var(--nord14)' }}>✓ Connected as {bot.username}</p>
-        )}
-        <DesktopIntegrationSettings />
-        <OutputDeviceSettings />
-        <details className="settings-advanced">
-          <summary>Advanced — playback tools, YouTube cookies, remote</summary>
-          <div className="settings-advanced-body">
+        {tab === 'audio' && <OutputDeviceSettings />}
+        {tab === 'remote' && <RemoteSettings />}
+        {tab === 'advanced' && (
+          <>
             <ToolsSettings />
             <hr className="modal-sep" />
             <CookiesSettings />
-            <hr className="modal-sep" />
-            <RemoteSettings />
-          </div>
-        </details>
-        <div className="actions">
-          <button onClick={() => setOpen(false)}>Close</button>
-          <button
-            className="primary"
-            disabled={saving || (!token.trim() && !hasToken)}
-            onClick={() => void save()}
-          >
-            {saving ? 'Connecting…' : hasToken && !token.trim() ? 'Connect' : 'Save & Connect'}
-          </button>
-        </div>
+          </>
+        )}
+      </div>
+
+      <div className="actions">
+        <button onClick={() => setOpen(false)}>Done</button>
+      </div>
     </Modal>
   )
 }

@@ -10,6 +10,8 @@ export function TopBar(): JSX.Element {
   const selectGuild = useStore((s) => s.selectGuild)
   const selectChannel = useStore((s) => s.selectChannel)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
+  const openSettings = useStore((s) => s.openSettings)
+  const remoteActive = useStore((s) => s.remoteActive)
   const showNotice = useStore((s) => s.showNotice)
   const openImportWizard = useStore((s) => s.openImportWizard)
 
@@ -101,6 +103,19 @@ export function TopBar(): JSX.Element {
         </>
       )}
 
+      <button
+        className={`icon${remoteActive ? ' toggled' : ''}`}
+        title={
+          remoteActive
+            ? 'Remote is on — phone / Stream Deck control'
+            : 'Remote control (phone / Stream Deck)'
+        }
+        aria-label="Remote control"
+        aria-pressed={remoteActive}
+        onClick={() => openSettings('remote')}
+      >
+        <Icon name="wifi" size={16} />
+      </button>
       <button className="icon" title="Settings" aria-label="Settings" onClick={() => setSettingsOpen(true)}>
         <Icon name="settings" size={16} />
       </button>

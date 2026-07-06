@@ -336,18 +336,20 @@ textarea {
 .ctl-label {
   font-size: var(--text-xs);
 }
-.settings-advanced {
-  margin-top: var(--space-3);
-  border-top: 1px solid var(--border);
+/* Settings modal is tabbed (General / Audio / Remote / Advanced) — the tab bar reuses the
+   .kind-tabs/.seg pill styling with an icon + label per tab. A min-height on the panel keeps the
+   dialog from resizing as you switch between short and tall sections. */
+.settings-tabs {
+  margin-bottom: var(--space-3);
 }
-.settings-advanced > summary {
-  padding: var(--space-3) 0;
-  font-weight: 600;
-  color: var(--text-dim);
-  cursor: pointer;
+.settings-tabs .seg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
 }
-.settings-advanced > summary:hover {
-  color: var(--text);
+.settings-panel {
+  min-height: 320px;
 }
 
 .status-pill {
