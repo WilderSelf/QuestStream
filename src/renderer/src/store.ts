@@ -15,7 +15,7 @@ import type {
   ItemKind,
   DesktopStatus
 } from '@shared/types'
-import { defaultGroupBy, normalizeTag } from '@shared/taxonomy'
+import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { clamp01 } from '@shared/num'
 import { DEFAULT_VOLUME } from '@shared/constants'
 
@@ -63,6 +63,14 @@ function readLocal<T>(key: string, parse: (raw: string) => T, fallback: T): T {
     return raw === null ? fallback : parse(raw)
   } catch {
     return fallback
+  }
+}
+/** Persist any JSON-serialisable preference (a no-op if localStorage is unavailable). */
+function persistJson(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    /* localStorage unavailable — preference just won't persist */
   }
 }
 /** Persist the tag-colour override map (a no-op if localStorage is unavailable). */
@@ -322,9 +330,36 @@ export const useStore = create<State>((set, get) => ({
   editSongId: null,
   shuffle: false,
   repeat: 'off',
-  kindTab: 'track',
-  groupBy: { track: defaultGroupBy('track'), ambience: defaultGroupBy('ambience'), sfx: defaultGroupBy('sfx') },
-  activeFilters: { track: {}, ambience: {}, sfx: {} },
+  // Library view state persists across restarts so you land back where you left off. Each read
+  // validates/normalises against the current kinds so a stale or malformed value can't wedge the UI.
+  kindTab: readLocal<ItemKind>(
+    'qs.kindTab',
+    (s) => {
+      const k = JSON.parse(s)
+      return KIND_ORDER.includes(k) ? k : 'track'
+    },
+    'track'
+  ),
+  groupBy: readLocal<Record<ItemKind, string>>(
+    'qs.groupBy',
+    (s) => {
+      const p = JSON.parse(s) as Partial<Record<ItemKind, string>>
+      return {
+        track: p.track ?? defaultGroupBy('track'),
+        ambience: p.ambience ?? defaultGroupBy('ambience'),
+        sfx: p.sfx ?? defaultGroupBy('sfx')
+      }
+    },
+    { track: defaultGroupBy('track'), ambience: defaultGroupBy('ambience'), sfx: defaultGroupBy('sfx') }
+  ),
+  activeFilters: readLocal<Record<ItemKind, Record<string, string | null>>>(
+    'qs.activeFilters',
+    (s) => {
+      const p = JSON.parse(s) as Partial<Record<ItemKind, Record<string, string | null>>>
+      return { track: p.track ?? {}, ambience: p.ambience ?? {}, sfx: p.sfx ?? {} }
+    },
+    { track: {}, ambience: {}, sfx: {} }
+  ),
   showArtistView: false,
   playlistsCollapsed: readLocal('qs.playlistsCollapsed', (s) => s === '1', false),
   tagColors: readLocal<Record<string, string>>(
@@ -444,13 +479,31 @@ export const useStore = create<State>((set, get) => ({
   setSearch: (q) => set({ search: q }),
   setEditSong: (songId) => set({ editSongId: songId }),
 
-  setKindTab: (kind) => set({ kindTab: kind }),
-  setGroupBy: (kind, dim) => set((st) => ({ groupBy: { ...st.groupBy, [kind]: dim } })),
+  setKindTab: (kind) => {
+    set({ kindTab: kind })
+    persistJson('qs.kindTab', kind)
+  },
+  setGroupBy: (kind, dim) =>
+    set((st) => {
+      const groupBy = { ...st.groupBy, [kind]: dim }
+      persistJson('qs.groupBy', groupBy)
+      return { groupBy }
+    }),
   setKindFilter: (kind, dim, value) =>
-    set((st) => ({
-      activeFilters: { ...st.activeFilters, [kind]: { ...st.activeFilters[kind], [dim]: value } }
-    })),
-  clearKindFilters: (kind) => set((st) => ({ activeFilters: { ...st.activeFilters, [kind]: {} } })),
+    set((st) => {
+      const activeFilters = {
+        ...st.activeFilters,
+        [kind]: { ...st.activeFilters[kind], [dim]: value }
+      }
+      persistJson('qs.activeFilters', activeFilters)
+      return { activeFilters }
+    }),
+  clearKindFilters: (kind) =>
+    set((st) => {
+      const activeFilters = { ...st.activeFilters, [kind]: {} }
+      persistJson('qs.activeFilters', activeFilters)
+      return { activeFilters }
+    }),
   toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
   togglePlaylistsCollapsed: () =>
     set((st) => {
