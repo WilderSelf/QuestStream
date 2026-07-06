@@ -575,8 +575,10 @@ textarea {
 .browser {
   display: grid;
   /* First column is the Scenes/Playlists rail; its own width (200px ↔ 48px collapsed) drives
-     the `auto` track, so collapsing reclaims the space without coordinating a parent class. */
-  grid-template-columns: auto 1.7fr 1.2fr;
+     the `auto` track, so collapsing reclaims the space without coordinating a parent class.
+     Cols 2/4 are Library and Mix with a 6px Splitter track between them; inline gridTemplateColumns
+     on the element (see App.tsx) supplies the draggable fractions — this is the pre-JS fallback. */
+  grid-template-columns: auto 1.7fr 6px 1.2fr;
   flex: 1;
   min-height: 0;
 }
@@ -806,27 +808,45 @@ textarea {
   min-width: 0;
 }
 
+/* ---- Draggable splitters (browser columns + mix rows) ---- */
+/* A 6px hit track that lives in its own grid cell. Thin and quiet until hovered/focused. */
+.splitter {
+  background: transparent;
+  transition: background 0.12s ease;
+}
+.splitter:hover,
+.splitter:active {
+  background: var(--border-strong);
+}
+.splitter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.splitter-vertical {
+  cursor: col-resize;
+  height: 100%;
+}
+.splitter-horizontal {
+  cursor: row-resize;
+  width: 100%;
+}
+
 /* ---- Right column: Now Playing, Ambience, Soundboard as three stacked panes ---- */
 /* Now Playing and Ambience split the leftover height 50/50 and each scroll independently;
    the Soundboard is pinned at the bottom, sized 1–3 cards tall, so it's always reachable
    without scrolling the rail. */
+/* Grid rows: Now Playing and Ambience take draggable fr shares (a Splitter sits between them),
+   the Soundboard is the trailing `auto` row pinned at the bottom. Inline gridTemplateRows on the
+   element supplies the actual fractions (see QueuePane); this is the pre-JS fallback. */
 .right-col {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 6px minmax(0, 1fr) auto;
   min-height: 0;
   min-width: 0;
-}
-.right-col .queue,
-.right-col .ambience-pane {
-  flex: 1 1 0;
-  min-height: 0;
 }
 .right-col .ambience-pane,
 .right-col .soundboard-pane {
   border-top: 2px solid var(--border-strong);
-}
-.right-col .soundboard-pane {
-  flex: 0 0 auto;
 }
 .ambience-pane {
   display: flex;

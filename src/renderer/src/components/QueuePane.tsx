@@ -10,6 +10,7 @@ import type { SoundboardItem } from '@shared/types'
 import { useStore, fmtTime, type QueueItem, type AmbienceSlot } from '../store'
 import { Icon } from './Icon'
 import { SeekBar } from './SeekBar'
+import { Splitter } from './Splitter'
 import { TagDots } from './TagDots'
 import { VolumeSlider } from './VolumeSlider'
 
@@ -357,6 +358,8 @@ export function QueuePane(): JSX.Element {
   const setSaveScenePromptOpen = useStore((s) => s.setSaveScenePromptOpen)
   const musicVolume = useStore((s) => s.musicVolume)
   const setMusicVolume = useStore((s) => s.setMusicVolume)
+  const mixSplit = useStore((s) => s.mixSplit)
+  const setMixSplit = useStore((s) => s.setMixSplit)
   const { setNodeRef, isOver } = useDroppable({ id: 'queue-drop' })
 
   // Clearing a built queue throws away work — confirm unless it's already empty.
@@ -366,7 +369,10 @@ export function QueuePane(): JSX.Element {
   }
 
   return (
-    <div className="right-col">
+    <div
+      className="right-col"
+      style={{ gridTemplateRows: `minmax(0, ${mixSplit}fr) 6px minmax(0, ${1 - mixSplit}fr) auto` }}
+    >
       <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
       <div className="pane-header">
         <span>Now Playing · {queue.length}</span>
@@ -424,6 +430,13 @@ export function QueuePane(): JSX.Element {
 
       </div>
 
+      <Splitter
+        orientation="horizontal"
+        value={mixSplit}
+        onChange={setMixSplit}
+        onReset={() => setMixSplit(0.5)}
+        ariaLabel="Resize Now Playing and Ambience"
+      />
       <AmbienceSection />
       <SoundboardSection />
     </div>

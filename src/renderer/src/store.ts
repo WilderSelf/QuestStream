@@ -56,6 +56,20 @@ export interface AmbienceSlot {
 let uidSeq = 0
 const newUid = (): string => `q${Date.now()}_${uidSeq++}`
 
+// Draggable-layout split fractions (the leading pane's share of two adjacent panes). Defaults
+// mirror the old fixed grid ratios; clamped so neither pane can be dragged to nothing.
+const BROWSER_SPLIT_DEFAULT = 1.7 / (1.7 + 1.2) // Library's share of Library+Mix (~0.586)
+const MIX_SPLIT_DEFAULT = 0.5 // Now Playing's share of NowPlaying+Ambience
+const SPLIT_MIN = 0.2
+const SPLIT_MAX = 0.8
+const clampSplit = (v: number): number => Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, v))
+/** Parse a persisted split fraction, throwing on a non-finite value so readLocal uses its default. */
+const parseSplit = (s: string): number => {
+  const n = parseFloat(s)
+  if (!Number.isFinite(n)) throw new Error('invalid split')
+  return clampSplit(n)
+}
+
 /** Read a persisted preference, falling back if the key is missing or localStorage throws. */
 function readLocal<T>(key: string, parse: (raw: string) => T, fallback: T): T {
   try {
@@ -200,6 +214,8 @@ interface State {
   groupBy: Record<ItemKind, string> // accordion grouping dimension, per kind
   activeFilters: Record<ItemKind, Record<string, string | null>> // secondary chip filters
   showArtistView: boolean // optional legacy Artist→Album→Song mode
+  browserSplit: number // Library's fraction of the Library+Mix columns (draggable divider)
+  mixSplit: number // Now Playing's fraction of the NowPlaying+Ambience rows (draggable divider)
   playlistsCollapsed: boolean // Scenes/Playlists rail collapsed to a slim icon strip
   tagColors: Record<string, string> // user colour overrides, keyed by normalized tag
   importWizardOpen: boolean
@@ -235,6 +251,8 @@ interface State {
   setGroupBy: (kind: ItemKind, dim: string) => void
   setKindFilter: (kind: ItemKind, dim: string, value: string | null) => void
   clearKindFilters: (kind: ItemKind) => void
+  setBrowserSplit: (frac: number) => void
+  setMixSplit: (frac: number) => void
   toggleArtistView: () => void
   togglePlaylistsCollapsed: () => void
   setImportWizardOpen: (open: boolean) => void
@@ -361,6 +379,8 @@ export const useStore = create<State>((set, get) => ({
     { track: {}, ambience: {}, sfx: {} }
   ),
   showArtistView: false,
+  browserSplit: readLocal('qs.browserSplit', (s) => parseSplit(s), BROWSER_SPLIT_DEFAULT),
+  mixSplit: readLocal('qs.mixSplit', (s) => parseSplit(s), MIX_SPLIT_DEFAULT),
   playlistsCollapsed: readLocal('qs.playlistsCollapsed', (s) => s === '1', false),
   tagColors: readLocal<Record<string, string>>(
     'qs.tagColors',
@@ -504,6 +524,16 @@ export const useStore = create<State>((set, get) => ({
       persistJson('qs.activeFilters', activeFilters)
       return { activeFilters }
     }),
+  setBrowserSplit: (frac) => {
+    const browserSplit = clampSplit(frac)
+    persistJson('qs.browserSplit', browserSplit)
+    set({ browserSplit })
+  },
+  setMixSplit: (frac) => {
+    const mixSplit = clampSplit(frac)
+    persistJson('qs.mixSplit', mixSplit)
+    set({ mixSplit })
+  },
   toggleArtistView: () => set((st) => ({ showArtistView: !st.showArtistView })),
   togglePlaylistsCollapsed: () =>
     set((st) => {

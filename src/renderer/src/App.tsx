@@ -14,6 +14,7 @@ import { TopBar } from './components/TopBar'
 import { PlaylistsPane } from './components/Browser'
 import { LibraryPane } from './components/LibraryPane'
 import { QueuePane } from './components/QueuePane'
+import { Splitter } from './components/Splitter'
 import { TransportBar } from './components/TransportBar'
 import {
   SettingsModal,
@@ -35,6 +36,8 @@ export function App(): JSX.Element {
   const enqueueSongs = useStore((s) => s.enqueueSongs)
   const reorderQueue = useStore((s) => s.reorderQueue)
   const addAmbience = useStore((s) => s.addAmbience)
+  const browserSplit = useStore((s) => s.browserSplit)
+  const setBrowserSplit = useStore((s) => s.setBrowserSplit)
 
   useEffect(() => {
     void init()
@@ -93,9 +96,19 @@ export function App(): JSX.Element {
           <UpdateBanner />
           <DesktopPrompt />
           <AlertBanner />
-          <div className="browser">
+          <div
+            className="browser"
+            style={{ gridTemplateColumns: `auto ${browserSplit}fr 6px ${1 - browserSplit}fr` }}
+          >
             <PlaylistsPane />
             <LibraryPane />
+            <Splitter
+              orientation="vertical"
+              value={browserSplit}
+              onChange={setBrowserSplit}
+              onReset={() => setBrowserSplit(1.7 / (1.7 + 1.2))}
+              ariaLabel="Resize library and mix columns"
+            />
             <QueuePane />
           </div>
         </div>
