@@ -6,13 +6,10 @@ import {
   KIND_LABELS,
   KIND_HINTS,
   dimensionsFor,
-  labelForDimension,
   labelForValue,
-  makeTag,
   parseTag,
   valuesPresent
 } from '@shared/taxonomy'
-import { colorForTag } from '@shared/tagColors'
 import {
   SongRow,
   useMatchingSongIds,
@@ -22,6 +19,7 @@ import {
 } from './Browser'
 import { Icon } from './Icon'
 import { TagColorPicker } from './TagColorPicker'
+import { FacetFilter } from './FacetFilter'
 
 const UNTAGGED = '__untagged__'
 
@@ -48,6 +46,7 @@ export function LibraryPane(): JSX.Element {
   const matching = useMatchingSongIds()
   const tagColors = useStore((s) => s.tagColors)
   const [colorEditTag, setColorEditTag] = useState<string | null>(null)
+  const [openFacet, setOpenFacet] = useState<string | null>(null)
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const toggleSection = (key: string): void =>
@@ -174,52 +173,39 @@ export function LibraryPane(): JSX.Element {
       ) : (
         <>
           {visible.length > 0 && (
-            <>
-              <div className="library-controls">
-            <label className="group-by">
-              <span>Group by</span>
-              <select value={groupBy} onChange={(e) => setGroupBy(kind, e.target.value)}>
-                {dims.map((d) => (
-                  <option key={d.key} value={d.key}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {activeFilterCount > 0 && (
-              <button className="link-btn" onClick={() => clearKindFilters(kind)}>
-                Clear filters ({activeFilterCount})
-              </button>
-            )}
-          </div>
+            <div className="library-controls filter-bar">
+              <label className="group-by">
+                <span>Group by</span>
+                <select value={groupBy} onChange={(e) => setGroupBy(kind, e.target.value)}>
+                  {dims.map((d) => (
+                    <option key={d.key} value={d.key}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-          {filterRows.map(({ dim, values }) => (
-            <div className="filter-row" key={dim}>
-              <span className="filter-label">{labelForDimension(dim)}</span>
-              {values.map((v) => {
-                const on = filters[dim] === v.value
-                const tag = makeTag(dim, v.value)
-                const color = colorForTag(tag, tagColors)
-                // The chip carries its own colour; left-click filters, right-click recolours.
-                return (
-                  <button
-                    key={v.value}
-                    className={`tag-chip ${on ? 'active' : ''}`}
-                    style={{ '--tag-color': color } as React.CSSProperties}
-                    title={`${v.label} — right-click to recolour`}
-                    onClick={() => setKindFilter(kind, dim, on ? null : v.value)}
-                    onContextMenu={(e) => {
-                      e.preventDefault()
-                      setColorEditTag(tag)
-                    }}
-                  >
-                    {v.label}
-                  </button>
-                )
-              })}
+              {filterRows.map(({ dim, values }) => (
+                <FacetFilter
+                  key={dim}
+                  dim={dim}
+                  values={values}
+                  selected={filters[dim] ?? null}
+                  tagColors={tagColors}
+                  open={openFacet === dim}
+                  onOpen={() => setOpenFacet(dim)}
+                  onClose={() => setOpenFacet((cur) => (cur === dim ? null : cur))}
+                  onSelect={(value) => setKindFilter(kind, dim, value)}
+                  onRecolor={(tag) => setColorEditTag(tag)}
+                />
+              ))}
+
+              {activeFilterCount > 0 && (
+                <button className="link-btn" onClick={() => clearKindFilters(kind)}>
+                  Clear ({activeFilterCount})
+                </button>
+              )}
             </div>
-          ))}
-            </>
           )}
 
           <div className="pane-body">

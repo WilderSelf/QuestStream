@@ -1110,6 +1110,84 @@ textarea {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
+/* The compact filter bar: Group-by + one facet button per dimension + Clear, on one wrapping row.
+   `position: relative` + a raised z-index let the facet popovers layer over the sticky accordion
+   headers (`.accordion-head`, z-index 1) that scroll underneath in `.pane-body`. */
+.filter-bar {
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+  gap: var(--space-2);
+  position: relative;
+  z-index: 5;
+}
+
+/* Facet control: the wrapper is the shared hover region for the button + its popover panel. */
+.facet {
+  position: relative;
+  display: inline-flex;
+}
+.facet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.facet-btn:hover,
+.facet-btn[aria-expanded='true'] {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+/* Selected: the button hosts the chosen value as an inline coloured pill + a ✕ to clear it. */
+.facet-btn.selected {
+  background: color-mix(in srgb, var(--tag-color) 16%, var(--nord0));
+  border-color: color-mix(in srgb, var(--tag-color) 55%, transparent);
+  color: color-mix(in srgb, var(--tag-color) 60%, var(--text));
+}
+.facet-clear {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+  opacity: 0.7;
+  cursor: pointer;
+}
+.facet-clear:hover {
+  opacity: 1;
+}
+
+/* The popover panel: anchored below the button, layered above the sticky accordion heads. */
+.facet-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--panel-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  min-width: 140px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.facet-panel .tag-chip {
+  text-align: left;
+}
+/* Keep the last facet's panel on-screen in the narrow pane. */
+.facet:last-child .facet-panel {
+  left: auto;
+  right: 0;
+}
 .group-by {
   display: flex;
   align-items: center;
