@@ -1,7 +1,7 @@
 {
   "name": "queststream",
   "productName": "QuestStream",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "A bring-your-own-audio mixer for tabletop game masters — local files & links, ambience, scenes, and Discord voice.",
   "type": "module",
   "main": "./out/main/index.js",
