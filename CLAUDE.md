@@ -1,0 +1,31 @@
+# QuestStream — project guidance
+
+## Version control (overrides the cross-project "never commit to main" default)
+Solo repo, no CI, no branch protection. Commits and releases go **directly to `main`** — the
+standing workflow, pre-authorized. `scripts/release.sh`'s local typecheck + test gate **is** the
+merge gate. Cut releases from the container: `npm run release -- 0.X.Y`, first enabling the
+HTTPS-over-gh push rewrite (`git config --local url."https://github.com/".insteadOf "git@github.com:"`)
+so the script's own `git push --follow-tags` lands the tag on the right commit. **Never `--no-push`**
+in-container — it tags the wrong commit (learned at v0.2.3, fixed from v0.2.4). Larger/riskier
+features may still use a PR at discretion (e.g. the tag-system PR #3).
+
+## Showing UI changes
+The Electron GUI can't launch in-container, but the renderer runs in a browser for the **Preview
+MCP**: `preview_start` (config `preview`) → `preview_screenshot` renders the real UI with seeded
+mock data (`src/renderer/preview-api.js`, served at `/` via `preview.html`). Use that for visual
+verification — not hand-drawn mockups. **When you add a `window.api` method to the preload
+(`src/preload/index.ts`), add it to `preview-api.js` too**, or the preview crashes on the missing mock.
+
+## Automation & learning (Claude Code)
+Uses the shared **workflow kit** (user-scope `/ship` `/advance` `/wrap` `/reflect` `/curate` +
+`planner`/`reviewer` agents). This repo's profile is `.claude/workflow.json` (kept local per the
+`.claude/` gitignore): `validate` = `npm run typecheck` + `npm test` + `npm run build`,
+`merge_model: solo-main`, `plan_path` → `~/.claude/plans/queststream.md`.
+- **`solo-main`**: `/ship` runs the validate gate + reviewer, then commits **directly to `main`**
+  and pushes (no PR) — the standing direct-to-main flow above. Releases still go via
+  `npm run release -- 0.X.Y`. Same guardrails: no force-push; validate must be green before commit.
+- **Planning is memory-driven, not spec-driven.** The knowledge base + session bridge is the
+  project memory (`MEMORY.md` + `memory/*.md`), not `specs/` or `HANDOFF.md`. `/advance` selects
+  the next increment from the approved plan (`plan_path`) — which must enumerate the active
+  milestone. When the roadmap is fully shipped and the phase is "hold major changes," there is no
+  active milestone: `/advance` correctly stops rather than inventing feature work.
