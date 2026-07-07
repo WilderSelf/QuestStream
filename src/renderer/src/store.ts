@@ -16,6 +16,8 @@ import type {
   DesktopStatus
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
+import { NORD_SWATCH_HEX, migrateTagColor } from '@shared/tagColors'
+import type { SwatchTable } from '@shared/tagColors'
 import { clamp01 } from '@shared/num'
 import { DEFAULT_VOLUME } from '@shared/constants'
 
@@ -77,6 +79,47 @@ const clampScale = (v: number): number =>
 /** Apply the text-only scale as a CSS var on :root (multiplies the --text-* tokens). */
 const applyTextScale = (scale: number): void => {
   document.documentElement.style.setProperty('--text-scale', String(scale))
+}
+/** Built-in themes, in picker order. `id` is the `data-theme` value; the default (nord-refined)
+ *  is the bare :root, so it needs no attribute. `swatch` is a [ground, primary] preview pair. */
+export const DEFAULT_THEME = 'nord-refined'
+export const BUILTIN_THEMES: { id: string; name: string; swatch: [string, string] }[] = [
+  { id: 'nord-refined', name: 'Nord Refined', swatch: ['#1b2028', '#e8a95e'] },
+  { id: 'torchlit', name: 'Torchlit', swatch: ['#1a1512', '#eab963'] },
+  { id: 'daylight', name: 'Daylight', swatch: ['#e5e9f0', '#b06e26'] }
+]
+/** Apply a theme by name: the default is the bare :root (no attribute); everything else is a
+ *  `[data-theme="<name>"]` block (built-in, compiled into styles.css; or user, injected below). */
+const applyThemeAttr = (name: string): void => {
+  if (name === DEFAULT_THEME) document.documentElement.removeAttribute('data-theme')
+  else document.documentElement.setAttribute('data-theme', name)
+}
+const isBuiltinTheme = (name: string): boolean => BUILTIN_THEMES.some((t) => t.id === name)
+/** Host the active USER theme's CSS. Any token it omits falls back to the base :root (Nord
+ *  Refined) via the cascade, so a partial or malformed sheet can't break the UI. */
+const setUserThemeCss = (css: string): void => {
+  const id = 'qs-user-theme'
+  let el = document.getElementById(id) as HTMLStyleElement | null
+  if (!el) {
+    el = document.createElement('style')
+    el.id = id
+    document.head.appendChild(el)
+  }
+  el.textContent = css
+}
+
+/** The swatch keys read from the active theme's `--tag-*` tokens (plus 'neutral'). */
+const SWATCH_TOKEN_KEYS = [...Object.keys(NORD_SWATCH_HEX)]
+/** Snapshot the active theme's tag swatch palette from CSS, falling back per-token to Nord so a
+ *  theme that omits a swatch (or a headless environment with no layout) still resolves. */
+const readThemeSwatches = (): SwatchTable => {
+  if (typeof document === 'undefined') return { ...NORD_SWATCH_HEX }
+  const cs = getComputedStyle(document.documentElement)
+  const out: SwatchTable = {}
+  for (const key of SWATCH_TOKEN_KEYS) {
+    out[key] = cs.getPropertyValue(`--tag-${key}`).trim() || NORD_SWATCH_HEX[key]
+  }
+  return out
 }
 /** Parse a persisted split fraction, throwing on a non-finite value so readLocal uses its default. */
 const parseSplit = (s: string): number => {
@@ -235,7 +278,10 @@ interface State {
   mixSplit: number // Now Playing's fraction of the NowPlaying+Ambience rows (draggable divider)
   railWidth: number // Scenes/Playlists rail width in px when expanded (draggable divider)
   playlistsCollapsed: boolean // Scenes/Playlists rail collapsed to a slim icon strip
-  tagColors: Record<string, string> // user colour overrides, keyed by normalized tag
+  tagColors: Record<string, string> // user colour overrides (swatch key or custom hex), keyed by normalized tag
+  theme: string // active theme id ('nord-refined' default, a built-in id, or a user-theme file stem)
+  themeSwatches: SwatchTable // active theme's tag palette, read from the --tag-* CSS tokens
+  userThemes: string[] // user-authored theme stems discovered in userData/themes
   importWizardOpen: boolean
   importWizardUrl: string // URL to pre-fill the wizard with (from the top-bar quick-add)
   importWizardSource: 'url' | 'files' // which source the wizard opens on
@@ -288,8 +334,12 @@ interface State {
   setMusicVolume: (volume: number) => void
   setMasterVolume: (volume: number) => void // Discord SEND level (what remote players hear)
   setMonitorVolume: (volume: number) => void // local MONITOR level (what the GM hears on this machine)
-  setTagColor: (tag: string, hex: string) => void // override a tag's colour
+  setTagColor: (tag: string, value: string) => void // override a tag's colour (swatch key or custom hex)
   resetTagColor: (tag: string) => void // clear an override, reverting to the default
+  refreshThemeSwatches: () => void // re-read the --tag-* tokens after a theme change
+  setTheme: (name: string) => void // switch the active theme (applies, persists, re-reads swatches)
+  reloadThemes: () => void // re-scan userData/themes for user-authored .css themes
+  revealThemesFolder: () => void // open the themes folder in the OS file manager
   setOutputDevice: (deviceId: string) => void
   setMonitor: (on: boolean) => void
   toggleMonitor: () => void
@@ -414,11 +464,19 @@ export const useStore = create<State>((set, get) => ({
     RAIL_WIDTH_DEFAULT
   ),
   playlistsCollapsed: readLocal('qs.playlistsCollapsed', (s) => s === '1', false),
+  // persistJson stores the name JSON-encoded, so parse it back (a bare legacy value throws → default).
+  theme: readLocal('qs.theme', (s) => String(JSON.parse(s)) || DEFAULT_THEME, DEFAULT_THEME),
+  themeSwatches: readThemeSwatches(),
+  userThemes: [],
   tagColors: readLocal<Record<string, string>>(
     'qs.tagColors',
     (raw) => {
       const parsed = JSON.parse(raw) as unknown
-      return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {}
+      if (!parsed || typeof parsed !== 'object') return {}
+      // Migrate legacy raw-hex overrides to swatch keys so existing tags follow the theme.
+      return Object.fromEntries(
+        Object.entries(parsed as Record<string, string>).map(([k, v]) => [k, migrateTagColor(v)])
+      )
     },
     {}
   ),
@@ -445,6 +503,7 @@ export const useStore = create<State>((set, get) => ({
     initialized = true
     const library = await window.api.library.get()
     set({ library })
+    get().reloadThemes() // discover user-authored themes for the picker
 
     window.api.library.onChanged((snap) => set({ library: snap }))
     window.api.library.onImportProgress((p) => {
@@ -914,8 +973,8 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
-  setTagColor: (tag, hex) => {
-    const next = { ...get().tagColors, [normalizeTag(tag)]: hex }
+  setTagColor: (tag, value) => {
+    const next = { ...get().tagColors, [normalizeTag(tag)]: value }
     set({ tagColors: next })
     persistTagColors(next)
   },
@@ -926,6 +985,43 @@ export const useStore = create<State>((set, get) => ({
     set({ tagColors: next })
     persistTagColors(next)
   },
+
+  refreshThemeSwatches: () => set({ themeSwatches: readThemeSwatches() }),
+
+  setTheme: (name) => {
+    persistJson('qs.theme', name)
+    // Apply the attribute + re-read the --tag-* palette so tags recolour with the theme.
+    const apply = (id: string): void => {
+      applyThemeAttr(id)
+      set({ theme: id, themeSwatches: readThemeSwatches() })
+    }
+    if (isBuiltinTheme(name)) {
+      setUserThemeCss('') // drop any previously-injected user theme
+      apply(name)
+      return
+    }
+    // A user theme: fetch + inject its CSS, then apply. On failure (e.g. file deleted) fall back
+    // to the default so a missing theme can never leave the UI unstyled.
+    window.api.themes
+      .read(name)
+      .then((css) => {
+        setUserThemeCss(css)
+        apply(name)
+      })
+      .catch(() => {
+        setUserThemeCss('')
+        apply(DEFAULT_THEME)
+      })
+  },
+
+  reloadThemes: () => {
+    window.api.themes
+      .list()
+      .then((userThemes) => set({ userThemes }))
+      .catch(() => set({ userThemes: [] }))
+  },
+
+  revealThemesFolder: () => void window.api.themes.reveal(),
 
   setOutputDevice: (deviceId) => {
     set({ outputDeviceId: deviceId })

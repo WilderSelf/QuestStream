@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { labelForDimension, labelForValue, makeTag, type TagValue } from '@shared/taxonomy'
 import { colorForTag } from '@shared/tagColors'
+import { useStore } from '../store'
 import { Popover } from './Popover'
 import { Icon } from './Icon'
 
@@ -34,6 +35,7 @@ export function FacetFilter({
 }): JSX.Element {
   const labelId = useId()
   const dimLabel = labelForDimension(dim)
+  const themeSwatches = useStore((s) => s.themeSwatches)
 
   return (
     <Popover
@@ -44,7 +46,7 @@ export function FacetFilter({
       trigger={({ triggerProps }) => {
         if (selected) {
           const tag = makeTag(dim, selected)
-          const color = colorForTag(tag, tagColors)
+          const color = colorForTag(tag, tagColors, themeSwatches)
           return (
             <button
               {...triggerProps}
@@ -79,7 +81,7 @@ export function FacetFilter({
       {values.map((v) => {
         const on = selected === v.value
         const tag = makeTag(dim, v.value)
-        const color = colorForTag(tag, tagColors)
+        const color = colorForTag(tag, tagColors, themeSwatches)
         return (
           <button
             key={v.value}

@@ -77,6 +77,11 @@ export const IPC = {
   desktopGetStatus: 'desktop:getStatus',
   desktopInstall: 'desktop:install',
 
+  // user themes (userData/themes/*.css)
+  themesList: 'themes:list',
+  themesRead: 'themes:read',
+  themesReveal: 'themes:reveal', // open the themes folder in the OS file manager
+
   // auto-update (electron-updater)
   updateInstall: 'update:install', // quit + install a downloaded update
   updateCheck: 'update:check', // manual "check now"
@@ -196,6 +201,11 @@ export interface RendererApi {
   desktop: {
     getStatus(): Promise<DesktopStatus>
     install(): Promise<{ ok: boolean; error?: string; status?: DesktopStatus }>
+  }
+  themes: {
+    list(): Promise<string[]> // user theme file stems in userData/themes (without the .css)
+    read(name: string): Promise<string> // the .css contents for a stem (throws on an invalid name)
+    reveal(): Promise<void> // create if needed + open the themes folder in the file manager
   }
   update: {
     onStatus(cb: (s: UpdateState) => void): () => void

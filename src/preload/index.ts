@@ -104,6 +104,11 @@ const api: RendererApi = {
     onNotice: (cb) => subscribe(IPC.notice, cb),
     // Zoom the whole renderer frame (UI scale). Acts on this frame directly — no main-process round-trip.
     setZoomFactor: (factor) => webFrame.setZoomFactor(factor)
+  },
+  themes: {
+    list: () => ipcRenderer.invoke(IPC.themesList),
+    read: (name) => ipcRenderer.invoke(IPC.themesRead, name),
+    reveal: () => ipcRenderer.invoke(IPC.themesReveal)
   }
 }
 

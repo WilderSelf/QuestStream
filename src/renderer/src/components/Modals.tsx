@@ -12,7 +12,7 @@ import type {
 } from '@shared/types'
 import { COOKIE_BROWSERS } from '@shared/types'
 import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
-import { useStore, type SettingsTab } from '../store'
+import { useStore, BUILTIN_THEMES, type SettingsTab } from '../store'
 import { Modal } from './Modal'
 import { TagPicker } from './ImportWizard'
 import { SegmentedControl } from './SegmentedControl'
@@ -59,7 +59,7 @@ function RemoteSettings(): JSX.Element {
       <button onClick={() => void toggle()}>
         {info?.enabled ? `Disable remote (port ${info.port})` : 'Enable remote'}
       </button>
-      {info?.error && <p style={{ color: 'var(--nord11)' }}>⚠ Couldn’t start remote: {info.error}</p>}
+      {info?.error && <p style={{ color: 'var(--danger)' }}>⚠ Couldn’t start remote: {info.error}</p>}
       {info?.enabled && info.url && (
         <div className="remote-pair">
           {qr && <img src={qr} alt="Scan to pair your phone" />}
@@ -338,8 +338,65 @@ function DisplaySettings(): JSX.Element {
   const setUiScale = useStore((s) => s.setUiScale)
   const textScale = useStore((s) => s.textScale)
   const setTextScale = useStore((s) => s.setTextScale)
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
+  const userThemes = useStore((s) => s.userThemes)
+  const reloadThemes = useStore((s) => s.reloadThemes)
+  const revealThemesFolder = useStore((s) => s.revealThemesFolder)
   return (
     <>
+      <div className="field">
+        <h3 className="field-label">Theme</h3>
+        <p className="muted small" style={{ padding: 0 }}>
+          Choose a look for the whole app. Drop your own <code>.css</code> theme in the themes
+          folder to add it here.
+        </p>
+        <div className="theme-picker" role="radiogroup" aria-label="Theme">
+          {BUILTIN_THEMES.map((t) => (
+            <button
+              key={t.id}
+              className={`theme-swatch ${theme === t.id ? 'active' : ''}`}
+              role="radio"
+              aria-checked={theme === t.id}
+              onClick={() => setTheme(t.id)}
+            >
+              <span
+                className="theme-swatch-chip"
+                style={
+                  {
+                    background: `linear-gradient(135deg, ${t.swatch[0]} 0 50%, ${t.swatch[1]} 50% 100%)`
+                  } as React.CSSProperties
+                }
+              />
+              <span className="theme-swatch-name">{t.name}</span>
+            </button>
+          ))}
+          {userThemes.map((name) => (
+            <button
+              key={name}
+              className={`theme-swatch user ${theme === name ? 'active' : ''}`}
+              role="radio"
+              aria-checked={theme === name}
+              onClick={() => setTheme(name)}
+              title={`${name}.css`}
+            >
+              <span className="theme-swatch-chip user">
+                <Icon name="layers" size={16} />
+              </span>
+              <span className="theme-swatch-name">{name}</span>
+            </button>
+          ))}
+        </div>
+        <div className="theme-folder-actions">
+          <button className="link-btn icon-text" onClick={() => revealThemesFolder()}>
+            <Icon name="folder" size={13} /> Open themes folder
+          </button>
+          <button className="link-btn" onClick={() => reloadThemes()}>
+            Reload
+          </button>
+        </div>
+      </div>
+      <hr className="modal-sep" />
       <div className="field">
         <h3 className="field-label">Interface size</h3>
         <p className="muted small" style={{ padding: 0 }}>
@@ -460,9 +517,9 @@ export function SettingsModal(): JSX.Element | null {
                 </button>
               </div>
             </div>
-            {bot.state === 'error' && <p style={{ color: 'var(--nord11)' }}>⚠ {bot.error}</p>}
+            {bot.state === 'error' && <p style={{ color: 'var(--danger)' }}>⚠ {bot.error}</p>}
             {bot.state === 'ready' && (
-              <p style={{ color: 'var(--nord14)' }}>✓ Connected as {bot.username}</p>
+              <p style={{ color: 'var(--ok)' }}>✓ Connected as {bot.username}</p>
             )}
             <DesktopIntegrationSettings />
           </>

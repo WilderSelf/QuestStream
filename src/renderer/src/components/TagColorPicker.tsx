@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { Modal } from './Modal'
 import { useStore } from '../store'
-import { NORD_SWATCHES, colorForTag } from '@shared/tagColors'
+import { SWATCHES, colorForTag } from '@shared/tagColors'
 import { parseTag, labelForValue } from '@shared/taxonomy'
 
 /** Display label for a tag: namespaced → its value label, free → the raw value. */
@@ -18,9 +18,10 @@ const sameHex = (a: string, b: string): boolean => a.toLowerCase() === b.toLower
  */
 export function TagColorPicker({ tag, onClose }: { tag: string; onClose: () => void }): JSX.Element {
   const tagColors = useStore((s) => s.tagColors)
+  const themeSwatches = useStore((s) => s.themeSwatches)
   const setTagColor = useStore((s) => s.setTagColor)
   const resetTagColor = useStore((s) => s.resetTagColor)
-  const current = colorForTag(tag, tagColors)
+  const current = colorForTag(tag, tagColors, themeSwatches)
   const titleId = useId()
 
   return (
@@ -33,17 +34,21 @@ export function TagColorPicker({ tag, onClose }: { tag: string; onClose: () => v
       </h2>
 
       <div className="swatch-grid" role="group" aria-label="Preset colours">
-        {NORD_SWATCHES.map((s) => (
-          <button
-            key={s.hex}
-            className={`swatch ${sameHex(current, s.hex) ? 'active' : ''}`}
-            style={{ background: s.hex }}
-            title={s.name}
-            aria-label={s.name}
-            aria-pressed={sameHex(current, s.hex)}
-            onClick={() => setTagColor(tag, s.hex)}
-          />
-        ))}
+        {SWATCHES.map((s) => {
+          const hex = themeSwatches[s.key] ?? '#000'
+          const active = sameHex(current, hex)
+          return (
+            <button
+              key={s.key}
+              className={`swatch ${active ? 'active' : ''}`}
+              style={{ background: hex }}
+              title={s.name}
+              aria-label={s.name}
+              aria-pressed={active}
+              onClick={() => setTagColor(tag, s.key)}
+            />
+          )
+        })}
       </div>
 
       <div className="tag-color-custom">

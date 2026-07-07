@@ -46,12 +46,14 @@ export function App(): JSX.Element {
     void init()
   }, [init])
 
-  // Re-apply the persisted display prefs once on launch: webFrame zoom is per-session, and the
-  // text-scale CSS var must be seeded onto :root.
+  // Re-apply the persisted display prefs once on launch: webFrame zoom is per-session, the
+  // text-scale CSS var must be seeded onto :root, and the saved theme must be applied (which also
+  // re-reads the --tag-* swatch palette so tags paint in the active theme).
   useEffect(() => {
-    const { uiScale, textScale } = useStore.getState()
+    const { uiScale, textScale, theme, setTheme } = useStore.getState()
     window.api.app.setZoomFactor(uiScale)
     document.documentElement.style.setProperty('--text-scale', String(textScale))
+    setTheme(theme)
   }, [])
 
   const sensors = useSensors(

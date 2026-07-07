@@ -329,6 +329,7 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
   const addAmbience = useStore((s) => s.addAmbience)
   const setEditSong = useStore((s) => s.setEditSong)
   const tagColors = useStore((s) => s.tagColors)
+  const themeSwatches = useStore((s) => s.themeSwatches)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `song:${song.id}`,
     data: { song }
@@ -375,7 +376,7 @@ export function SongRow({ song }: { song: Song }): JSX.Element {
               <span
                 className="song-tag"
                 key={t}
-                style={{ '--tag-color': colorForTag(t, tagColors) } as React.CSSProperties}
+                style={{ '--tag-color': colorForTag(t, tagColors, themeSwatches) } as React.CSSProperties}
               >
                 {tagLabel(t)}
               </span>

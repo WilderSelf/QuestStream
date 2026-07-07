@@ -23,15 +23,15 @@
 
   /* ---- Surfaces: a rising elevation ramp (each lighter than the one below), with light
      hairline borders instead of dark trenches darker than the panels they bound. ---- */
-  --bg: #242931; /* deepest */
-  --surface: #2e3440; /* panels */
-  --surface-raised: #3b4252; /* cards, pane headers */
-  --surface-over: #434c5e; /* modals, transport (the focal anchor) */
+  --bg: #1b2028; /* deepest */
+  --surface: #2a303b; /* panels */
+  --surface-raised: #3a4150; /* cards, pane headers */
+  --surface-over: #4a5468; /* modals, transport (the focal anchor) */
   --panel: var(--surface); /* back-compat aliases for existing rules */
   --panel-alt: var(--surface-raised);
-  --border: rgba(216, 222, 233, 0.1); /* faint light hairline */
-  --border-strong: rgba(216, 222, 233, 0.16); /* structural divisions */
-  --border-subtle: rgba(216, 222, 233, 0.06);
+  --border: rgba(216, 222, 233, 0.14); /* faint light hairline */
+  --border-strong: rgba(216, 222, 233, 0.2); /* structural divisions */
+  --border-subtle: rgba(216, 222, 233, 0.08);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.38);
 
@@ -43,10 +43,10 @@
 
   /* ---- One primary: warm "torchlit" amber. The ONLY action/emphasis colour — primary
      buttons, toggled-on states, and selection. ---- */
-  --primary: #e0a35c;
-  --primary-hi: #edb877; /* hover */
-  --primary-press: #cf8f46;
-  --primary-tint: rgba(224, 163, 92, 0.16);
+  --primary: #e8a95e;
+  --primary-hi: #f2ba75; /* hover */
+  --primary-press: #d1904a;
+  --primary-tint: rgba(232, 169, 94, 0.16);
   --on-primary: #21262e; /* dark text on amber (AA) */
   /* back-compat: primary buttons / .toggled still reference --active* */
   --active: var(--primary);
@@ -95,6 +95,139 @@
   --space-4: 12px;
   --space-5: 16px;
   --space-6: 24px;
+
+  /* ---- Theme-contract additions (Phase 1): tokens components reference instead of raw nord.
+     A theme overrides these; default values equal the original nord colours (visual no-op). ---- */
+  --track: #4c566a; /* slider/progress rails, idle status dot (was nord3) */
+  --field-bg: #20252d; /* recessed inputs / segmented-tab wells */
+  --danger-tint: rgba(191, 97, 106, 0.16); /* red banners/error tints */
+  --scrim: rgba(20, 24, 30, 0.6); /* modal backdrop */
+  --on-tag: #2e3440; /* dark text on a solid tag fill (was nord0) */
+  --on-accent: #2e3440; /* dark text on a cyan/accent fill (was nord0) */
+  --on-solid: #eceff4; /* bright text on a deep/danger fill (was nord6) */
+  --shadow-3: 0 20px 60px rgba(0, 0, 0, 0.5); /* modal */
+
+  /* Tag swatch palette — theme-driven; read back into JS via getComputedStyle (see tagColors.ts). */
+  --tag-red: #bf616a;
+  --tag-orange: #d08770;
+  --tag-yellow: #ebcb8b;
+  --tag-green: #a3be8c;
+  --tag-teal: #8fbcbb;
+  --tag-cyan: #88c0d0;
+  --tag-blue: #81a1c1;
+  --tag-deepblue: #5e81ac;
+  --tag-purple: #b48ead;
+  --tag-neutral: #6b7280;
+}
+
+/* ===================================================================
+   BUILT-IN THEMES  — each overrides the full semantic-token contract.
+   Aliases (--panel, --active*, --accent, --muted, --selected) follow
+   their base token automatically, so a theme sets only the base tokens.
+   User themes live in userData/themes/*.css and scope to the same
+   :root[data-theme="<name>"] selector (see THEME.md).
+   =================================================================== */
+
+/* ---- Torchlit — warm, dim-room, tabletop mood ---- */
+:root[data-theme='torchlit'] {
+  --bg: #1a1512;
+  --surface: #241d18;
+  --surface-raised: #2f2620;
+  --surface-over: #3b2f27;
+  --field-bg: #191410;
+  --border: rgba(235, 220, 200, 0.1);
+  --border-strong: rgba(235, 220, 200, 0.18);
+  --border-subtle: rgba(235, 220, 200, 0.07);
+  --track: #5a4a3a;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.44);
+  --shadow-3: 0 20px 60px rgba(0, 0, 0, 0.55);
+
+  --text: #efe4d6;
+  --text-dim: #c9b8a6;
+  --text-faint: #9a8a78;
+
+  --primary: #eab963; /* ember / candle-gold */
+  --primary-hi: #f6cf85;
+  --primary-press: #d59a45;
+  --primary-tint: rgba(234, 185, 99, 0.16);
+  --on-primary: #241d18;
+
+  --live: #7fb0b8; /* muted teal — audio sounding now */
+  --live-tint: rgba(127, 176, 184, 0.16);
+  --accent-deep: #a86a3f;
+  --tag: #c58fb0;
+  --danger: #d9635f;
+  --danger-tint: rgba(217, 99, 95, 0.16);
+  --warn: #e6b455;
+  --ok: #a9b86a;
+  --scrim: rgba(15, 10, 7, 0.62);
+  --on-tag: #241d18;
+  --on-accent: #241d18;
+  --on-solid: #f3e9dc;
+  --hover: rgba(235, 220, 200, 0.06);
+
+  --tag-red: #d9635f;
+  --tag-orange: #e08a54;
+  --tag-yellow: #e6b455;
+  --tag-green: #a9b86a;
+  --tag-teal: #86b3a0;
+  --tag-cyan: #7fb0b8;
+  --tag-blue: #8aa4c0;
+  --tag-deepblue: #6f86ac;
+  --tag-purple: #c58fb0;
+  --tag-neutral: #8a7a68;
+}
+
+/* ---- Daylight — Nord Snow Storm, for a bright room / session prep ---- */
+:root[data-theme='daylight'] {
+  --bg: #dce1ea;
+  --surface: #e5e9f0;
+  --surface-raised: #eef1f6;
+  --surface-over: #ffffff;
+  --field-bg: #ffffff;
+  --border: rgba(46, 52, 64, 0.14);
+  --border-strong: rgba(46, 52, 64, 0.22);
+  --border-subtle: rgba(46, 52, 64, 0.08);
+  --track: #c2cbd9;
+  --shadow-1: 0 1px 2px rgba(46, 52, 64, 0.1);
+  --shadow-2: 0 6px 20px rgba(46, 52, 64, 0.14);
+  --shadow-3: 0 20px 60px rgba(46, 52, 64, 0.2);
+
+  --text: #2e3440;
+  --text-dim: #434c5e;
+  --text-faint: #5b657a;
+
+  --primary: #b06e26; /* darkened amber — AA on light */
+  --primary-hi: #955c1c;
+  --primary-press: #7f4f17;
+  --primary-tint: rgba(176, 110, 38, 0.14);
+  --on-primary: #ffffff;
+
+  --live: #2f7d90; /* darkened cyan */
+  --live-tint: rgba(47, 125, 144, 0.14);
+  --accent-deep: #4b6ea0;
+  --tag: #8a5f83;
+  --danger: #a3434c;
+  --danger-tint: rgba(163, 67, 76, 0.12);
+  --warn: #8a6a12;
+  --ok: #5c7a45;
+  --scrim: rgba(46, 52, 64, 0.35);
+  --on-tag: #ffffff;
+  --on-accent: #ffffff;
+  --on-solid: #ffffff;
+  --hover: rgba(46, 52, 64, 0.06);
+
+  --tag-red: #a3434c;
+  --tag-orange: #b05f34;
+  --tag-yellow: #8a6a12;
+  --tag-green: #5c7a45;
+  --tag-teal: #3f7d78;
+  --tag-cyan: #2f7d90;
+  --tag-blue: #4b6ea0;
+  --tag-deepblue: #3d5a86;
+  --tag-purple: #8a5f83;
+  --tag-neutral: #6b7280;
 }
 
 /* Inline action-button group in pane headers (was a repeated inline flex style). */
@@ -144,7 +277,7 @@ button {
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 button:hover:not(:disabled) {
-  background: var(--nord3);
+  background: var(--track);
 }
 button:disabled {
   opacity: 0.45;
@@ -154,7 +287,7 @@ button:disabled {
 button.primary {
   background: var(--active);
   border-color: var(--active);
-  color: var(--nord0);
+  color: var(--on-primary);
   font-weight: 600;
 }
 button.primary:hover:not(:disabled) {
@@ -225,7 +358,7 @@ select {
   font-family: inherit;
   font-size: var(--text-base);
   color: var(--text);
-  background: var(--nord0);
+  background: var(--field-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 6px 8px;
@@ -281,7 +414,7 @@ textarea {
   align-items: center;
   gap: var(--space-4);
   padding: 8px 12px;
-  background: linear-gradient(var(--nord1), var(--nord0));
+  background: linear-gradient(var(--surface-raised), var(--surface));
   border-bottom: 1px solid var(--border);
 }
 .topbar .brand {
@@ -362,7 +495,7 @@ textarea {
   gap: var(--space-2);
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: var(--nord0);
+  background: var(--field-bg);
   border: 1px solid var(--border);
   font-size: var(--text-sm);
   white-space: nowrap;
@@ -375,17 +508,17 @@ textarea {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--nord3);
+  background: var(--track);
   flex-shrink: 0;
 }
 .dot.ready {
-  background: var(--nord14);
+  background: var(--ok);
 }
 .dot.connecting {
-  background: var(--nord13);
+  background: var(--warn);
 }
 .dot.error {
-  background: var(--nord11);
+  background: var(--danger);
 }
 
 /* ---- Main area (tag bar + browser) ---- */
@@ -421,21 +554,21 @@ textarea {
   /* The chip is coloured by its own tag colour so each reads at a glance without a separate
      dot: tinted fill, colour-matched border and text. --tag-color is set inline per chip,
      falling back to the old purple if absent. */
-  background: color-mix(in srgb, var(--tag-color, var(--nord15)) 16%, var(--nord0));
-  border: 1px solid color-mix(in srgb, var(--tag-color, var(--nord15)) 55%, transparent);
-  color: color-mix(in srgb, var(--tag-color, var(--nord15)) 60%, var(--text));
+  background: color-mix(in srgb, var(--tag-color, var(--tag)) 16%, var(--field-bg));
+  border: 1px solid color-mix(in srgb, var(--tag-color, var(--tag)) 55%, transparent);
+  color: color-mix(in srgb, var(--tag-color, var(--tag)) 60%, var(--text));
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .tag-chip:hover {
-  background: color-mix(in srgb, var(--tag-color, var(--nord15)) 30%, var(--nord0));
+  background: color-mix(in srgb, var(--tag-color, var(--tag)) 30%, var(--field-bg));
 }
 .tag-chip.active {
   /* Selected chips fill solid with their colour; the tint darkens to dark-on-colour text. */
-  background: var(--tag-color, var(--nord15));
-  border-color: var(--tag-color, var(--nord15));
-  color: var(--nord0);
+  background: var(--tag-color, var(--tag));
+  border-color: var(--tag-color, var(--tag));
+  color: var(--on-tag);
 }
 .tag-count {
   opacity: 0.6;
@@ -475,7 +608,7 @@ textarea {
   padding: 0;
   border-radius: var(--radius-pill);
   background: var(--tag-color);
-  color: var(--nord0);
+  color: var(--on-tag);
   font-size: var(--text-2xs);
   font-weight: 600;
   line-height: 1;
@@ -740,19 +873,19 @@ textarea {
   opacity: 0.45;
   background: transparent;
   border: none;
-  color: var(--nord11);
+  color: var(--danger);
   padding: 4px 6px;
 }
 .play-btn {
   opacity: 1;
   background: transparent;
   border: none;
-  color: var(--nord14);
+  color: var(--ok);
   padding: 2px 6px;
   flex-shrink: 0;
 }
 .play-btn:hover {
-  color: var(--nord8);
+  color: var(--live);
 }
 /* Per-track loop toggle. Off = a dim, icon-only affordance. When looping it adopts the
    amber "toggled-on" language used everywhere else (shuffle/repeat) and grows a label
@@ -919,7 +1052,7 @@ textarea {
 .amb-card .amb-vol {
   flex: 0 1 88px;
   min-width: 56px;
-  accent-color: var(--nord15);
+  accent-color: var(--tag);
 }
 /* The mode toggle sizes to its content rather than stretching like the full-width tabs. */
 .amb-mode {
@@ -950,7 +1083,7 @@ textarea {
   right: 0;
   bottom: 0;
   height: 3px;
-  background: var(--nord3);
+  background: var(--track);
 }
 .amb-progress .fill {
   height: 100%;
@@ -964,7 +1097,7 @@ textarea {
 /* ---- Remote pairing (settings) ---- */
 .modal-sep {
   border: 0;
-  border-top: 1px solid rgba(76, 86, 106, 0.5);
+  border-top: 1px solid var(--border);
   margin: 14px 0;
 }
 .remote-pair {
@@ -982,13 +1115,13 @@ textarea {
 .remote-url {
   font-size: var(--text-xs);
   word-break: break-all;
-  color: var(--muted, #99a);
+  color: var(--muted);
   text-align: center;
 }
 .link-btn {
   background: none;
   border: 0;
-  color: var(--nord8, #88c0d0);
+  color: var(--live);
   font-size: var(--text-sm);
   cursor: pointer;
   padding: 2px;
@@ -999,7 +1132,7 @@ textarea {
 }
 .remote-advanced summary {
   cursor: pointer;
-  color: var(--muted, #99a);
+  color: var(--muted);
 }
 .remote-advanced button {
   margin: 6px 6px 0 0;
@@ -1028,7 +1161,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 2px;
-  background: rgba(43, 49, 60, 0.5);
+  background: var(--surface-raised);
   border-radius: var(--radius);
   padding: 2px;
 }
@@ -1046,11 +1179,11 @@ textarea {
   padding: 3px 5px;
 }
 .sfx .sfx-key.bound {
-  color: var(--nord14);
+  color: var(--ok);
   font-weight: 700;
 }
 .sfx .sfx-duck.on {
-  color: var(--nord13);
+  color: var(--warn);
 }
 .sfx .sfx-gain {
   width: 52px;
@@ -1101,7 +1234,7 @@ textarea {
 .kind-tabs {
   display: flex;
   gap: 2px;
-  background: var(--nord0);
+  background: var(--field-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 2px;
@@ -1122,7 +1255,7 @@ textarea {
 }
 .seg.active {
   background: var(--accent);
-  color: var(--nord0);
+  color: var(--on-accent);
   font-weight: 600;
 }
 .library-controls {
@@ -1169,7 +1302,7 @@ textarea {
 }
 /* Selected: the button hosts the chosen value as an inline coloured pill + a ✕ to clear it. */
 .facet-btn.selected {
-  background: color-mix(in srgb, var(--tag-color) 16%, var(--nord0));
+  background: color-mix(in srgb, var(--tag-color) 16%, var(--field-bg));
   border-color: color-mix(in srgb, var(--tag-color) 55%, transparent);
   color: color-mix(in srgb, var(--tag-color) 60%, var(--text));
 }
@@ -1311,15 +1444,15 @@ textarea {
   margin-bottom: 6px;
 }
 .wizard-error {
-  background: rgba(191, 97, 106, 0.14); /* nord11 tint */
-  border: 1px solid var(--nord11);
+  background: var(--danger-tint);
+  border: 1px solid var(--danger);
   border-radius: var(--radius);
   padding: 10px 12px;
   margin: 4px 0 10px;
 }
 .wizard-error-msg {
   font-size: var(--text-base);
-  color: var(--nord11);
+  color: var(--danger);
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 7.5em;
@@ -1413,12 +1546,12 @@ textarea {
   font-size: 20px;
   background: var(--accent-deep);
   border-color: var(--accent-deep);
-  color: var(--nord6);
+  color: var(--on-solid);
 }
 .control-buttons .play:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--nord0);
+  color: var(--on-accent);
 }
 /* Repeat-mode clarity: orange = on, "1" badge = repeat-one. */
 .control-buttons .repeat .rep-badge {
@@ -1446,7 +1579,7 @@ textarea {
   flex: 1;
   height: 5px;
   border-radius: var(--radius-pill);
-  background: var(--nord3);
+  background: var(--track);
   cursor: pointer;
   position: relative;
 }
@@ -1532,7 +1665,7 @@ textarea {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 24, 30, 0.6);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1547,7 +1680,7 @@ textarea {
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-3);
 }
 .modal h2 {
   margin: 0 0 8px;
@@ -1585,7 +1718,7 @@ textarea {
   gap: var(--space-3);
 }
 .modal a {
-  color: var(--nord8);
+  color: var(--live);
 }
 
 /* The settings dialog is content-heavy; widen it and pin the action row to the bottom so
@@ -1626,13 +1759,13 @@ textarea {
   animation: toast-in 0.16s ease-out;
 }
 .toast.error {
-  border-left-color: var(--nord11);
+  border-left-color: var(--danger);
 }
 .toast-icon {
   flex-shrink: 0;
 }
 .toast.error .toast-icon {
-  color: var(--nord11);
+  color: var(--danger);
 }
 .toast-text {
   flex: 1;
@@ -1668,14 +1801,14 @@ textarea {
   align-items: center;
   gap: var(--space-4);
   padding: 9px 14px;
-  background: rgba(191, 97, 106, 0.16); /* nord11 tint */
-  border-bottom: 1px solid var(--nord11);
+  background: var(--danger-tint);
+  border-bottom: 1px solid var(--danger);
   color: var(--text);
   font-size: var(--text-base);
   flex-shrink: 0;
 }
 .alert-icon {
-  color: var(--nord11);
+  color: var(--danger);
   flex-shrink: 0;
   font-size: 14px;
 }
@@ -1684,10 +1817,10 @@ textarea {
 }
 .alert-action {
   flex-shrink: 0;
-  background: var(--nord11);
+  background: var(--danger);
   border: none;
   border-radius: var(--radius);
-  color: var(--nord6);
+  color: var(--on-solid);
   cursor: pointer;
   font-size: var(--text-sm);
   padding: 3px 10px;
@@ -1745,7 +1878,7 @@ textarea {
   color: var(--text-dim);
 }
 .tool-list li.missing .tool-source {
-  color: var(--nord11);
+  color: var(--danger);
 }
 .tool-dot {
   width: 8px;
@@ -1754,10 +1887,10 @@ textarea {
   flex-shrink: 0;
 }
 .tool-dot.ok {
-  background: var(--nord14);
+  background: var(--ok);
 }
 .tool-dot.bad {
-  background: var(--nord11);
+  background: var(--danger);
 }
 .cookies-row {
   display: flex;
@@ -1766,10 +1899,10 @@ textarea {
   margin-top: 8px;
 }
 .cookies-row .ok {
-  color: var(--nord14);
+  color: var(--ok);
 }
 .muted.ok {
-  color: var(--nord14);
+  color: var(--ok);
 }
 
 /* ---- Desktop-integration prompt (AppImage → menu) ---- */
@@ -1819,10 +1952,73 @@ textarea {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--nord3);
+  background: var(--track);
   border-radius: var(--radius);
   border: 2px solid var(--bg);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--nord10);
+  background: var(--accent-deep);
+}
+
+/* ---- Theme picker (Settings → Display) ---- */
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-1);
+}
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.theme-swatch-chip {
+  width: 58px;
+  height: 40px;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.theme-swatch.active .theme-swatch-chip {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--surface-over);
+}
+.theme-swatch-name {
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+.theme-swatch.active .theme-swatch-name {
+  color: var(--text);
+  font-weight: 600;
+}
+.theme-swatch:focus-visible {
+  outline: none;
+}
+.theme-swatch:focus-visible .theme-swatch-chip {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Row of actions under the user-theme list (open folder / reload). */
+.theme-folder-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* User-authored theme chip: no colour preview, a neutral card with a file glyph. */
+.theme-swatch-chip.user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-raised);
+  color: var(--text-faint);
+}
+.theme-swatch.user.active .theme-swatch-chip.user {
+  color: var(--primary);
 }

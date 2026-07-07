@@ -18,6 +18,7 @@ const MAX_DOTS = 6
  */
 export function TagDots({ tags }: { tags: string[] }): JSX.Element | null {
   const tagColors = useStore((s) => s.tagColors)
+  const themeSwatches = useStore((s) => s.themeSwatches)
   if (!tags || tags.length === 0) return null
 
   // Namespaced tags first (they carry the meaningful colours), then free tags.
@@ -33,7 +34,7 @@ export function TagDots({ tags }: { tags: string[] }): JSX.Element | null {
           <span
             key={t}
             className="tag-dots-item"
-            style={{ '--tag-color': colorForTag(t, tagColors) } as React.CSSProperties}
+            style={{ '--tag-color': colorForTag(t, tagColors, themeSwatches) } as React.CSSProperties}
             tabIndex={0}
             aria-label={label}
             title={label}

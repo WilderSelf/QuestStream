@@ -17,6 +17,7 @@ import { updateYtDlp } from '../bot/updater'
 import { buildCookieArgs, cookiesFilePath, isCookieBrowser } from '../bot/cookies'
 import { desktopStatus, installDesktopEntry } from '../desktop'
 import { checkForUpdates, quitAndInstall } from '../appUpdater'
+import { ensureThemesDir, listThemes, readTheme } from '../themes'
 import { join } from 'node:path'
 import type { IpcContext } from './context'
 
@@ -114,6 +115,15 @@ export function registerLibraryIpc(ctx: IpcContext): void {
   // ---- auto-update (electron-updater) ----
   handle(IPC.updateCheck, () => checkForUpdates())
   handle(IPC.updateInstall, () => quitAndInstall())
+
+  // ---- user themes (userData/themes/*.css) ----
+  handle(IPC.themesList, () => listThemes(userData))
+  handle(IPC.themesRead, (_e, name: string) => readTheme(userData, name))
+  handle(IPC.themesReveal, async () => {
+    // Dynamic import keeps electron out of this module's load graph (headless tests import it).
+    const { shell } = await import('electron')
+    await shell.openPath(ensureThemesDir(userData)) // create + seed THEME.md, then open the folder
+  })
 
   const doImport = async (
     url: string,

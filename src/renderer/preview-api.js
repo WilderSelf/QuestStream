@@ -149,6 +149,12 @@
       getToken: () => Promise.resolve('preview-token'),
       resetToken: () => Promise.resolve({ enabled: false, port: 8723, url: '', error: undefined })
     },
-    app: { onNotice: noop, setZoomFactor: () => {} }
+    app: { onNotice: noop, setZoomFactor: () => {} },
+    themes: {
+      // A couple of fake user themes so the preview shows the picker's user-theme section.
+      list: () => Promise.resolve(['moonlit', 'parchment']),
+      read: (name) => Promise.resolve(`:root[data-theme="${name}"]{ --primary:#b48ead }`),
+      reveal: () => Promise.resolve()
+    }
   }
 })()
