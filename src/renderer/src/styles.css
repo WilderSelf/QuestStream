@@ -1558,8 +1558,8 @@ textarea {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: var(--space-6);
-  padding: 12px 16px;
+  gap: var(--space-4);
+  padding: 6px 12px;
   background: var(--surface-over);
   border-top: 1px solid var(--border-strong);
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.32);
@@ -1569,8 +1569,11 @@ textarea {
 .np-info {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  min-width: 0;
+  gap: var(--space-3);
+  /* Give the now-playing title priority: floor the column so a wide volume section
+     can't starve it (at ~960px the title otherwise clips to ~49px). The .meta child
+     keeps min-width:0 for the ellipsis. */
+  min-width: 208px;
 }
 .np-info .thumb {
   width: 44px;
@@ -1601,19 +1604,20 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  min-width: 360px;
+  gap: var(--space-1);
+  min-width: 264px;
 }
 .control-buttons {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
-/* Larger, legible transport controls (the small emoji glyphs were hard to read). */
+/* Legible transport controls, condensed for small windows (the emoji glyphs were hard
+   to read at the old tiny size, but the 38/48px heights ate ~18% of a 520px window). */
 .control-buttons .icon {
-  min-width: 42px;
-  height: 38px;
-  font-size: 18px;
+  min-width: 36px;
+  height: 32px;
+  font-size: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1622,13 +1626,13 @@ textarea {
 /* The play button stays blue (the orange "active" language is for toggles/primary
    actions, not transport play). Overrides .primary. */
 .control-buttons .play {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   background: var(--accent-deep);
   border-color: var(--accent-deep);
   color: var(--on-solid);
@@ -1662,7 +1666,7 @@ textarea {
 }
 .bar {
   flex: 1;
-  height: 5px;
+  height: 4px;
   border-radius: var(--radius-pill);
   background: var(--track);
   cursor: pointer;
@@ -1701,7 +1705,7 @@ textarea {
   justify-content: flex-end;
 }
 .volume input[type='range'] {
-  width: 110px;
+  width: 96px;
   /* Monitor/send volume: amber control accent, matching the deck-row sliders. */
   accent-color: var(--primary);
 }
@@ -1720,7 +1724,9 @@ textarea {
   }
   .transport {
     gap: var(--space-3);
-    padding: 10px 10px;
+    /* Keep the compacted base height (6px) here — the old 10px bump now made the
+       transport *taller* below 900px than at 960px, the opposite of the intent. */
+    padding: 6px 10px;
   }
   .controls {
     min-width: 0;
@@ -1741,9 +1747,6 @@ textarea {
   }
   .volume input[type='range'] {
     width: 72px;
-  }
-  .control-buttons .icon {
-    min-width: 36px;
   }
 }
 

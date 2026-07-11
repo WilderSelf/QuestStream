@@ -37,7 +37,9 @@ export function TransportBar(): JSX.Element {
           <div className="thumb" />
         )}
         <div className="meta">
-          <div className="t">{current ? current.title : 'Nothing playing'}</div>
+          <div className="t" title={current ? current.title : undefined}>
+            {current ? current.title : 'Nothing playing'}
+          </div>
           <div className="a">
             {current
               ? player.state === 'buffering'
@@ -68,7 +70,7 @@ export function TransportBar(): JSX.Element {
             aria-label={isPlaying ? 'Pause' : 'Play'}
             onClick={() => void togglePlay()}
           >
-            <Icon name={isPlaying ? 'pause' : 'play'} size={20} />
+            <Icon name={isPlaying ? 'pause' : 'play'} size={18} />
           </button>
           <button className="icon" title="Next" aria-label="Next track" onClick={() => void playNext()}>
             <Icon name="next" />
