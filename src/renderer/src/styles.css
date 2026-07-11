@@ -1318,15 +1318,23 @@ textarea {
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
-/* The compact filter bar: Group-by + one facet button per dimension + Clear, on one wrapping row.
-   `position: relative` + a raised z-index let the facet popovers layer over the sticky accordion
-   headers (`.accordion-head`, z-index 1) that scroll underneath in `.pane-body`. */
+/* The compact filter bar: Group-by + a single "Filters (n)" popover + Clear, on one non-wrapping
+   row (facets used to be one button per dimension, which wrapped to a 2nd row ~65px tall at
+   ~960×520 — see FiltersPopover). `position: relative` + a raised z-index let the facet popovers
+   layer over the sticky accordion headers (`.accordion-head`, z-index 1) that scroll underneath in
+   `.pane-body`. */
 .filter-bar {
-  flex-wrap: wrap;
-  row-gap: var(--space-2);
+  flex-wrap: nowrap;
   gap: var(--space-2);
   position: relative;
   z-index: 5;
+}
+/* The group-by select yields first if the row is ever tight, keeping Filters/Clear un-clipped. */
+.filter-bar .group-by {
+  min-width: 0;
+}
+.filter-bar .group-by select {
+  min-width: 0;
 }
 
 /* Facet control: the wrapper is the shared hover region for the button + its popover panel. */
@@ -1352,23 +1360,6 @@ textarea {
   color: var(--text);
   border-color: var(--border-strong);
 }
-/* Selected: the button hosts the chosen value as an inline coloured pill + a ✕ to clear it. */
-.facet-btn.selected {
-  background: color-mix(in srgb, var(--tag-color) 16%, var(--field-bg));
-  border-color: color-mix(in srgb, var(--tag-color) 55%, transparent);
-  color: color-mix(in srgb, var(--tag-color) 60%, var(--text));
-}
-.facet-clear {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 2px;
-  opacity: 0.7;
-  cursor: pointer;
-}
-.facet-clear:hover {
-  opacity: 1;
-}
-
 /* The popover panel: anchored below the button, layered above the sticky accordion heads. */
 .facet-panel {
   position: absolute;
@@ -1395,6 +1386,48 @@ textarea {
 .facet:last-child .facet-panel {
   left: auto;
   right: 0;
+}
+
+/* "Filters (n)" trigger: active count badge, and a subtle highlight when any facet is set. */
+.facet-btn.has-active {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.facet-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+/* Consolidated Filters popover: each dimension is a labelled group of chips, stacked in the panel. */
+.facet-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.facet-group + .facet-group {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+.facet-group-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.facet-group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.facet-group-chips .tag-chip {
+  text-align: left;
 }
 .group-by {
   display: flex;

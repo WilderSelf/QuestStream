@@ -36,6 +36,7 @@ export type IconName =
   | 'dice'
   | 'chevron-down'
   | 'chevron-right'
+  | 'filter'
   | 'warning'
   | 'info'
   | 'arrow-up'
@@ -281,6 +282,9 @@ const ICONS: Record<IconName, IconDef> = {
   },
   'chevron-down': { body: <polyline points="6 9 12 15 18 9" /> },
   'chevron-right': { body: <polyline points="9 18 15 12 9 6" /> },
+  filter: {
+    body: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  },
   warning: {
     body: (
       <>

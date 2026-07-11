@@ -19,7 +19,7 @@ import {
 } from './Browser'
 import { Icon } from './Icon'
 import { TagColorPicker } from './TagColorPicker'
-import { FacetFilter } from './FacetFilter'
+import { FiltersPopover } from './FiltersPopover'
 
 const UNTAGGED = '__untagged__'
 
@@ -46,7 +46,6 @@ export function LibraryPane(): JSX.Element {
   const matching = useMatchingSongIds()
   const tagColors = useStore((s) => s.tagColors)
   const [colorEditTag, setColorEditTag] = useState<string | null>(null)
-  const [openFacet, setOpenFacet] = useState<string | null>(null)
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const toggleSection = (key: string): void =>
@@ -185,20 +184,16 @@ export function LibraryPane(): JSX.Element {
                 </select>
               </label>
 
-              {filterRows.map(({ dim, values }) => (
-                <FacetFilter
-                  key={dim}
-                  dim={dim}
-                  values={values}
-                  selected={filters[dim] ?? null}
+              {filterRows.length > 0 && (
+                <FiltersPopover
+                  rows={filterRows}
+                  filters={filters}
                   tagColors={tagColors}
-                  open={openFacet === dim}
-                  onOpen={() => setOpenFacet(dim)}
-                  onClose={() => setOpenFacet((cur) => (cur === dim ? null : cur))}
-                  onSelect={(value) => setKindFilter(kind, dim, value)}
+                  activeCount={activeFilterCount}
+                  onSelect={(dim, value) => setKindFilter(kind, dim, value)}
                   onRecolor={(tag) => setColorEditTag(tag)}
                 />
-              ))}
+              )}
 
               {activeFilterCount > 0 && (
                 <button className="link-btn" onClick={() => clearKindFilters(kind)}>
