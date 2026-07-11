@@ -61,7 +61,7 @@ const newUid = (): string => `q${Date.now()}_${uidSeq++}`
 // Draggable-layout split fractions (the leading pane's share of two adjacent panes). Defaults
 // mirror the old fixed grid ratios; clamped so neither pane can be dragged to nothing.
 const BROWSER_SPLIT_DEFAULT = 1.7 / (1.7 + 1.2) // Library's share of Library+Mix (~0.586)
-const MIX_SPLIT_DEFAULT = 0.5 // Now Playing's share of NowPlaying+Ambience
+const MIX_SPLIT_DEFAULT = 0.62 // Now Playing's share of NowPlaying+Ambience (it's the primary pane)
 const SPLIT_MIN = 0.2
 const SPLIT_MAX = 0.8
 const clampSplit = (v: number): number => Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, v))

@@ -241,11 +241,9 @@ function AmbienceSection(): JSX.Element {
       </div>
       <div className={`ambience-list ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
         {ambience.length === 0 && (
-          <div className="muted small">
-            Layer sounds that all play at once — a rain bed, a tavern crowd, the occasional
-            thunderclap. Drag an ambience track here (or double-click it) — each sound becomes its
-            own layer you can set to <strong>Loop</strong> (continuous) or <strong>Random</strong>{' '}
-            (fired every few seconds).
+          <div className="empty-hint">
+            <Icon name="layers" size={18} />
+            <span>Drag ambience here — each sound loops or fires at random.</span>
           </div>
         )}
         {ambience.map((s) => (
@@ -337,9 +335,9 @@ function SoundboardSection(): JSX.Element {
       </div>
       <div className={`sfx-grid ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
         {soundboard.length === 0 && (
-          <div className="muted small">
-            Drag a track here to make a one-shot effect (door knock, sword clash). Bind a key to
-            fire it instantly; the speaker toggle ducks the music while it plays.
+          <div className="empty-hint">
+            <Icon name="keyboard" size={18} />
+            <span>Drag a track here for a hotkey one-shot (door knock, sword clash).</span>
           </div>
         )}
         {soundboard.map((item) => (
@@ -416,9 +414,9 @@ export function QueuePane(): JSX.Element {
 
       <div className="pane-body" ref={setNodeRef}>
         {queue.length === 0 && (
-          <div className="muted">
-            Drag songs here (or double-click them) to build a queue. Reorder by dragging the grip
-            handle, then save it as a playlist.
+          <div className="empty-hint">
+            <Icon name="music" size={18} />
+            <span>Drag or double-click songs to build a queue.</span>
           </div>
         )}
         <SortableContext items={queue.map((q) => q.uid)} strategy={verticalListSortingStrategy}>
