@@ -25,10 +25,11 @@ verification — not hand-drawn mockups. **When you add a `window.api` method to
 Uses the shared **workflow kit** (user-scope `/ship` `/advance` `/wrap` `/reflect` `/curate` +
 `planner`/`reviewer` agents). This repo's profile is `.claude/workflow.json` (kept local per the
 `.claude/` gitignore): `validate` = `npm run typecheck` + `npm test` + `npm run build`,
-`merge_model: solo-main`, `plan_path` → `~/.claude/plans/queststream.md`.
-- **`solo-main`**: `/ship` runs the validate gate + reviewer, then commits **directly to `main`**
-  and pushes (no PR) — the standing direct-to-main flow above. Releases still go via
-  `npm run release -- 0.X.Y`. Same guardrails: no force-push; validate must be green before commit.
+`merge_model: pr-gated`, `plan_path` → `~/.claude/plans/queststream.md`.
+- **`pr-gated`**: `/ship` (and `/advance`) run the validate gate + reviewer, then push a `feat/*`
+  branch and open a PR that squash-auto-merges on green CI — the flow in **Version control** above.
+  Releases still cut directly to `main` via `npm run release -- 0.X.Y`. Same guardrails: no
+  force-push; validate must be green before commit.
 - **Planning is memory-driven, not spec-driven.** The knowledge base + session bridge is the
   project memory (`MEMORY.md` + `memory/*.md`), not `specs/` or `HANDOFF.md`. `/advance` selects
   the next increment from the approved plan (`plan_path`) — which must enumerate the active
