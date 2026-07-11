@@ -78,7 +78,10 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
         </span>
       ) : null}
       <div className="title">
-        <div className="title">{item.song.title}</div>
+        <div className="title-line">
+          <span className="song-title">{item.song.title}</span>
+          <TagDots tags={item.song.tags ?? []} />
+        </div>
         {isCurrent ? (
           <SeekBar
             className="row-seek"
@@ -90,7 +93,6 @@ function QueueRow({ item }: { item: QueueItem }): JSX.Element {
         ) : (
           <div className="sub">{fmtTime(duration)}</div>
         )}
-        <TagDots tags={item.song.tags ?? []} />
       </div>
       <button
         className={`loop-btn ${loop !== 'off' ? 'on' : ''}`}
@@ -227,9 +229,15 @@ function AmbienceSection(): JSX.Element {
   const ambience = useStore((s) => s.ambience)
   const setKindTab = useStore((s) => s.setKindTab)
   const { setNodeRef, isOver } = useDroppable({ id: 'ambience-drop' })
+  const empty = ambience.length === 0
+  // When empty this pane collapses to just its header — which stays the drop target (the
+  // droppable ref is on the whole pane), so the section reclaims its height until a layer lands.
   return (
-    <div className="pane ambience-pane">
-      <div className="ambience-header">
+    <div className="pane ambience-pane" ref={setNodeRef}>
+      <div
+        className={`ambience-header ${empty && isOver ? 'drop-active' : ''}`}
+        title={empty ? 'Drag ambience here — each sound loops or fires at random.' : undefined}
+      >
         <span>Ambience layers · {ambience.length}</span>
         <button
           className="link-btn"
@@ -239,17 +247,13 @@ function AmbienceSection(): JSX.Element {
           Browse ambience →
         </button>
       </div>
-      <div className={`ambience-list ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
-        {ambience.length === 0 && (
-          <div className="empty-hint">
-            <Icon name="layers" size={18} />
-            <span>Drag ambience here — each sound loops or fires at random.</span>
-          </div>
-        )}
-        {ambience.map((s) => (
-          <AmbienceRow key={s.id} slot={s} />
-        ))}
-      </div>
+      {!empty && (
+        <div className={`ambience-list ${isOver ? 'drop-active' : ''}`}>
+          {ambience.map((s) => (
+            <AmbienceRow key={s.id} slot={s} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -328,22 +332,23 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
 function SoundboardSection(): JSX.Element {
   const soundboard = useStore((s) => s.library.soundboard)
   const { setNodeRef, isOver } = useDroppable({ id: 'soundboard-drop' })
+  const empty = soundboard.length === 0
+  // Empty → collapse to the header alone, which remains the drop target (ref on the pane).
   return (
-    <div className="pane soundboard-pane">
-      <div className="ambience-header">
+    <div className="pane soundboard-pane" ref={setNodeRef}>
+      <div
+        className={`ambience-header ${empty && isOver ? 'drop-active' : ''}`}
+        title={empty ? 'Drag a track here for a hotkey one-shot (door knock, sword clash).' : undefined}
+      >
         <span>Soundboard · {soundboard.length}</span>
       </div>
-      <div className={`sfx-grid ${isOver ? 'drop-active' : ''}`} ref={setNodeRef}>
-        {soundboard.length === 0 && (
-          <div className="empty-hint">
-            <Icon name="keyboard" size={18} />
-            <span>Drag a track here for a hotkey one-shot (door knock, sword clash).</span>
-          </div>
-        )}
-        {soundboard.map((item) => (
-          <SoundboardButton key={item.id} item={item} />
-        ))}
-      </div>
+      {!empty && (
+        <div className={`sfx-grid ${isOver ? 'drop-active' : ''}`}>
+          {soundboard.map((item) => (
+            <SoundboardButton key={item.id} item={item} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -366,11 +371,15 @@ export function QueuePane(): JSX.Element {
       clearQueue()
   }
 
+  // With no ambience layers, the Ambience pane is just its header — so drop the resizable split
+  // and let Now Playing take the whole upper region (ambience + soundboard headers pin below).
+  const ambienceEmpty = ambience.length === 0
+  const gridRows = ambienceEmpty
+    ? 'minmax(0, 1fr) auto auto'
+    : `minmax(0, ${mixSplit}fr) 6px minmax(0, ${1 - mixSplit}fr) auto`
+
   return (
-    <div
-      className="right-col"
-      style={{ gridTemplateRows: `minmax(0, ${mixSplit}fr) 6px minmax(0, ${1 - mixSplit}fr) auto` }}
-    >
+    <div className="right-col" style={{ gridTemplateRows: gridRows }}>
       <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
       <div className="pane-header">
         <span>Now Playing · {queue.length}</span>
@@ -428,13 +437,15 @@ export function QueuePane(): JSX.Element {
 
       </div>
 
-      <Splitter
-        orientation="horizontal"
-        value={mixSplit}
-        onChange={setMixSplit}
-        onReset={() => setMixSplit(0.5)}
-        ariaLabel="Resize Now Playing and Ambience"
-      />
+      {!ambienceEmpty && (
+        <Splitter
+          orientation="horizontal"
+          value={mixSplit}
+          onChange={setMixSplit}
+          onReset={() => setMixSplit(0.5)}
+          ariaLabel="Resize Now Playing and Ambience"
+        />
+      )}
       <AmbienceSection />
       <SoundboardSection />
     </div>
