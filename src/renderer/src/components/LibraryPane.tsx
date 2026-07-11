@@ -138,7 +138,7 @@ export function LibraryPane(): JSX.Element {
             aria-pressed={showArtistView}
             onClick={toggleArtistView}
           >
-            <Icon name="layers" size={16} /> Artists
+            <Icon name="layers" size={16} /> <span className="btn-label">Artists</span>
           </button>
           <button
             className="icon icon-text"
@@ -146,7 +146,7 @@ export function LibraryPane(): JSX.Element {
             aria-label="Import audio"
             onClick={() => openImportWizard()}
           >
-            <Icon name="plus" size={16} /> Import
+            <Icon name="plus" size={16} /> <span className="btn-label">Import</span>
           </button>
         </span>
       </div>

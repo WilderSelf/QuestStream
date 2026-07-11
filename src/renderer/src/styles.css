@@ -438,7 +438,7 @@ textarea {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 4px 12px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
@@ -460,7 +460,7 @@ textarea {
   flex-shrink: 0;
 }
 .kind-hint {
-  padding: 7px 12px;
+  padding: 3px 12px;
   font-size: var(--text-xs);
   color: var(--text-dim);
   background: var(--surface);
@@ -1259,13 +1259,28 @@ textarea {
 /* ---- Library pane (tag-faceted browser) ---- */
 .library-pane {
   min-width: 0;
+  /* Establish an inline-size container so the header can respond to the *pane's* width (set by the
+     draggable browser split), not the viewport — a viewport media query can't see the split. */
+  container-type: inline-size;
 }
+/* When the pane is narrow (dragged small), the kind tabs + Artists/Import buttons can't share one
+   row: let them wrap so the buttons drop to a second line instead of clipping past the pane edge. */
 .library-head {
   gap: var(--space-3);
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
 }
 .library-head-actions {
   display: flex;
   gap: var(--space-2);
+  flex: 0 0 auto; /* buttons keep their size; the tabs yield space first */
+}
+/* Below the width where labelled buttons + tabs stop fitting on one row, drop to icon-only so the
+   header stays a single row down to a much narrower pane (wrap above is the final fallback). */
+@container (max-width: 430px) {
+  .library-head-actions .btn-label {
+    display: none;
+  }
 }
 /* segmented control (kind tabs, source/type/mode toggles) */
 .kind-tabs {
