@@ -935,7 +935,9 @@ textarea {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 6px 10px;
+  /* Slim vertical padding: this music-volume row sits between the Now Playing header and the
+     queue list, so every px it drops is a px the (height-starved) queue reclaims at ~520px. */
+  padding: 3px 10px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
@@ -945,6 +947,8 @@ textarea {
      (--primary), not the cyan --live, so it sits with the theme instead of against it. */
   accent-color: var(--primary);
   min-width: 0;
+  /* Thin the native range so the row is ~24px, not ~47px. */
+  height: 16px;
 }
 
 /* ---- Draggable splitters (browser columns + mix rows) ---- */
@@ -987,6 +991,11 @@ textarea {
 .right-col .soundboard-pane {
   border-top: 2px solid var(--border-strong);
 }
+/* Denser Now Playing header at short window heights — its icon buttons drive the height, so a
+   tighter block padding reclaims ~8px straight into the queue list below it. */
+.right-col .queue .pane-header {
+  padding: 5px 12px;
+}
 .ambience-pane {
   display: flex;
   flex-direction: column;
@@ -1017,10 +1026,19 @@ textarea {
   outline-offset: -4px;
   border-radius: var(--radius);
 }
-/* Soundboard body: ~1 row tall when empty, grows to ~3 rows before it scrolls. */
+/* Soundboard body: ~1 row tall when empty, grows to ~3 rows before it scrolls. It's the trailing
+   `auto` row, so whatever height it takes is subtracted from the Now Playing + Ambience share
+   above it. */
 .soundboard-pane .sfx-grid {
   max-height: 124px;
   overflow-y: auto;
+}
+/* In a short window (quarter of a 1080p screen) a full soundboard would starve the queue — cap it
+   to ~2 rows there so Now Playing keeps usable height. Tall windows are unaffected. */
+@media (max-height: 700px) {
+  .soundboard-pane .sfx-grid {
+    max-height: 88px;
+  }
 }
 
 /* Each ambience layer is ONE compact, wrapping row: play · name · Loop/Random · interval ·
@@ -1094,6 +1112,23 @@ textarea {
 .muted.small {
   font-size: var(--text-sm);
   padding: 10px;
+}
+/* Compact empty state for the small stacked panes (queue/ambience/soundboard). At ~520px window
+   height the old multi-sentence hero copy ate 70–90px per empty section and starved the queue;
+   research on small-window empty states says a small region gets an icon + one line, no hero. */
+.empty-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  /* --text-dim (not --text-faint) keeps this hint ≥4.5:1 (WCAG AA) at --text-sm. */
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  line-height: var(--lh-tight);
+}
+.empty-hint svg {
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 /* ---- Remote pairing (settings) ---- */
