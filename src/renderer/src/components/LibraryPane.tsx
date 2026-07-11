@@ -117,7 +117,7 @@ export function LibraryPane(): JSX.Element {
   return (
     <div className="pane library-pane">
       <div className="pane-header library-head">
-        <div className="kind-tabs">
+        <div className="kind-tabs" title={KIND_HINTS[kind]}>
           {KIND_ORDER.map((k) => (
             <button
               key={k}
@@ -129,6 +129,11 @@ export function LibraryPane(): JSX.Element {
             </button>
           ))}
         </div>
+        {/* The kind hint rides inline with the tabs (truncating) instead of costing its own row —
+            the full text stays reachable as the tabs' tooltip. */}
+        <span className="kind-hint" title={KIND_HINTS[kind]}>
+          {KIND_HINTS[kind]}
+        </span>
         <span className="library-head-actions">
           <button
             className={`icon icon-text ${showArtistView ? 'toggled' : ''}`}
@@ -150,17 +155,51 @@ export function LibraryPane(): JSX.Element {
         </span>
       </div>
 
-      <div className="kind-hint">{KIND_HINTS[kind]}</div>
+      {/* Search (left half) shares one row with the group-by + Filters controls (right) so the
+          library chrome costs a single row instead of two stacked ones. */}
+      <div className="library-toolbar">
+        <div className="library-search">
+          <Icon name="search" size={14} className="search-icon" />
+          <input
+            className="search-box"
+            placeholder="Filter library…"
+            aria-label="Filter library"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-      <div className="library-search">
-        <Icon name="search" size={14} className="search-icon" />
-        <input
-          className="search-box"
-          placeholder="Filter library…"
-          aria-label="Filter library"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {!showArtistView && visible.length > 0 && (
+          <div className="library-controls filter-bar">
+            <label className="group-by">
+              <span>Group by</span>
+              <select value={groupBy} onChange={(e) => setGroupBy(kind, e.target.value)}>
+                {dims.map((d) => (
+                  <option key={d.key} value={d.key}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {filterRows.length > 0 && (
+              <FiltersPopover
+                rows={filterRows}
+                filters={filters}
+                tagColors={tagColors}
+                activeCount={activeFilterCount}
+                onSelect={(dim, value) => setKindFilter(kind, dim, value)}
+                onRecolor={(tag) => setColorEditTag(tag)}
+              />
+            )}
+
+            {activeFilterCount > 0 && (
+              <button className="link-btn" onClick={() => clearKindFilters(kind)}>
+                Clear ({activeFilterCount})
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showArtistView ? (
@@ -170,47 +209,14 @@ export function LibraryPane(): JSX.Element {
           <SongsPane />
         </div>
       ) : (
-        <>
-          {visible.length > 0 && (
-            <div className="library-controls filter-bar">
-              <label className="group-by">
-                <span>Group by</span>
-                <select value={groupBy} onChange={(e) => setGroupBy(kind, e.target.value)}>
-                  {dims.map((d) => (
-                    <option key={d.key} value={d.key}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {filterRows.length > 0 && (
-                <FiltersPopover
-                  rows={filterRows}
-                  filters={filters}
-                  tagColors={tagColors}
-                  activeCount={activeFilterCount}
-                  onSelect={(dim, value) => setKindFilter(kind, dim, value)}
-                  onRecolor={(tag) => setColorEditTag(tag)}
-                />
-              )}
-
-              {activeFilterCount > 0 && (
-                <button className="link-btn" onClick={() => clearKindFilters(kind)}>
-                  Clear ({activeFilterCount})
-                </button>
-              )}
+        <div className="pane-body">
+          {visible.length === 0 && (
+            <div className="muted">
+              No {KIND_LABELS[kind].toLowerCase()} items yet — click <strong>Add audio</strong> in
+              the top bar (or <strong>Import</strong> above) to bring some in.
             </div>
           )}
-
-          <div className="pane-body">
-            {visible.length === 0 && (
-              <div className="muted">
-                No {KIND_LABELS[kind].toLowerCase()} items yet — click <strong>Add audio</strong> in
-                the top bar (or <strong>Import</strong> above) to bring some in.
-              </div>
-            )}
-            {buckets.map(([key, items]) => {
+          {buckets.map(([key, items]) => {
               const isOpen = !collapsed.has(key)
               const title = key === UNTAGGED ? 'Untagged' : labelForValue(groupBy, key)
               return (
@@ -230,8 +236,7 @@ export function LibraryPane(): JSX.Element {
                 </div>
               )
             })}
-          </div>
-        </>
+        </div>
       )}
       {colorEditTag && (
         <TagColorPicker tag={colorEditTag} onClose={() => setColorEditTag(null)} />

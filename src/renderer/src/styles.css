@@ -389,6 +389,7 @@ a:focus-visible,
 
 /* Let users copy content/diagnostic text even though the chrome disables selection. */
 .title,
+.song-title,
 .sub,
 .meta,
 .muted,
@@ -413,7 +414,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: 8px 12px;
+  padding: 5px 12px;
   background: linear-gradient(var(--surface-raised), var(--surface));
   border-bottom: 1px solid var(--border);
 }
@@ -432,19 +433,28 @@ textarea {
   max-width: 150px;
   min-width: 0;
 }
-/* Library filter — search now lives in the Library pane header, where it acts (not the top
-   bar). Reuses .search-box / .search-icon. */
+/* Library toolbar — search (left half) and the group-by + Filters controls (right) on one row,
+   so the library chrome is a single row instead of two stacked ones. */
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 5px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+/* Library filter — search lives in the toolbar, where it acts (not the top bar). Reuses
+   .search-box / .search-icon; the toolbar supplies the padding/border now. */
 .library-search {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 4px 12px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  flex: 1 1 50%;
+  min-width: 0;
 }
 .library-search .search-icon {
   position: absolute;
-  left: 20px;
+  left: 8px;
   color: var(--text-dim);
   pointer-events: none;
 }
@@ -459,11 +469,20 @@ textarea {
 .topbar .add-audio {
   flex-shrink: 0;
 }
+/* Inline kind hint: rides in the library header next to the tabs, truncating rather than costing
+   its own row. `min-width: 0` + flex:1 lets it shrink to nothing (yielding to tabs/actions) on a
+   narrow pane; the full text stays reachable via the tabs' title tooltip. */
 .kind-hint {
-  padding: 3px 12px;
+  /* flex-basis:0 (not auto) is load-bearing: with flex-wrap on the header, an `auto` basis makes
+     the hint demand its full content width and wrap to a 2nd row; basis:0 lets it fit on the tabs
+     row and truncate into whatever space is left. */
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--text-xs);
   color: var(--text-dim);
-  background: var(--surface);
 }
 .section-caption {
   padding: 0 12px 7px;
@@ -754,7 +773,7 @@ textarea {
   background: var(--bg);
 }
 .pane-header {
-  padding: 10px 12px;
+  padding: 7px 12px;
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-dim);
@@ -828,6 +847,26 @@ textarea {
   outline: 2px dashed var(--accent);
   outline-offset: -4px;
   border-radius: var(--radius);
+}
+/* Title + tag dots share one line: the title truncates and the colour-coded dots sit right
+   after it (instead of dropping below the seek bar, where they cost the row extra height). */
+.title-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.song-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.title-line .tag-dots {
+  margin-top: 0;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 .queue-item .grip {
   color: var(--text-dim);
@@ -1015,6 +1054,13 @@ textarea {
 .ambience-header .link-btn {
   text-transform: none;
   letter-spacing: 0;
+}
+/* When an empty Ambience/Soundboard section is collapsed to just its header, the header itself is
+   the drop target — highlight it on hover-drag the same way the open list highlights. */
+.ambience-header.drop-active {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  border-radius: var(--radius);
 }
 .ambience-list {
   flex: 1;
@@ -1276,8 +1322,10 @@ textarea {
   flex: 0 0 auto; /* buttons keep their size; the tabs yield space first */
 }
 /* Below the width where labelled buttons + tabs stop fitting on one row, drop to icon-only so the
-   header stays a single row down to a much narrower pane (wrap above is the final fallback). */
-@container (max-width: 430px) {
+   header stays a single row AND the inline kind-hint has room to show next to the tabs (wrap above
+   is the final fallback). ~500px is where tabs + labelled actions crowd the hint at the default
+   split; icon-only actions free ~90px for it. */
+@container (max-width: 500px) {
   .library-head-actions .btn-label {
     display: none;
   }
@@ -1294,7 +1342,7 @@ textarea {
 .seg {
   flex: 1;
   font-size: var(--text-sm);
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: var(--radius);
   background: transparent;
   border: none;
@@ -1313,10 +1361,10 @@ textarea {
 .library-controls {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: 6px 10px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  gap: var(--space-3);
+  /* Shrinkable so the search input keeps ~half the toolbar; the group-by select yields first. */
+  flex: 0 1 auto;
+  min-width: 0;
 }
 /* The compact filter bar: Group-by + a single "Filters (n)" popover + Clear, on one non-wrapping
    row (facets used to be one button per dimension, which wrapped to a 2nd row ~65px tall at
@@ -1329,12 +1377,14 @@ textarea {
   position: relative;
   z-index: 5;
 }
-/* The group-by select yields first if the row is ever tight, keeping Filters/Clear un-clipped. */
+/* The group-by select yields first if the row is ever tight, keeping Filters/Clear un-clipped and
+   leaving the search input ~half the toolbar. */
 .filter-bar .group-by {
   min-width: 0;
 }
 .filter-bar .group-by select {
   min-width: 0;
+  max-width: 120px;
 }
 
 /* Facet control: the wrapper is the shared hover region for the button + its popover panel. */
