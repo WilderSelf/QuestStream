@@ -42,6 +42,7 @@
   .mark.draft::after { border-style: dashed; background: rgba(42,48,59,0.5); }
   .mark.draft .nm { color: var(--text-dim); font-style: italic; }
   .mark.draft .meta { color: var(--nord7); }
+  .addmark { margin-right: 16px; border: 1.5px dashed var(--border); border-radius: 10px; padding: 11px; text-align: center; font-size: 12.5px; color: var(--text-dim); }
   .plist-row { display: flex; justify-content: space-between; padding: 7px 2px; border-bottom: 1px solid var(--border-subtle); font-size: 13.5px; color: var(--text-dim); font-family: 'Fraunces'; }
   .plist-row small { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-faint); }
   .unsorted { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-right: 16px; border: 1px dashed rgba(235,203,139,0.4); border-radius: 10px; font-size: 12.5px; color: var(--warn); }
@@ -64,7 +65,9 @@
 
   .btn { background: var(--primary); color: var(--on-primary); font-weight: 600; font-size: 13.5px; padding: 10px 18px; border-radius: 10px; display: inline-flex; gap: 8px; align-items: center; }
   .ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
-  .kbd { font-family: 'JetBrains Mono'; font-size: 10px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 5px; color: var(--text-faint); }
+  .kbd { font-family: 'JetBrains Mono'; font-size: 10.5px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 5px; color: var(--text-dim); }
+  /* Keyboard focus is always visible — every interactive control gets this ring. */
+  :focus-visible { outline: 2px solid var(--live); outline-offset: 2px; border-radius: 6px; }
 
   .wavemini { display: flex; align-items: center; gap: 1.5px; height: 22px; width: 90px; }
   .wavemini i { flex: 1; background: var(--track); border-radius: 1px; }
@@ -80,10 +83,10 @@
   .urlfield { flex: 1; background: var(--field-bg); border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; font-size: 13px; color: var(--text); display: flex; gap: 8px; align-items: center; }
   .itable { margin-top: 6px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .irow { display: grid; grid-template-columns: 26px 118px 1fr 96px 190px 210px; gap: 12px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--border-subtle); font-size: 13px; background: var(--surface); }
-  .irow.head { background: var(--surface-raised); font-family: 'JetBrains Mono'; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); border-top: none; }
-  .irow .play { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border-strong); display: grid; place-items: center; font-size: 9px; color: var(--live); }
+  .irow.head { background: var(--surface-raised); font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); border-top: none; }
+  .irow .play { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-strong); display: grid; place-items: center; font-size: 10px; color: var(--live); }
   .irow .t { font-weight: 500; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .irow .t small { display: block; font-size: 10.5px; color: var(--text-faint); font-weight: 400; }
+  .irow .t small { display: block; font-size: 11px; color: var(--text-faint); font-weight: 400; }
   .seg3 { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-size: 10.5px; }
   .seg3 b { padding: 3px 8px; color: var(--text-faint); font-weight: 500; }
   .seg3 b.on { background: var(--live-tint); color: var(--live); }
@@ -125,6 +128,8 @@
   .pagewrap { position: relative; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); margin-top: 12px;
     box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--border), 0 18px 50px rgba(0,0,0,0.4); padding: 22px 34px 18px; display: flex; flex-direction: column; min-height: 0; flex: 1; }
   .pagewrap::before { content: ''; position: absolute; inset: 8px; border: 1px solid var(--border-subtle); border-radius: 3px; pointer-events: none; }
+  .pagewrap.fit { flex: 0 0 auto; }
+  .vrow .num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-faint); border: 1px solid var(--border-subtle); flex: none; }
   .folio { text-align: center; font-family: 'Fraunces'; font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--text-faint); }
   .ptitle { font-family: 'Fraunces'; font-weight: 700; font-size: 34px; text-align: center; color: var(--nord6); margin: 2px 0; }
   .ptitle .caret { display: inline-block; width: 2px; height: 30px; background: var(--live); vertical-align: -4px; }
@@ -147,13 +152,13 @@
   .lay .line b { position: absolute; top: 50%; transform: translate(-50%, -50%); color: var(--nord8); font-size: 11px; }
   .lay .pct { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); width: 32px; text-align: right; }
   .layctl { display: flex; gap: 8px; align-items: center; flex: none; }
-  .modeseg { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-size: 10.5px; }
-  .modeseg b { padding: 4px 10px; color: var(--text-faint); font-weight: 500; }
-  .modeseg b.on { background: var(--live-tint); color: var(--live); }
-  .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-family: 'JetBrains Mono'; font-size: 10.5px; }
-  .stepper b { padding: 4px 7px; color: var(--text-faint); background: var(--field-bg); font-weight: 500; }
-  .stepper .v { padding: 4px 8px; color: var(--text); min-width: 26px; text-align: center; }
-  .stepper .u { padding: 4px 7px 4px 0; color: var(--text-faint); }
+  .modeseg { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-size: 11px; }
+  .modeseg b { padding: 5px 11px; color: var(--text-faint); font-weight: 500; }
+  .modeseg b.on { background: var(--live-tint); color: var(--live); font-weight: 600; }
+  .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-family: 'JetBrains Mono'; font-size: 11px; }
+  .stepper b { padding: 5px 9px; color: var(--text-dim); background: var(--field-bg); font-weight: 600; }
+  .stepper .v { padding: 5px 8px; color: var(--text); min-width: 26px; text-align: center; }
+  .stepper .u { padding: 5px 8px 5px 0; color: var(--text-faint); }
   .endsel { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border); border-radius: 7px; padding: 4px 10px; font-size: 11px; color: var(--text-dim); }
   .endsel b { color: var(--text); font-weight: 500; }
   .minisig { display: flex; gap: 14px; justify-content: center; }
@@ -167,7 +172,8 @@
   .tg { display: flex; gap: 6px; align-items: center; }
   .tg .box { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border-strong); display: grid; place-items: center; font-size: 9px; color: var(--ok); }
 
-  .bindgrid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; margin-top: 10px; min-height: 0; flex: 1; }
+  .bindgrid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; margin-top: 10px; min-height: 0; flex: 1; align-items: start; }
+  .bindgrid .palette { align-self: stretch; }
   .palette { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
   .palette .search { background: var(--field-bg); border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; font-size: 12.5px; color: var(--text-faint); display: flex; gap: 8px; }
   .prow { display: flex; gap: 9px; align-items: center; padding: 6px 8px; border-radius: 8px; font-size: 12.5px; }
@@ -199,8 +205,8 @@
     background: var(--surface); border: 1px solid var(--border-strong);
     box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--border-subtle); }
   .rune.duck .sig { border-color: rgba(232,169,94,0.45); }
-  .rune .lb { font-size: 10.5px; color: var(--text-dim); text-align: center; line-height: 1.15; }
-  .rune .k { font-family: 'JetBrains Mono'; font-size: 8px; color: var(--live); border: 1px solid rgba(136,192,208,0.35); border-radius: 3px; padding: 0 4px; }
+  .rune .lb { font-size: 11px; color: var(--text-dim); text-align: center; line-height: 1.15; }
+  .rune .k { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--live); border: 1px solid rgba(136,192,208,0.35); border-radius: 3px; padding: 0 5px; }
   .fn { font-size: 13.5px; color: var(--text-dim); display: flex; gap: 10px; padding: 6px 2px; border-bottom: 1px solid var(--border-subtle); align-items: baseline; font-family: 'Spectral'; }
   .fn .n { font-style: italic; color: var(--text-faint); width: 18px; font-size: 12px; }
   .fn .d { margin-left: auto; font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--text-faint); }
@@ -214,7 +220,7 @@
   .seal { width: 92px; height: 92px; flex: none; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--primary-hi), var(--primary) 55%, #b57f3e);
     color: var(--on-primary); display: grid; place-items: center; text-align: center; font-family: 'Fraunces'; font-weight: 700; font-size: 14px; line-height: 1.1;
     box-shadow: 0 8px 24px rgba(232,169,94,0.33), inset 0 0 0 5px rgba(33,38,46,0.15); }
-  .seal small { font-family: 'JetBrains Mono'; font-weight: 400; font-size: 8px; display: block; margin-top: 3px; opacity: 0.85; }
+  .seal small { font-family: 'JetBrains Mono'; font-weight: 500; font-size: 10px; display: block; margin-top: 3px; opacity: 0.95; }
   .seal-note { font-family: 'Spectral'; font-style: italic; font-size: 12px; color: var(--text-dim); line-height: 1.55; }
 
   .transport { display: grid; grid-template-columns: 430px 1fr 360px; align-items: center; gap: 22px; padding: 0 32px; border-top: 1px solid var(--border-strong); background: linear-gradient(rgba(74,84,104,0.5), rgba(58,65,80,0.5)); }
@@ -253,6 +259,7 @@
       <div class="mark"><div class="nm">Final Boss</div><div class="meta">3 tracks · 2 layers</div><div class="kbd">F3</div></div>
       <div class="mark"><div class="nm">Long Rest</div><div class="meta">1 track · 3 layers</div><div class="kbd">F4</div></div>
       
+      <div class="addmark">＋ New scene</div>
       <div class="m-h" style="margin-top:12px">Playlists</div>
       <div>
         <div class="plist-row">Tavern Night <small>2 tracks</small></div>
@@ -270,7 +277,8 @@
     <div>
       <div class="tcard">
         <div class="tt">Bar Brawl (Percussion)</div>
-        <div class="ts"><span>from “Tavern Nights” · youtube · 2:58</span><span class="chip live">♫ Music</span><span class="kbd">T</span><span style="font-size:10.5px">change type</span></div>
+        <div class="ts"><span>from “Tavern Nights” · youtube · 2:58</span>
+          <span class="modeseg"><b class="on">♫ Music</b><b>〰 Ambience</b><b>⌗ Soundboard</b></span><span class="kbd">T</span></div>
         <div class="bigwave"><i class="p" style="height:25%"></i><i class="p" style="height:52%"></i><i class="p" style="height:70%"></i><i class="p" style="height:73%"></i><i class="p" style="height:62%"></i><i class="p" style="height:42%"></i><i class="p" style="height:31%"></i><i class="p" style="height:50%"></i><i class="p" style="height:59%"></i><i class="p" style="height:58%"></i><i class="p" style="height:51%"></i><i class="p" style="height:34%"></i><i class="p" style="height:38%"></i><i class="p" style="height:59%"></i><i class="p" style="height:71%"></i><i class="p" style="height:70%"></i><i class="p" style="height:55%"></i><i class="p" style="height:29%"></i><i class="p" style="height:49%"></i><i class="p" style="height:71%"></i><i class="p" style="height:80%"></i><i class="p" style="height:72%"></i><i class="p" style="height:50%"></i><i class="p" style="height:30%"></i><i class="p" style="height:56%"></i><i class="p" style="height:73%"></i><i class="p" style="height:75%"></i><i class="p" style="height:62%"></i><i class="p" style="height:39%"></i><i class="p" style="height:35%"></i><i class="p" style="height:54%"></i><i class="p" style="height:63%"></i><i class="p" style="height:59%"></i><i class="p" style="height:46%"></i><i class="p" style="height:30%"></i><i class="p" style="height:40%"></i><i class="" style="height:59%"></i><i class="" style="height:69%"></i><i class="" style="height:66%"></i><i class="" style="height:50%"></i><i class="" style="height:25%"></i><i class="" style="height:53%"></i><i class="" style="height:73%"></i><i class="" style="height:79%"></i><i class="" style="height:69%"></i><i class="" style="height:46%"></i><i class="" style="height:34%"></i><i class="" style="height:61%"></i><i class="" style="height:76%"></i><i class="" style="height:76%"></i><i class="" style="height:60%"></i><i class="" style="height:36%"></i><i class="" style="height:40%"></i><i class="" style="height:59%"></i><i class="" style="height:66%"></i><i class="" style="height:61%"></i><i class="" style="height:46%"></i><i class="" style="height:27%"></i><i class="" style="height:42%"></i><i class="" style="height:58%"></i><i class="" style="height:66%"></i><i class="" style="height:62%"></i><i class="" style="height:45%"></i><i class="" style="height:29%"></i><i class="" style="height:55%"></i><i class="" style="height:73%"></i><i class="" style="height:77%"></i><i class="" style="height:66%"></i><i class="" style="height:41%"></i><i class="" style="height:39%"></i><i class="" style="height:64%"></i><i class="" style="height:78%"></i><i class="" style="height:76%"></i><i class="" style="height:58%"></i><i class="" style="height:32%"></i><i class="" style="height:45%"></i><i class="" style="height:63%"></i><i class="" style="height:70%"></i><i class="" style="height:62%"></i><i class="" style="height:45%"></i><i class="" style="height:26%"></i><i class="" style="height:43%"></i><i class="" style="height:57%"></i><i class="" style="height:63%"></i><i class="" style="height:57%"></i><i class="" style="height:41%"></i><i class="" style="height:33%"></i><i class="" style="height:57%"></i><i class="" style="height:73%"></i><i class="" style="height:75%"></i><i class="" style="height:62%"></i><i class="" style="height:37%"></i><i class="" style="height:43%"></i><i class="" style="height:68%"></i><i class="" style="height:79%"></i><i class="" style="height:75%"></i><i class="" style="height:56%"></i><i class="" style="height:28%"></i><i class="" style="height:49%"></i><i class="" style="height:68%"></i><i class="" style="height:72%"></i><i class="" style="height:63%"></i><i class="" style="height:43%"></i><i class="" style="height:29%"></i><i class="" style="height:47%"></i><i class="" style="height:57%"></i><i class="" style="height:59%"></i><i class="" style="height:53%"></i><i class="" style="height:36%"></i><i class="" style="height:36%"></i><i class="" style="height:58%"></i><i class="" style="height:71%"></i><i class="" style="height:72%"></i><i class="" style="height:57%"></i><i class="" style="height:32%"></i><i class="" style="height:47%"></i><i class="" style="height:70%"></i><i class="" style="height:80%"></i><i class="" style="height:73%"></i><i class="" style="height:52%"></i></div>
         <div class="frow"><span class="lbl">Genre <span class="kbd">1</span></span><span class="chip live">Fantasy</span><span class="chip">Sci-Fi</span><span class="chip">Horror</span><span class="chip">Cyberpunk</span><span class="chip">Modern</span></div>
         <div class="frow"><span class="lbl">Activity <span class="kbd">2</span></span><span class="chip live">Combat</span><span class="chip">Boss</span><span class="chip">Exploration</span><span class="chip live">Social</span><span class="chip">Travel</span><span class="chip">Downtime</span></div>
@@ -285,12 +293,14 @@
           </div>
         </div>
         <div class="keybar">
-          <span><span class="kbd">Space</span> audition</span>
+          <span><span class="kbd">Space</span> preview</span>
           <span><span class="kbd">1–4</span> jump to a row</span>
-          <span><span class="kbd">⏎</span> save &amp; next</span>
-          <span><span class="kbd">S</span> skip</span>
           <span><span class="kbd">⌫</span> previous</span>
-          <span style="margin-left:auto; color:var(--ok)">✓ tags copy forward — same playlist, same defaults</span>
+          <span style="color:var(--ok)">✓ tags copy forward — same playlist, same defaults</span>
+          <span style="margin-left:auto; display:flex; gap:10px">
+            <span class="btn ghost">Skip <span class="kbd">S</span></span>
+            <span class="btn">Save &amp; next <span class="kbd" style="border-color:rgba(33,38,46,0.4); color:var(--on-primary)">⏎</span></span>
+          </span>
         </div>
       </div>
       <div class="progress"><i></i></div>
@@ -335,7 +345,7 @@
       </div>
       <div class="colophon">All pads loudness-matched at import — every sound plays at equal weight.</div>
       <div class="seal-wrap">
-        <div class="seal">DUCK<small>hold · space</small></div>
+        <div class="seal">DUCK<small>hold · D</small></div>
         <div class="seal-note">Hold to lower the whole mix −18 dB while you speak.</div>
       </div>
     </div>
