@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>QuestStream — An open chapter</title>
+<title>QuestStream — An open scene</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;1,400&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -146,6 +146,16 @@
   .lay .line i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--nord8); border-radius: 2px; }
   .lay .line b { position: absolute; top: 50%; transform: translate(-50%, -50%); color: var(--nord8); font-size: 11px; }
   .lay .pct { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); width: 32px; text-align: right; }
+  .layctl { display: flex; gap: 8px; align-items: center; flex: none; }
+  .modeseg { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-size: 10.5px; }
+  .modeseg b { padding: 4px 10px; color: var(--text-faint); font-weight: 500; }
+  .modeseg b.on { background: var(--live-tint); color: var(--live); }
+  .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-family: 'JetBrains Mono'; font-size: 10.5px; }
+  .stepper b { padding: 4px 7px; color: var(--text-faint); background: var(--field-bg); font-weight: 500; }
+  .stepper .v { padding: 4px 8px; color: var(--text); min-width: 26px; text-align: center; }
+  .stepper .u { padding: 4px 7px 4px 0; color: var(--text-faint); }
+  .endsel { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border); border-radius: 7px; padding: 4px 10px; font-size: 11px; color: var(--text-dim); }
+  .endsel b { color: var(--text); font-weight: 500; }
   .minisig { display: flex; gap: 14px; justify-content: center; }
   .minisig .rune { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .minisig .sig { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 17px; background: var(--field-bg); border: 1px solid var(--border-strong); box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 4px var(--border-subtle); }
@@ -223,7 +233,7 @@
 <body>
   <div class="top">
     <div class="logo">♪ Quest<span>Stream</span></div>
-    <div class="tome">— the grimoire of <b>Curse of the Amber Throne</b>, session the twelfth</div>
+    <div class="tome"><b>Curse of the Amber Throne</b> · Session 12</div>
     <div class="out">
       <div class="pill"><span class="dot"></span> Discord · #tavern-voice · 3 listening</div>
       <span class="gear">⚙</span>
@@ -232,56 +242,59 @@
   <div class="main">
     
     <div class="chapters">
-      <div class="m-h">Chapters · Scenes</div>
+      <div class="m-h">Scenes</div>
       <div class="mark active">
         <span class="rib"></span>
         <div class="nm">Quiet Tavern</div>
-        <div class="meta">on air · 1 track, 4 layers</div>
+        <div class="meta">playing · 1 track, 4 layers</div>
         <div class="kbd">F1</div>
       </div>
       <div class="mark"><div class="nm">Ambush on the Road</div><div class="meta">2 tracks · 1 layer</div><div class="kbd">F2</div></div>
       <div class="mark"><div class="nm">Final Boss</div><div class="meta">3 tracks · 2 layers</div><div class="kbd">F3</div></div>
       <div class="mark"><div class="nm">Long Rest</div><div class="meta">1 track · 3 layers</div><div class="kbd">F4</div></div>
       
-      <div class="m-h" style="margin-top:12px">Appendices · Playlists</div>
+      <div class="m-h" style="margin-top:12px">Playlists</div>
       <div>
         <div class="plist-row">Tavern Night <small>2 tracks</small></div>
         <div class="plist-row">Final Boss Suite <small>3 tracks</small></div>
         <div class="plist-row">Road Songs <small>5 tracks</small></div>
       </div>
       
-      <div class="hint">The chapter on air keeps sounding while you write, import, or rehearse another. Nothing here interrupts the table.</div>
+      <div class="hint">The playing scene keeps going while you import, edit, or preview another. Nothing here interrupts the table.</div>
     </div>
     <div class="content">
-  <div class="crumb">Chapters · Final Boss</div>
+  <div class="crumb">Scenes · Final Boss</div>
   <div class="pagewrap">
-    <div class="folio">Chapter the Ninth</div>
+    <div class="folio">Scene</div>
     <div class="ptitle">Final Boss</div>
     <div class="epigraph">“The amber throne remembers every oath sworn upon it.”</div>
-    <div class="scopesearch">🔍 Find within this chapter… <span class="kbd" style="margin-left:auto">⌘F</span></div>
-    <div class="rule"><b>The Melody · 3 tracks · 11:08</b></div>
-    <div class="vrow playing"><span class="play">▶</span><div class="t">The Lich Awakens<small>opens the chapter</small></div><span class="d">4:07</span><span class="chip">start here</span></div>
-    <div class="vrow"><span class="play">▶</span><div class="t">Steel &amp; Thunder<small>4s crossfade</small></div><span class="d">3:21</span><span class="chip">start here</span></div>
-    <div class="vrow"><span class="play">▶</span><div class="t">Last Stand<small>loops until the stage clears</small></div><span class="d">3:40</span><span class="chip">start here</span></div>
-    <div class="rule"><b>The Undertones · 2 layers</b></div>
-    <div class="lay"><div class="nm2">Storm Above<small>endless loop, gapless</small></div><div class="line"><i style="width:65%"></i><b style="left:65%">◆</b></div><div class="pct">65%</div></div>
-    <div class="lay"><div class="nm2">Whispered Names<small>random · every 2–6 min</small></div><div class="line"><i style="width:40%"></i><b style="left:40%">◆</b></div><div class="pct">40%</div></div>
-    <div class="rule"><b>Sigils of this chapter</b></div>
+    <div class="scopesearch">🔍 Search this scene… <span class="kbd" style="margin-left:auto">⌘F</span></div>
+    <div class="rule"><b>Music · 3 tracks · 11:08</b></div>
+    <div class="vrow playing"><span class="play">▶</span><div class="t">The Lich Awakens<small>plays first</small></div><span class="d">4:07</span><span class="chip">▶ start here</span></div>
+    <div class="vrow"><span class="play">▶</span><div class="t">Steel &amp; Thunder</div><span class="d">3:21</span><span class="chip">▶ start here</span></div>
+    <div class="vrow"><span class="play">▶</span><div class="t">Last Stand</div><span class="d">3:40</span><span class="chip">▶ start here</span></div>
+    <div class="vrow" style="padding-top:2px"><span class="endsel">when the list ends: <b>loop last track ▾</b></span><span class="endsel">crossfade <span class="stepper"><b>−</b><span class="v">4</span><b>＋</b><span class="u">s</span></span></span></div>
+    <div class="rule"><b>Ambience · 2 layers</b></div>
+    <div class="lay"><div class="nm2">Storm Above<small>plays continuously</small></div><div class="line"><i style="width:65%"></i><b style="left:65%">◆</b></div><div class="pct">65%</div>
+      <div class="layctl"><span class="modeseg"><b class="on">Loop</b><b>Random</b></span></div></div>
+    <div class="lay"><div class="nm2">Whispered Names<small>plays once in a while</small></div><div class="line"><i style="width:40%"></i><b style="left:40%">◆</b></div><div class="pct">40%</div>
+      <div class="layctl"><span class="modeseg"><b>Loop</b><b class="on">Random</b></span><span class="endsel">every <span class="stepper"><b>−</b><span class="v">2</span><b>＋</b></span> to <span class="stepper"><b>−</b><span class="v">6</span><b>＋</b></span> min</span></div></div>
+    <div class="rule"><b>Soundboard</b></div>
     <div class="minisig">
       <div class="rune"><div class="sig">🐉</div><div class="lb">Dragon Roar</div></div>
       <div class="rune"><div class="sig">⛈</div><div class="lb">Thunder</div></div>
       <div class="rune"><div class="sig">💥</div><div class="lb">Throne Cracks</div></div>
     </div>
     <div class="pageactions">
-      <span class="btn ghost">🎧 Rehearse in monitor</span>
-      <span class="btn" style="font-size:15px; padding:13px 26px">▶ Take the stage · 4s crossfade</span>
+      <span class="btn ghost">🎧 Preview — only you hear it</span>
+      <span class="btn" style="font-size:15px; padding:13px 26px">▶ Play scene</span>
     </div>
     <div class="toggles">
-      <span class="tg"><span class="box">✓</span> bring the melody</span>
-      <span class="tg"><span class="box">✓</span> bring the undertones</span>
+      <span class="tg"><span class="box">✓</span> include music</span>
+      <span class="tg"><span class="box">✓</span> include ambience</span>
       <span class="tg"><span class="box"></span> keep current volumes</span>
     </div>
-    <div style="text-align:center; margin-top:12px; font-family:'Spectral'; font-style:italic; font-size:12px; color:var(--text-faint)">Last took the stage in session the ninth — 48 minutes, ending on “Last Stand.”</div>
+    <div style="text-align:center; margin-top:12px; font-size:12px; color:var(--text-faint)">Last played in session 9 · 48 minutes, ending on “Last Stand.”</div>
   </div></div>
     
     <div class="margin">
@@ -298,8 +311,8 @@
       </div>
       <div class="m-h" style="margin-top:4px">Up next</div>
       <div>
-        <div class="fn"><span class="n">i.</span> Crossroads at Dusk <span class="d">3:08</span></div>
-        <div class="fn"><span class="n">ii.</span> Steel &amp; Thunder <span class="d">3:21</span></div>
+        <div class="fn"><span class="n">1</span> Crossroads at Dusk <span class="d">3:08</span></div>
+        <div class="fn"><span class="n">2</span> Steel &amp; Thunder <span class="d">3:21</span></div>
       </div>
       <div class="m-h" style="margin-top:4px">Sounding now</div>
       <div>
@@ -307,10 +320,10 @@
         <div class="lrow"><span class="lb2">🍺 Tavern Crowd</span><div class="bar"><i style="width:60%"></i></div><small>60%</small></div>
         <div class="lrow"><span class="lb2">🔥 Crackling Fire</span><div class="bar"><i style="width:30%"></i></div><small>30%</small></div>
       </div>
-      <div class="colophon">Every pad strikes at equal weight — loudness matched at import.</div>
+      <div class="colophon">All pads loudness-matched at import — every sound plays at equal weight.</div>
       <div class="seal-wrap">
         <div class="seal">DUCK<small>hold · space</small></div>
-        <div class="seal-note">Press the seal and the mix bows to −18 dB while you narrate.</div>
+        <div class="seal-note">Hold to lower the whole mix −18 dB while you speak.</div>
       </div>
     </div>
   </div>
@@ -320,7 +333,7 @@
       <div class="art"></div>
       <div>
         <div class="t">The Sleeping Dragon Inn</div>
-        <div class="s">on air from “Quiet Tavern” · 1:12 / 3:33 · then Crossroads at Dusk</div>
+        <div class="s">playing from “Quiet Tavern” · 1:12 / 3:33 · next: Crossroads at Dusk</div>
       </div>
     </div>
     <div class="btns">

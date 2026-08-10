@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>QuestStream — The Scriptorium</title>
+<title>QuestStream — Import audio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;1,400&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -146,6 +146,16 @@
   .lay .line i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--nord8); border-radius: 2px; }
   .lay .line b { position: absolute; top: 50%; transform: translate(-50%, -50%); color: var(--nord8); font-size: 11px; }
   .lay .pct { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); width: 32px; text-align: right; }
+  .layctl { display: flex; gap: 8px; align-items: center; flex: none; }
+  .modeseg { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-size: 10.5px; }
+  .modeseg b { padding: 4px 10px; color: var(--text-faint); font-weight: 500; }
+  .modeseg b.on { background: var(--live-tint); color: var(--live); }
+  .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; font-family: 'JetBrains Mono'; font-size: 10.5px; }
+  .stepper b { padding: 4px 7px; color: var(--text-faint); background: var(--field-bg); font-weight: 500; }
+  .stepper .v { padding: 4px 8px; color: var(--text); min-width: 26px; text-align: center; }
+  .stepper .u { padding: 4px 7px 4px 0; color: var(--text-faint); }
+  .endsel { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border); border-radius: 7px; padding: 4px 10px; font-size: 11px; color: var(--text-dim); }
+  .endsel b { color: var(--text); font-weight: 500; }
   .minisig { display: flex; gap: 14px; justify-content: center; }
   .minisig .rune { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .minisig .sig { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 17px; background: var(--field-bg); border: 1px solid var(--border-strong); box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 4px var(--border-subtle); }
@@ -223,7 +233,7 @@
 <body>
   <div class="top">
     <div class="logo">♪ Quest<span>Stream</span></div>
-    <div class="tome">— the grimoire of <b>Curse of the Amber Throne</b>, session the twelfth</div>
+    <div class="tome"><b>Curse of the Amber Throne</b> · Session 12</div>
     <div class="out">
       <div class="pill"><span class="dot"></span> Discord · #tavern-voice · 3 listening</div>
       <span class="gear">⚙</span>
@@ -232,29 +242,29 @@
   <div class="main">
     
     <div class="chapters">
-      <div class="m-h">Chapters · Scenes</div>
+      <div class="m-h">Scenes</div>
       <div class="mark active">
         <span class="rib"></span>
         <div class="nm">Quiet Tavern</div>
-        <div class="meta">on air · 1 track, 4 layers</div>
+        <div class="meta">playing · 1 track, 4 layers</div>
         <div class="kbd">F1</div>
       </div>
       <div class="mark"><div class="nm">Ambush on the Road</div><div class="meta">2 tracks · 1 layer</div><div class="kbd">F2</div></div>
       <div class="mark"><div class="nm">Final Boss</div><div class="meta">3 tracks · 2 layers</div><div class="kbd">F3</div></div>
       <div class="mark"><div class="nm">Long Rest</div><div class="meta">1 track · 3 layers</div><div class="kbd">F4</div></div>
       
-      <div class="m-h" style="margin-top:12px">Appendices · Playlists</div>
+      <div class="m-h" style="margin-top:12px">Playlists</div>
       <div>
         <div class="plist-row">Tavern Night <small>2 tracks</small></div>
         <div class="plist-row">Final Boss Suite <small>3 tracks</small></div>
         <div class="plist-row">Road Songs <small>5 tracks</small></div>
       </div>
-      <div class="unsorted"><span>⚠ Unsorted shelf</span><b>23 to tag</b></div>
-      <div class="hint">The chapter on air keeps sounding while you write, import, or rehearse another. Nothing here interrupts the table.</div>
+      <div class="unsorted"><span>⚠ Untagged</span><b>23 to tag</b></div>
+      <div class="hint">The playing scene keeps going while you import, edit, or preview another. Nothing here interrupts the table.</div>
     </div>
     <div class="content">
-  <div class="crumb">Library · bring in audio</div>
-  <h1>The Scriptorium</h1>
+  <div class="crumb">Library · import</div>
+  <h1>Import audio</h1>
   <div class="sub">Drop files anywhere in the window, or paste a link — importing never opens a dialog and never stops the music.</div>
   <div class="drops">
     <div class="drop"><span class="big">⇣</span><div><div class="t">Drop audio files here</div><div class="s">or <u>browse…</u> — MP3, FLAC, OGG, WAV · loudness-matched on arrival</div></div></div>
@@ -262,7 +272,7 @@
       <div class="urlfield">https://youtube.com/playlist?list=tavern-nights <span class="kbd" style="margin-left:auto">⏎</span></div>
       <div class="s">YouTube · SoundCloud · Bandcamp — a playlist brings every track</div></div></div>
   </div>
-  <div class="shelf-h"><h2>Arriving now</h2><span class="n">5 items · from “Tavern Nights” playlist + 2 local files</span><a>history →</a></div>
+  <div class="shelf-h"><h2>Importing now</h2><span class="n">5 items · from “Tavern Nights” playlist + 2 local files</span><a>history →</a></div>
   <div class="itable">
     <div class="irow head"><span></span><span>Listen</span><span>Title</span><span>Type</span><span>Tags</span><span>Status</span></div>
     <div class="irow"><input type="checkbox" checked><span style="display:flex;gap:8px;align-items:center"><span class="play">▶</span><div class="wavemini"><i class="p" style="height:25%"></i><i class="p" style="height:52%"></i><i class="p" style="height:70%"></i><i class="p" style="height:73%"></i><i class="p" style="height:62%"></i><i class="p" style="height:42%"></i><i class="p" style="height:31%"></i><i class="p" style="height:50%"></i><i class="" style="height:59%"></i><i class="" style="height:58%"></i><i class="" style="height:51%"></i><i class="" style="height:34%"></i><i class="" style="height:38%"></i><i class="" style="height:59%"></i><i class="" style="height:71%"></i><i class="" style="height:70%"></i><i class="" style="height:55%"></i><i class="" style="height:29%"></i></div></span>
@@ -294,10 +304,10 @@
   <div class="ibar">
     <span><b>3 selected</b> · apply tags to all: </span>
     <span class="cellchips"><span class="chip live">Fantasy</span><span class="chip">Social</span><span class="chip">Tavern</span><span class="chip add">+ add</span></span>
-    <span style="margin-left:auto" class="sub">or tag later — untagged items wait on the <b>Unsorted shelf</b></span>
+    <span style="margin-left:auto" class="sub">or tag later — they'll wait in <b>Untagged</b></span>
     <span class="btn">Done — 4 added</span>
   </div>
-  <div class="shelf-h" style="margin-top:22px"><h2>The Unsorted shelf</h2><span class="n">23 waiting from earlier imports</span><a class="btn ghost" style="font-size:12px; padding:7px 14px">🎧 Tag as you listen →</a></div>
+  <div class="shelf-h" style="margin-top:22px"><h2>Untagged</h2><span class="n">23 waiting from earlier imports</span><a class="btn ghost" style="font-size:12px; padding:7px 14px">🎧 Tag with preview →</a></div>
   <div class="itable">
     <div class="irow"><span></span><span style="display:flex;gap:8px;align-items:center"><span class="play">▶</span><div class="wavemini"><i class="" style="height:25%"></i><i class="" style="height:52%"></i><i class="" style="height:70%"></i><i class="" style="height:73%"></i><i class="" style="height:62%"></i><i class="" style="height:42%"></i><i class="" style="height:31%"></i><i class="" style="height:50%"></i><i class="" style="height:59%"></i><i class="" style="height:58%"></i><i class="" style="height:51%"></i><i class="" style="height:34%"></i><i class="" style="height:38%"></i><i class="" style="height:59%"></i><i class="" style="height:71%"></i><i class="" style="height:70%"></i><i class="" style="height:55%"></i><i class="" style="height:29%"></i></div></span>
       <div class="t">Dockside Dawn <small>youtube · 3:05 · imported yesterday</small></div>
@@ -310,7 +320,7 @@
       <div class="cellchips"><span class="chip add">+ tag</span></div>
       <div class="status dupe">untagged</div></div>
   </div>
-  <div class="sub" style="margin-top:8px; font-family:'Spectral'; font-style:italic">Untagged audio still plays and still searches by title — tags only make it easier to find when the party kicks the door in.</div></div>
+  <div class="sub" style="margin-top:8px">Untagged audio still plays and still turns up in title search — tags just make it faster to find mid-session.</div></div>
     
     <div class="margin">
       <div class="m-h">Soundboard</div>
@@ -326,8 +336,8 @@
       </div>
       <div class="m-h" style="margin-top:4px">Up next</div>
       <div>
-        <div class="fn"><span class="n">i.</span> Crossroads at Dusk <span class="d">3:08</span></div>
-        <div class="fn"><span class="n">ii.</span> Steel &amp; Thunder <span class="d">3:21</span></div>
+        <div class="fn"><span class="n">1</span> Crossroads at Dusk <span class="d">3:08</span></div>
+        <div class="fn"><span class="n">2</span> Steel &amp; Thunder <span class="d">3:21</span></div>
       </div>
       <div class="m-h" style="margin-top:4px">Sounding now</div>
       <div>
@@ -335,10 +345,10 @@
         <div class="lrow"><span class="lb2">🍺 Tavern Crowd</span><div class="bar"><i style="width:60%"></i></div><small>60%</small></div>
         <div class="lrow"><span class="lb2">🔥 Crackling Fire</span><div class="bar"><i style="width:30%"></i></div><small>30%</small></div>
       </div>
-      <div class="colophon">Every pad strikes at equal weight — loudness matched at import.</div>
+      <div class="colophon">All pads loudness-matched at import — every sound plays at equal weight.</div>
       <div class="seal-wrap">
         <div class="seal">DUCK<small>hold · space</small></div>
-        <div class="seal-note">Press the seal and the mix bows to −18 dB while you narrate.</div>
+        <div class="seal-note">Hold to lower the whole mix −18 dB while you speak.</div>
       </div>
     </div>
   </div>
@@ -348,7 +358,7 @@
       <div class="art"></div>
       <div>
         <div class="t">The Sleeping Dragon Inn</div>
-        <div class="s">on air from “Quiet Tavern” · 1:12 / 3:33 · then Crossroads at Dusk</div>
+        <div class="s">playing from “Quiet Tavern” · 1:12 / 3:33 · next: Crossroads at Dusk</div>
       </div>
     </div>
     <div class="btns">
