@@ -16,6 +16,7 @@ import type {
   DesktopStatus
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
+import { resolveKey } from '@shared/keymap'
 import { NORD_SWATCH_HEX, migrateTagColor } from '@shared/tagColors'
 import type { SwatchTable } from '@shared/tagColors'
 import { clamp01 } from '@shared/num'
@@ -40,6 +41,9 @@ export type RepeatMode = 'off' | 'all' | 'one'
 
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
+/** Center workspaces of the grimoire shell; the union grows as phases land. */
+export type Workspace = 'library'
+
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
   text: string
@@ -294,9 +298,11 @@ interface State {
   outputDeviceId: string // chosen local output device ('' = system default)
   ducking: boolean
   remoteActive: boolean // is the LAN remote enabled (gates state pushes)
+  workspace: Workspace // which center workspace is open
 
   // actions
   init: () => Promise<void>
+  setWorkspace: (w: Workspace) => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -495,8 +501,10 @@ export const useStore = create<State>((set, get) => ({
   outputDeviceId: readLocal('qs.outputDeviceId', (s) => s, ''),
   ducking: false,
   remoteActive: false,
+  workspace: 'library',
 
   setRemoteActive: (on) => set({ remoteActive: on }),
+  setWorkspace: (w) => set({ workspace: w }),
 
   init: async () => {
     if (initialized) return // run once even under StrictMode's double-mount
@@ -563,19 +571,60 @@ export const useStore = create<State>((set, get) => ({
     useStore.subscribe(pushRemote)
     void window.api.remote.getInfo().then((i) => set({ remoteActive: i.enabled }))
 
-    // Global soundboard hotkeys. Ignored while typing in a field or rebinding a key
-    // (the bind UI sets a flag on window). A bound key fires its one-shot over the mix.
-    window.addEventListener('keydown', (e) => {
+    // Global hotkeys, all routed through the pure resolver (@shared/keymap): bound
+    // soundboard keys, F1–F8 scene recall, and hold-D ducking. Ignored while typing in
+    // a field or rebinding a key (the bind UI sets a flag on window). User bindings on
+    // a built-in key claim it entirely — precedence lives in resolveKey, not here.
+    const dispatchKey = (e: KeyboardEvent, type: 'down' | 'up'): void => {
       if ((window as unknown as { __sbBinding?: boolean }).__sbBinding) return
       const el = document.activeElement
-      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      const hit = get().library.soundboard.find((sb) => sb.hotkey && sb.hotkey === e.key)
-      if (hit) {
-        e.preventDefault()
-        get().triggerSfx(hit.id)
+      const typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)
+      const s = get()
+      const action = resolveKey(
+        {
+          key: e.key,
+          type,
+          meta: e.metaKey,
+          ctrl: e.ctrlKey,
+          alt: e.altKey,
+          repeat: e.repeat,
+          typing
+        },
+        {
+          sceneIds: s.library.scenes.map((sc) => sc.id),
+          soundboardHotkeys: s.library.soundboard
+            .filter((sb) => sb.hotkey)
+            .map((sb) => ({ key: sb.hotkey!, id: sb.id })),
+          scenePadHotkeys: [] // pads of the on-air scene join in Phase 5
+        }
+      )
+      if (!action) return
+      e.preventDefault()
+      switch (action.kind) {
+        case 'sfx':
+          s.triggerSfx(action.id)
+          break
+        case 'scene-pad':
+          break // unreachable until scenePadHotkeys is populated (Phase 5)
+        case 'duck':
+          s.setDuck(action.down)
+          break
+        case 'recall-scene': {
+          // Same dirty-mix guard as the rail rows; goes away when scenes get an
+          // explicit Play action (Phase 5).
+          const dirty = s.queue.length > 0 || s.ambience.length > 0
+          if (
+            !dirty ||
+            s.loadedSceneId === action.sceneId ||
+            confirm('Replace the current mix with this scene? Unsaved changes will be lost.')
+          )
+            s.recallScene(action.sceneId)
+          break
+        }
       }
-    })
+    }
+    window.addEventListener('keydown', (e) => dispatchKey(e, 'down'))
+    window.addEventListener('keyup', (e) => dispatchKey(e, 'up'))
 
     // Not in a voice channel yet → behave like a local jukebox (monitor on).
     get().setMonitor(true)

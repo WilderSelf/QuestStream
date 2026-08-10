@@ -14,6 +14,16 @@ import { Splitter } from './Splitter'
 import { TagDots } from './TagDots'
 import { VolumeSlider } from './VolumeSlider'
 
+/**
+ * The grimoire's right margin — the live-mix column. A full port of the old QueuePane
+ * (queue with reorder/loop/seek, ambience layers with loop/random + intervals,
+ * soundboard with hotkey/duck/gain) under the new section language (Up next /
+ * Sounding now / Soundboard), plus the wax-seal DUCK: press-and-hold to lower the
+ * whole mix while narrating (keyboard: hold D). Sticky ducking stays on the transport.
+ * Drop-target ids (queue-drop / ambience-drop / soundboard-drop) are unchanged —
+ * App.tsx's onDragEnd depends on them.
+ */
+
 const LOOP_LABEL: Record<NonNullable<QueueItem['loop']>, string> = {
   off: 'Loop: off',
   on: 'Loop this track',
@@ -238,7 +248,7 @@ function AmbienceSection(): JSX.Element {
         className={`ambience-header ${empty && isOver ? 'drop-active' : ''}`}
         title={empty ? 'Drag ambience here — each sound loops or fires at random.' : undefined}
       >
-        <span>Ambience layers · {ambience.length}</span>
+        <span>Sounding now · {ambience.length}</span>
         <button
           className="link-btn"
           title="Open the Ambience library to add a layer"
@@ -281,7 +291,7 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
   }, [binding, item.id])
 
   return (
-    <div className="sfx">
+    <div className="sfx sigil">
       <button className="sfx-trigger" title={song?.title ?? 'missing track'} onClick={() => triggerSfx(item.id)}>
         {song?.title ?? '— missing —'}
       </button>
@@ -353,7 +363,33 @@ function SoundboardSection(): JSX.Element {
   )
 }
 
-export function QueuePane(): JSX.Element {
+/** Press-and-hold wax seal: mix bows while held (keyboard equivalent: hold D). */
+function DuckSeal(): JSX.Element {
+  const ducking = useStore((s) => s.ducking)
+  const setDuck = useStore((s) => s.setDuck)
+  return (
+    <div className="seal-row">
+      <button
+        className={`duck-seal ${ducking ? 'held' : ''}`}
+        title="Hold to lower the whole mix while you speak (hold D)"
+        aria-label="Duck the mix while held"
+        aria-pressed={ducking}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          setDuck(true)
+        }}
+        onPointerUp={() => setDuck(false)}
+        onPointerCancel={() => setDuck(false)}
+      >
+        <span className="duck-seal-word">DUCK</span>
+        <span className="duck-seal-hint">hold · D</span>
+      </button>
+      <span className="seal-note">Hold to lower the whole mix while you speak.</span>
+    </div>
+  )
+}
+
+export function MarginPane(): JSX.Element {
   const queue = useStore((s) => s.queue)
   const ambience = useStore((s) => s.ambience)
   const clearQueue = useStore((s) => s.clearQueue)
@@ -371,70 +407,69 @@ export function QueuePane(): JSX.Element {
       clearQueue()
   }
 
-  // With no ambience layers, the Ambience pane is just its header — so drop the resizable split
-  // and let Now Playing take the whole upper region (ambience + soundboard headers pin below).
+  // With no ambience layers, the Sounding-now pane is just its header — drop the resizable
+  // split and let Up next take the whole upper region (headers + seal pin below).
   const ambienceEmpty = ambience.length === 0
   const gridRows = ambienceEmpty
-    ? 'minmax(0, 1fr) auto auto'
-    : `minmax(0, ${mixSplit}fr) 6px minmax(0, ${1 - mixSplit}fr) auto`
+    ? 'minmax(0, 1fr) auto auto auto'
+    : `minmax(0, ${mixSplit}fr) 6px minmax(0, ${1 - mixSplit}fr) auto auto`
 
   return (
-    <div className="right-col" style={{ gridTemplateRows: gridRows }}>
+    <div className="right-col margin-pane" style={{ gridTemplateRows: gridRows }}>
       <div className={`pane queue ${isOver ? 'drop-active' : ''}`}>
-      <div className="pane-header">
-        <span>Now Playing · {queue.length}</span>
-        <span className="header-actions">
-          <button
-            className="icon"
-            disabled={queue.length === 0 && ambience.length === 0}
-            title="Save as scene (music + ambience + volumes)"
-            aria-label="Save as scene"
-            onClick={() => setSaveScenePromptOpen(true)}
-          >
-            <Icon name="film" size={16} />
-          </button>
-          <button
-            className="icon"
-            disabled={queue.length === 0}
-            title="Save queue as playlist"
-            aria-label="Save queue as playlist"
-            onClick={() => setSavePromptOpen(true)}
-          >
-            <Icon name="save" size={16} />
-          </button>
-          <button
-            className="icon"
-            disabled={queue.length === 0}
-            title="Clear queue"
-            aria-label="Clear queue"
-            onClick={clearQueueConfirmed}
-          >
-            <Icon name="trash" size={16} />
-          </button>
-        </span>
-      </div>
+        <div className="pane-header">
+          <span>Up next · {queue.length}</span>
+          <span className="header-actions">
+            <button
+              className="icon"
+              disabled={queue.length === 0 && ambience.length === 0}
+              title="Save as scene (music + ambience + volumes)"
+              aria-label="Save as scene"
+              onClick={() => setSaveScenePromptOpen(true)}
+            >
+              <Icon name="bookmark" size={16} />
+            </button>
+            <button
+              className="icon"
+              disabled={queue.length === 0}
+              title="Save queue as playlist"
+              aria-label="Save queue as playlist"
+              onClick={() => setSavePromptOpen(true)}
+            >
+              <Icon name="save" size={16} />
+            </button>
+            <button
+              className="icon"
+              disabled={queue.length === 0}
+              title="Clear queue"
+              aria-label="Clear queue"
+              onClick={clearQueueConfirmed}
+            >
+              <Icon name="trash" size={16} />
+            </button>
+          </span>
+        </div>
 
-      <div className="deck-row" title="Music layer volume (relative to ambience)">
-        <span className="vol-icon" aria-hidden="true">
-          <Icon name="music" size={16} />
-        </span>
-        <VolumeSlider ariaLabel="Music layer volume" value={musicVolume} onChange={setMusicVolume} />
-      </div>
+        <div className="deck-row" title="Music layer volume (relative to ambience)">
+          <span className="vol-icon" aria-hidden="true">
+            <Icon name="music" size={16} />
+          </span>
+          <VolumeSlider ariaLabel="Music layer volume" value={musicVolume} onChange={setMusicVolume} />
+        </div>
 
-      <div className="pane-body" ref={setNodeRef}>
-        {queue.length === 0 && (
-          <div className="empty-hint">
-            <Icon name="music" size={18} />
-            <span>Drag or double-click songs to build a queue.</span>
-          </div>
-        )}
-        <SortableContext items={queue.map((q) => q.uid)} strategy={verticalListSortingStrategy}>
-          {queue.map((item) => (
-            <QueueRow key={item.uid} item={item} />
-          ))}
-        </SortableContext>
-      </div>
-
+        <div className="pane-body" ref={setNodeRef}>
+          {queue.length === 0 && (
+            <div className="empty-hint">
+              <Icon name="music" size={18} />
+              <span>Drag or double-click songs to build a queue.</span>
+            </div>
+          )}
+          <SortableContext items={queue.map((q) => q.uid)} strategy={verticalListSortingStrategy}>
+            {queue.map((item) => (
+              <QueueRow key={item.uid} item={item} />
+            ))}
+          </SortableContext>
+        </div>
       </div>
 
       {!ambienceEmpty && (
@@ -443,11 +478,12 @@ export function QueuePane(): JSX.Element {
           value={mixSplit}
           onChange={setMixSplit}
           onReset={() => setMixSplit(0.5)}
-          ariaLabel="Resize Now Playing and Ambience"
+          ariaLabel="Resize Up next and Sounding now"
         />
       )}
       <AmbienceSection />
       <SoundboardSection />
+      <DuckSeal />
     </div>
   )
 }

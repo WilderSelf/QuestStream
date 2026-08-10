@@ -297,7 +297,7 @@ body,
 }
 
 body {
-  font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
   font-size: var(--text-base);
   line-height: var(--lh);
   color: var(--text);
@@ -2192,4 +2192,198 @@ textarea {
 }
 .theme-swatch.user.active .theme-swatch-chip.user {
   color: var(--primary);
+}
+
+/* ===================================================================
+   GRIMOIRE SHELL — scene bookmark rail (Phase 1.3)
+   =================================================================== */
+.scene-rail .rail-caption {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  padding: 0 4px var(--space-3);
+  line-height: var(--lh);
+}
+.bookmark {
+  position: relative;
+  margin: 0 12px var(--space-3) 0;
+  padding: 9px 30px 9px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  cursor: pointer;
+}
+/* The bookmark's notched right edge. Background/border must mirror the card by state
+   (a pseudo-element can't inherit a gradient sanely, so states restate the colour). */
+.bookmark::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  right: -12px;
+  width: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-left: none;
+  clip-path: polygon(0 0, 100% 0, 55% 50%, 100% 100%, 0 100%);
+}
+.bookmark:hover {
+  background: var(--surface-over);
+}
+.bookmark:hover::after {
+  background: var(--surface-over);
+}
+.bookmark.on-air {
+  background: var(--primary-tint);
+  border-color: var(--primary);
+  padding-left: 22px;
+}
+.bookmark.on-air::after {
+  background: var(--surface-raised);
+  border-color: var(--primary);
+}
+.bookmark-ribbon {
+  position: absolute;
+  left: 8px;
+  top: -4px;
+  width: 8px;
+  height: 26px;
+  background: var(--ornament);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+.bookmark-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-md);
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+.bookmark.on-air .bookmark-name {
+  color: var(--primary-hi);
+}
+.bookmark-meta {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.bookmark-key {
+  position: absolute;
+  top: 8px;
+  right: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.bookmark.on-air .bookmark-key {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.bookmark-actions {
+  position: absolute;
+  right: 2px;
+  bottom: 6px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.bookmark:hover .bookmark-actions,
+.bookmark:focus-within .bookmark-actions {
+  opacity: 1;
+}
+.bookmark-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 12px);
+  margin: 0 12px var(--space-4) 0;
+  padding: 8px;
+  min-height: var(--hit-target-min);
+  background: transparent;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.bookmark-add:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+
+/* ---- Grimoire margin: sigil-ringed soundboard triggers + the wax-seal duck ---- */
+.sfx.sigil .sfx-trigger {
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--sigil-ring), inset 0 0 0 3px var(--bg);
+}
+.seal-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.duck-seal {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(circle at 35% 30%, var(--primary-hi), var(--seal) 55%, var(--primary-press));
+  color: var(--seal-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--primary-tint), inset 0 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: transform 0.08s, box-shadow 0.08s;
+  touch-action: none;
+}
+.duck-seal.held {
+  transform: scale(0.94);
+  box-shadow: 0 1px 4px var(--primary-tint), inset 0 0 0 5px rgba(0, 0, 0, 0.2);
+}
+.duck-seal-word {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+}
+.duck-seal-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  opacity: 0.85;
+}
+.seal-note {
+  font-family: var(--font-marginalia);
+  font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  line-height: var(--lh);
+}
+
+/* ---- Grimoire chrome typography (Phase 1.5) ---- */
+.topbar .brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pane-header,
+.ambience-header {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+.np-info .meta .t {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.section-label {
+  font-family: var(--font-display);
 }

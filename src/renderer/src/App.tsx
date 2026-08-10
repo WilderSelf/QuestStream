@@ -11,9 +11,9 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from './store'
 import { TopBar } from './components/TopBar'
-import { PlaylistsPane } from './components/Browser'
-import { LibraryPane } from './components/LibraryPane'
-import { QueuePane } from './components/QueuePane'
+import { SceneRail } from './components/SceneRail'
+import { WorkspaceHost } from './components/WorkspaceHost'
+import { MarginPane } from './components/MarginPane'
 import { Splitter } from './components/Splitter'
 import { TransportBar } from './components/TransportBar'
 import {
@@ -118,7 +118,7 @@ export function App(): JSX.Element {
                 : `auto 6px ${browserSplit}fr 6px ${1 - browserSplit}fr`
             }}
           >
-            <PlaylistsPane />
+            <SceneRail />
             {!playlistsCollapsed && (
               <Splitter
                 orientation="vertical"
@@ -129,7 +129,7 @@ export function App(): JSX.Element {
                 ariaLabel="Resize the scenes and playlists rail"
               />
             )}
-            <LibraryPane />
+            <WorkspaceHost />
             <Splitter
               orientation="vertical"
               value={browserSplit}
@@ -137,7 +137,7 @@ export function App(): JSX.Element {
               onReset={() => setBrowserSplit(1.7 / (1.7 + 1.2))}
               ariaLabel="Resize library and mix columns"
             />
-            <QueuePane />
+            <MarginPane />
           </div>
         </div>
         <TransportBar />
