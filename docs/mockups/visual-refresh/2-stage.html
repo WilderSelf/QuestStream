@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QuestStream — Stage Mode</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; grid-template-rows: 54px 1fr 264px; }
+
+  .top { display: flex; align-items: center; gap: 16px; padding: 0 22px; border-bottom: 1px solid var(--border-subtle); }
+  .logo { font-family: 'Space Grotesk'; font-weight: 700; font-size: 15px; letter-spacing: 0.06em; color: var(--nord6); }
+  .logo span { color: var(--primary); }
+  .stagechip { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--primary); border: 1px solid rgba(232,169,94,0.45); padding: 4px 10px; border-radius: 999px; font-family: 'JetBrains Mono'; }
+  .timer { margin-left: auto; font-family: 'JetBrains Mono'; font-size: 13px; color: var(--text-dim); display: flex; gap: 18px; align-items: center; }
+  .pill { display: flex; gap: 8px; align-items: center; padding: 6px 14px; border-radius: 999px; background: var(--live-tint); color: var(--live); border: 1px solid rgba(136,192,208,0.35); font-size: 13px; font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); }
+  .exit { font-size: 13px; color: var(--text-dim); border: 1px solid var(--border); padding: 7px 14px; border-radius: 8px; }
+
+  .mid { display: grid; grid-template-columns: 330px 1fr; min-height: 0; }
+
+  /* ---- scenes column ---- */
+  .scenecol { border-right: 1px solid var(--border-subtle); padding: 20px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .col-h { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); font-family: 'JetBrains Mono'; display: flex; justify-content: space-between; align-items: baseline; }
+  .scene {
+    flex: 1; justify-content: center;
+    border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; background: var(--surface);
+    display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden;
+  }
+  .scene.ghost { flex: 0 0 auto; border-style: dashed; background: transparent; color: var(--text-faint); font-size: 13px; align-items: center; padding: 14px; }
+  .scene .nm { font-family: 'Space Grotesk'; font-weight: 600; font-size: 18px; color: var(--text); }
+  .scene .meta { font-size: 12px; color: var(--text-faint); }
+  .scene .kbd { position: absolute; top: 14px; right: 14px; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-faint); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; }
+  .scene.active { background: linear-gradient(160deg, rgba(232,169,94,0.16), var(--surface) 70%); border-color: rgba(232,169,94,0.5); }
+  .scene.active .nm { color: var(--primary-hi); }
+  .scene.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--primary); }
+  .scene.active .kbd { color: var(--primary); border-color: rgba(232,169,94,0.5); }
+  .scene .live { font-size: 11px; color: var(--primary); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ---- hero ---- */
+  .hero { padding: 26px 44px 0; display: flex; flex-direction: column; min-height: 0; }
+  .eyebrow { font-family: 'JetBrains Mono'; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--live); display: flex; gap: 10px; align-items: center; }
+  .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; }
+  .eq i { width: 3px; background: var(--live); border-radius: 1px; }
+  .title { font-family: 'Fraunces'; font-weight: 600; font-size: 76px; line-height: 1.05; color: var(--nord6); margin: 10px 0 10px; letter-spacing: -0.01em; }
+  .meta { font-size: 15px; color: var(--text-dim); display: flex; gap: 12px; align-items: center; }
+  .meta .dsp { font-size: 11px; font-family: 'JetBrains Mono'; color: var(--nord7); border: 1px solid rgba(143,188,187,0.35); padding: 2px 8px; border-radius: 5px; }
+  .wave { margin-top: auto; height: 150px; display: flex; align-items: center; gap: 2px; }
+  .wave i { flex: 1; border-radius: 2px; background: var(--track); }
+  .wave i.played { background: var(--live); }
+  .wave i.head { background: var(--nord6); }
+  .times { display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+  .times .remain { color: var(--warn); }
+
+  .heroctl { display: flex; align-items: center; gap: 26px; margin-top: 18px; }
+  .tbtn { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); font-size: 21px; border: 1px solid var(--border); }
+  .play { width: 76px; height: 76px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-size: 30px; box-shadow: 0 6px 26px rgba(232,169,94,0.4); }
+  .nextcard { margin-left: auto; display: flex; gap: 14px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 14px; padding: 14px 20px; max-width: 430px; }
+  .nextcard .lbl { font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); }
+  .nextcard .t { font-family: 'Space Grotesk'; font-weight: 600; font-size: 17px; color: var(--text); margin-top: 3px; }
+  .nextcard .x { font-size: 11px; color: var(--nord7); margin-top: 3px; }
+  .nextcard .d { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text-faint); margin-left: 10px; }
+
+  /* ---- ambience row ---- */
+  .amb { display: flex; gap: 14px; margin-top: auto; padding-bottom: 22px; }
+  .layer {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .layer .r1 { display: flex; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 500; }
+  .layer .r1 small { color: var(--text-faint); font-size: 11px; font-family: 'JetBrains Mono'; margin-left: auto; }
+  .layer .bar { height: 10px; border-radius: 6px; background: var(--field-bg); position: relative; }
+  .layer .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, var(--nord10), var(--nord8)); }
+  .layer .bar i::after { content: ''; position: absolute; right: -7px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; border-radius: 50%; background: var(--nord6); box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+  .layer .mode { font-size: 10px; color: var(--nord7); font-family: 'JetBrains Mono'; }
+  .layer.rand .mode { color: var(--tag); }
+
+  /* ---- pad band ---- */
+  .band { border-top: 1px solid var(--border-subtle); background: linear-gradient(rgba(42,48,59,0.5), var(--bg)); padding: 18px 44px 20px; display: grid; grid-template-columns: 1fr 210px; gap: 22px; }
+  .band-h { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 14px; font-family: 'JetBrains Mono'; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); }
+  .band-h .norm { color: var(--ok); text-transform: none; letter-spacing: 0; }
+  .padgrid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 14px; }
+  .pad {
+    height: 150px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
+    padding: 14px; display: flex; flex-direction: column; position: relative;
+  }
+  .pad .ico { font-size: 26px; }
+  .pad .nm { font-family: 'Space Grotesk'; font-weight: 600; font-size: 16px; margin-top: auto; line-height: 1.2; }
+  .pad .k { position: absolute; top: 12px; right: 12px; font-family: 'JetBrains Mono'; font-size: 12px; color: var(--live); border: 1px solid rgba(136,192,208,0.4); border-radius: 6px; padding: 2px 8px; }
+  .pad .duckb { font-size: 10px; color: var(--primary); margin-top: 4px; }
+  .pad.playing { border-color: rgba(136,192,208,0.6); background: linear-gradient(180deg, rgba(136,192,208,0.14), var(--surface)); }
+  .pad.playing .ring { position: absolute; inset: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(136,192,208,0.5), 0 0 24px rgba(136,192,208,0.25); }
+  .pad.playing .prog { position: absolute; left: 12px; right: 12px; bottom: 8px; height: 3px; border-radius: 2px; background: var(--field-bg); }
+  .pad.playing .prog i { display: block; height: 100%; width: 62%; border-radius: 2px; background: var(--live); }
+  .duckzone { display: flex; flex-direction: column; gap: 10px; }
+  .duckbig {
+    flex: 1; border-radius: 16px; background: var(--primary); color: var(--on-primary); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px; font-family: 'Space Grotesk'; font-weight: 700; font-size: 22px;
+    box-shadow: 0 6px 24px rgba(232,169,94,0.35);
+  }
+  .duckbig small { font-family: 'JetBrains Mono'; font-weight: 400; font-size: 11px; opacity: 0.8; }
+  .stopall { text-align: center; font-size: 13px; color: var(--danger); border: 1px solid rgba(191,97,106,0.45); border-radius: 12px; padding: 11px; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="logo">♪ QUEST<span>STREAM</span></div>
+    <div class="stagechip">Stage · live at the table</div>
+    <div class="timer">
+      <span>session 1:42:10</span>
+      <div class="pill"><span class="dot"></span> Discord · #tavern-voice · 3 listening</div>
+      <div class="exit">⤢ Back to library</div>
+    </div>
+  </div>
+
+  <div class="mid">
+    <div class="scenecol">
+      <div class="col-h"><span>Scenes</span><span>tap or F-key</span></div>
+      <div class="scene active">
+        <div class="live">● Live now</div>
+        <div class="nm">Quiet Tavern</div>
+        <div class="meta">1 track · 4 layers · 8 pads</div>
+        <div class="kbd">F1</div>
+      </div>
+      <div class="scene">
+        <div class="nm">Ambush on the Road</div>
+        <div class="meta">2 tracks · 1 layer · fades in 4s</div>
+        <div class="kbd">F2</div>
+      </div>
+      <div class="scene">
+        <div class="nm">Final Boss</div>
+        <div class="meta">3 tracks · 2 layers</div>
+        <div class="kbd">F3</div>
+      </div>
+      <div class="scene">
+        <div class="nm">Long Rest</div>
+        <div class="meta">1 track · 3 layers</div>
+        <div class="kbd">F4</div>
+      </div>
+      <div class="scene ghost">＋ Save what's playing as a scene</div>
+    </div>
+
+    <div class="hero">
+      <div class="eyebrow">
+        <span class="eq"><i style="height:55%"></i><i style="height:100%"></i><i style="height:35%"></i><i style="height:75%"></i></span>
+        Now playing · music bus 82%
+      </div>
+      <div class="title">The Sleeping Dragon Inn</div>
+      <div class="meta">Fantasy · Social · Peaceful <span class="dsp">DSP · Old Radio</span></div>
+      <div class="wave" id="wave"></div>
+      <div class="times"><span>1:12</span><span class="remain">−2:21 · crossfade arms at 3:29</span><span>3:33</span></div>
+      <div class="heroctl">
+        <div class="tbtn">⏮</div>
+        <div class="play">▶</div>
+        <div class="tbtn">⏭</div>
+        <div class="nextcard">
+          <div>
+            <div class="lbl">Next up</div>
+            <div class="t">Crossroads at Dusk</div>
+            <div class="x">⇄ 4s crossfade · gapless</div>
+          </div>
+          <div class="d">3:08</div>
+        </div>
+      </div>
+      <div class="amb">
+        <div class="layer">
+          <div class="r1">🌧 Rain on Canvas <small>∞ loop · 45%</small></div>
+          <div class="bar"><i style="width:45%"></i></div>
+          <div class="mode">gapless</div>
+        </div>
+        <div class="layer">
+          <div class="r1">🍺 Tavern Crowd <small>∞ loop · 60%</small></div>
+          <div class="bar"><i style="width:60%"></i></div>
+          <div class="mode">gapless</div>
+        </div>
+        <div class="layer">
+          <div class="r1">🔥 Crackling Fire <small>∞ loop · 30%</small></div>
+          <div class="bar"><i style="width:30%"></i></div>
+          <div class="mode">gapless</div>
+        </div>
+        <div class="layer rand">
+          <div class="r1">🐺 Distant Wolves <small>random · 55%</small></div>
+          <div class="bar"><i style="width:55%"></i></div>
+          <div class="mode">⚄ fires every 2–5 min · next ~2:40</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="band-h">Soundboard <span class="norm">✓ all pads loudness-matched (R128)</span><span style="margin-left:auto">tap a pad or press its key · ⤓ ducks music</span></div>
+    <div class="padgrid">
+      <div class="pad"><span class="ico">⚔️</span><span class="k">1</span><div class="nm">Sword Clash</div><div class="duckb">⤓ ducks music</div></div>
+      <div class="pad"><span class="ico">🔥</span><span class="k">2</span><div class="nm">Fireball</div><div class="duckb">⤓ ducks music</div></div>
+      <div class="pad playing"><span class="ring"></span><span class="ico">🚪</span><span class="k">3</span><div class="nm">Wooden Door</div><div class="prog"><i></i></div></div>
+      <div class="pad"><span class="ico">🐺</span><span class="k">4</span><div class="nm">Wolf Howl</div></div>
+      <div class="pad"><span class="ico">⛈</span><span class="k">5</span><div class="nm">Thunder Crack</div><div class="duckb">⤓ ducks music</div></div>
+      <div class="pad"><span class="ico">💰</span><span class="k">6</span><div class="nm">Coin Purse</div></div>
+      <div class="pad"><span class="ico">🐉</span><span class="k">7</span><div class="nm">Dragon Roar</div><div class="duckb">⤓ ducks music</div></div>
+      <div class="pad"><span class="ico">🪵</span><span class="k">8</span><div class="nm">Creaking Timber</div></div>
+    </div>
+    <div class="duckzone">
+      <div class="duckbig">DUCK<small>hold space · −18 dB</small></div>
+      <div class="stopall">■ Fade everything out</div>
+    </div>
+  </div>
+
+<script>
+  // deterministic waveform bars
+  const w = document.getElementById('wave');
+  const N = 140, playedUpto = Math.floor(N * 0.34);
+  for (let i = 0; i < N; i++) {
+    const t = i / N;
+    let h = 0.35 + 0.3 * Math.abs(Math.sin(i * 0.55)) + 0.25 * Math.abs(Math.sin(i * 0.13 + 2)) + 0.1 * Math.abs(Math.sin(i * 1.7));
+    h *= 0.75 + 0.25 * Math.sin(t * Math.PI); // swell toward middle
+    const el = document.createElement('i');
+    el.style.height = Math.round(h * 100) + '%';
+    if (i < playedUpto) el.className = 'played';
+    if (i === playedUpto) el.className = 'head';
+    w.appendChild(el);
+  }
+</script>
+</body>
+</html>

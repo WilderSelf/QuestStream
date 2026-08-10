@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QuestStream — Session Lanes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; grid-template-rows: 56px 1fr 250px 92px; }
+
+  .top { display: flex; align-items: center; gap: 18px; padding: 0 22px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .logo { font-family: 'Space Grotesk'; font-weight: 700; font-size: 16px; letter-spacing: 0.06em; color: var(--nord6); }
+  .logo span { color: var(--primary); }
+  .chip { font-size: 13px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+  .chip.active { background: var(--primary); color: var(--on-primary); border-color: transparent; font-weight: 600; }
+  .onair { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+  .air { display: flex; gap: 8px; align-items: center; font-family: 'JetBrains Mono'; font-size: 12px; letter-spacing: 0.12em; color: var(--live); border: 1px solid rgba(136,192,208,0.4); background: var(--live-tint); padding: 6px 14px; border-radius: 999px; }
+  .air .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); }
+  .clock { font-family: 'JetBrains Mono'; font-size: 13px; color: var(--text-dim); }
+
+  /* ---- timeline ---- */
+  .tl { position: relative; overflow: hidden; background:
+    linear-gradient(90deg, rgba(216,222,233,0.02) 1px, transparent 1px) 0 0 / 8.333% 100%,
+    var(--bg);
+    display: flex; flex-direction: column; padding: 14px 0 10px; }
+  .ruler { position: relative; height: 26px; margin: 0 0 6px; font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-faint); }
+  .ruler b { position: absolute; transform: translateX(-50%); font-weight: 400; }
+  .lane { position: relative; flex: 1; margin: 5px 0; }
+  .lane-h { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); z-index: 3; width: 150px; }
+  .lane-h .t { font-family: 'Space Grotesk'; font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+  .lane-h .s { font-size: 10px; color: var(--text-faint); font-family: 'JetBrains Mono'; margin-top: 3px; }
+  .lane .bed { position: absolute; left: 190px; right: 0; top: 0; bottom: 0; border-top: 1px solid var(--border-subtle); }
+  .blk { position: absolute; top: 12%; bottom: 12%; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-strong); background: var(--surface-raised); }
+  .blk .nm { position: absolute; left: 12px; top: 7px; font-size: 12px; font-weight: 600; color: var(--nord6); z-index: 2; white-space: nowrap; }
+  .blk .in { position: absolute; left: 12px; bottom: 6px; font-family: 'JetBrains Mono'; font-size: 9px; color: rgba(236,239,244,0.75); z-index: 2; }
+  .blk.past { opacity: 0.45; }
+  .blk.future { border-style: dashed; background: rgba(58,65,80,0.5); }
+  .blk .wv { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 1px; padding: 20px 4px 3px; }
+  .blk .wv i { flex: 1; background: rgba(136,192,208,0.5); border-radius: 1px; }
+  .blk.music-cur { background: linear-gradient(180deg, rgba(136,192,208,0.16), var(--surface-raised)); border-color: rgba(136,192,208,0.55); }
+  .amb .blk { border-color: rgba(143,188,187,0.3); background:
+    repeating-linear-gradient(90deg, rgba(143,188,187,0.1) 0 2px, transparent 2px 7px) 0 60% / 100% 45% no-repeat,
+    rgba(143,188,187,0.08); }
+  .amb .blk .loopmark { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(143,188,187,0.35); }
+  .amb .blk .loopmark::after { content: '∞'; position: absolute; top: 2px; left: 4px; font-size: 9px; color: rgba(143,188,187,0.8); }
+  .rnd .blk { background: rgba(180,142,173,0.1); border-color: rgba(180,142,173,0.3); }
+  .shot { position: absolute; top: 22%; bottom: 22%; width: 34px; border-radius: 7px; background: var(--surface-over); border: 1px solid var(--border-strong); z-index: 2; }
+  .shot i { position: absolute; inset: 4px 6px; display: flex; align-items: flex-end; gap: 1px; }
+  .shot i b { flex: 1; background: var(--nord13); opacity: 0.7; border-radius: 1px; }
+  .shot .lb { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--text-faint); white-space: nowrap; font-family: 'JetBrains Mono'; }
+  .shot.ghost { border-style: dashed; opacity: 0.55; }
+  .xf { position: absolute; z-index: 4; }
+  .xf svg { display: block; }
+  .xf .lb { position: absolute; top: -4px; left: 50%; transform: translate(-50%, -100%); font-family: 'JetBrains Mono'; font-size: 9px; color: var(--nord7); background: var(--bg); border: 1px solid rgba(143,188,187,0.4); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+
+  .playhead { position: absolute; top: 10px; bottom: 6px; left: 46%; width: 2px; background: var(--primary); z-index: 6; box-shadow: 0 0 12px rgba(232,169,94,0.5); }
+  .playhead::before { content: 'NOW · 20:14:32'; position: absolute; top: -2px; left: 50%; transform: translate(-50%, 0); font-family: 'JetBrains Mono'; font-size: 9px; letter-spacing: 0.08em; background: var(--primary); color: var(--on-primary); padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+
+  /* ---- lower deck ---- */
+  .deck { display: grid; grid-template-columns: 460px 1fr; border-top: 1px solid var(--border); min-height: 0; }
+  .deckpane { padding: 14px 22px; min-width: 0; }
+  .deckpane + .deckpane { border-left: 1px solid var(--border-subtle); }
+  .dp-h { font-family: 'Space Grotesk'; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; display: flex; gap: 10px; align-items: baseline; }
+  .dp-h small { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-faint); text-transform: none; letter-spacing: 0; }
+  .qrow { display: flex; gap: 12px; align-items: center; padding: 8px 4px; border-top: 1px solid var(--border-subtle); font-size: 13px; }
+  .qrow .n { width: 16px; color: var(--text-faint); font-family: 'JetBrains Mono'; font-size: 11px; }
+  .qrow .grip { color: var(--text-faint); opacity: 0.6; }
+  .qrow .d { margin-left: auto; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-faint); }
+  .qrow .eta { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--nord7); }
+  .pads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .padrow { display: grid; grid-template-columns: 1fr 190px; gap: 16px; }
+  .pad { border-radius: 10px; background: var(--surface); border: 1px solid var(--border); padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: center; height: 58px; }
+  .pad .k { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--live); border: 1px solid rgba(136,192,208,0.4); border-radius: 5px; padding: 1px 6px; }
+  .pad .dk { margin-left: auto; color: var(--primary); font-size: 12px; }
+  .duckcol { display: flex; flex-direction: column; gap: 10px; }
+  .duckbtn { flex: 1; border-radius: 12px; background: var(--primary); color: var(--on-primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Space Grotesk'; font-weight: 700; font-size: 17px; box-shadow: 0 5px 18px rgba(232,169,94,0.3); }
+  .duckbtn small { font-family: 'JetBrains Mono'; font-weight: 400; font-size: 10px; opacity: 0.8; margin-top: 3px; }
+  .stopall { text-align: center; font-size: 12px; color: var(--danger); border: 1px solid rgba(191,97,106,0.45); border-radius: 10px; padding: 9px; }
+
+  /* ---- transport ---- */
+  .transport { display: grid; grid-template-columns: 430px 1fr 380px; align-items: center; gap: 22px; padding: 0 22px; background: linear-gradient(var(--surface-over), var(--surface-raised)); border-top: 1px solid var(--border-strong); }
+  .np { display: flex; gap: 13px; align-items: center; min-width: 0; }
+  .np .art { width: 52px; height: 52px; border-radius: 8px; flex: none; }
+  .np .t { font-family: 'Space Grotesk'; font-weight: 600; font-size: 16px; color: var(--nord6); white-space: nowrap; }
+  .np .s { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+  .btns { display: flex; gap: 16px; align-items: center; justify-content: center; }
+  .tbtn { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); font-size: 15px; }
+  .play { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-size: 19px; }
+  .right { display: flex; gap: 16px; align-items: center; justify-content: flex-end; font-size: 12px; color: var(--text-dim); }
+  .mvol { display: flex; gap: 10px; align-items: center; }
+  .mvol .bar { width: 100px; height: 5px; background: var(--track); border-radius: 3px; position: relative; }
+  .mvol .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 72%; background: var(--text-dim); border-radius: 3px; }
+  .monbtn { padding: 8px 13px; border-radius: 8px; background: var(--primary-tint); border: 1px solid rgba(232,169,94,0.4); color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="logo">♪ QUEST<span>STREAM</span></div>
+    <div class="chip active">Quiet Tavern</div>
+    <div class="chip">Ambush on the Road</div>
+    <div class="chip">Final Boss</div>
+    <div class="chip">Long Rest</div>
+    <div class="onair">
+      <div class="air"><span class="dot"></span> ON AIR · #tavern-voice</div>
+      <div class="clock">session 1:42:10</div>
+    </div>
+  </div>
+
+  <div class="tl">
+    <div class="ruler" id="ruler"></div>
+    <div class="playhead"></div>
+
+    <!-- MUSIC lane -->
+    <div class="lane">
+      <div class="lane-h"><div class="t">♫ Music</div><div class="s">bus 82% · crossfade 4s</div></div>
+      <div class="bed">
+        <div class="blk past" style="left:2%; width:16%"><div class="nm">Embers at Dawn</div><div class="in">3:57 · played</div></div>
+        <div class="blk music-cur" style="left:19%; width:24%"><div class="nm">▶ The Sleeping Dragon Inn</div><div class="in">1:12 / 3:33</div><div class="wv" id="wv1"></div></div>
+        <div class="blk future" style="left:41.6%; width:21%"><div class="nm">Crossroads at Dusk</div><div class="in">3:08 · queued</div></div>
+        <div class="xf" style="left:40.4%; top:0; bottom:0; width:3.6%">
+          <div class="lb">⇄ 4s crossfade</div>
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M0,20 C50,20 50,80 100,80" fill="none" stroke="#88c0d0" stroke-width="2.5" opacity="0.9"/>
+            <path d="M0,80 C50,80 50,20 100,20" fill="none" stroke="#8fbcbb" stroke-width="2.5" opacity="0.9" stroke-dasharray="5 4"/>
+          </svg>
+        </div>
+        <div class="blk future" style="left:61.2%; width:22%"><div class="nm">Steel &amp; Thunder</div><div class="in">3:21 · queued</div></div>
+        <div class="blk future" style="left:81.8%; width:16%"><div class="nm">Last Stand</div><div class="in">3:40 · queued</div></div>
+      </div>
+    </div>
+
+    <!-- AMBIENCE lanes -->
+    <div class="lane amb">
+      <div class="lane-h"><div class="t">〰 Rain on Canvas</div><div class="s">loop · 45% · gapless</div></div>
+      <div class="bed">
+        <div class="blk" style="left:0; width:100%"><div class="nm" style="font-weight:500; color:var(--nord7)">rain, medium, canvas tent</div>
+          <div class="loopmark" style="left:25%"></div><div class="loopmark" style="left:50%"></div><div class="loopmark" style="left:75%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="lane amb">
+      <div class="lane-h"><div class="t">〰 Tavern Crowd</div><div class="s">loop · 60% · gapless</div></div>
+      <div class="bed">
+        <div class="blk" style="left:8%; width:92%"><div class="nm" style="font-weight:500; color:var(--nord7)">murmur, mugs, laughter</div>
+          <div class="loopmark" style="left:33%"></div><div class="loopmark" style="left:66%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="lane rnd">
+      <div class="lane-h"><div class="t">⚄ Distant Wolves</div><div class="s">random · every 2–5 min</div></div>
+      <div class="bed">
+        <div class="shot" style="left:12%"><i><b style="height:60%"></b><b style="height:100%"></b><b style="height:45%"></b></i><div class="lb">19:48</div></div>
+        <div class="shot" style="left:31%"><i><b style="height:80%"></b><b style="height:50%"></b><b style="height:90%"></b></i><div class="lb">20:02</div></div>
+        <div class="shot ghost" style="left:57%"><i><b style="height:70%"></b><b style="height:40%"></b><b style="height:85%"></b></i><div class="lb">~20:17</div></div>
+      </div>
+    </div>
+
+    <!-- ONE-SHOTS lane -->
+    <div class="lane">
+      <div class="lane-h"><div class="t">⌗ Soundboard</div><div class="s">bus 78% · R128 matched</div></div>
+      <div class="bed">
+        <div class="shot" style="left:9%"><i><b style="height:90%"></b><b style="height:60%"></b><b style="height:30%"></b></i><div class="lb">Door</div></div>
+        <div class="shot" style="left:22%"><i><b style="height:50%"></b><b style="height:95%"></b><b style="height:70%"></b></i><div class="lb">Coins</div></div>
+        <div class="shot" style="left:43.5%"><i><b style="height:75%"></b><b style="height:100%"></b><b style="height:55%"></b></i><div class="lb">Door · now</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="deck">
+    <div class="deckpane">
+      <div class="dp-h">Up next <small>drag to reorder · lands on the timeline</small></div>
+      <div class="qrow"><span class="grip">⠿</span><span class="n">1</span> Crossroads at Dusk <span class="eta">starts 20:16:53</span> <span class="d">3:08</span></div>
+      <div class="qrow"><span class="grip">⠿</span><span class="n">2</span> Steel &amp; Thunder <span class="eta">20:19:57</span> <span class="d">3:21</span></div>
+      <div class="qrow"><span class="grip">⠿</span><span class="n">3</span> Last Stand <span class="eta">20:23:14</span> <span class="d">3:40</span></div>
+      <div class="qrow" style="border-top-style:dashed; color:var(--text-faint)"><span class="n">+</span> drop tracks here or press ⌘K to search</div>
+    </div>
+    <div class="deckpane">
+      <div class="dp-h">Soundboard <small>fires paint onto the timeline above</small></div>
+      <div class="padrow">
+        <div class="pads">
+          <div class="pad"><span class="k">1</span> Sword Clash <span class="dk">⤓</span></div>
+          <div class="pad"><span class="k">2</span> Fireball <span class="dk">⤓</span></div>
+          <div class="pad"><span class="k">3</span> Wooden Door</div>
+          <div class="pad"><span class="k">4</span> Wolf Howl</div>
+          <div class="pad"><span class="k">5</span> Thunder Crack <span class="dk">⤓</span></div>
+          <div class="pad"><span class="k">6</span> Coin Purse</div>
+          <div class="pad"><span class="k">7</span> Dragon Roar <span class="dk">⤓</span></div>
+          <div class="pad"><span class="k">8</span> Creaking Timber</div>
+        </div>
+        <div class="duckcol">
+          <div class="duckbtn">DUCK<small>hold space · −18 dB</small></div>
+          <div class="stopall">■ Fade all out</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport">
+    <div class="np">
+      <div class="art" style="background:linear-gradient(135deg,var(--nord10),var(--nord15))"></div>
+      <div style="min-width:0">
+        <div class="t">The Sleeping Dragon Inn</div>
+        <div class="s">Quiet Tavern · 1:12 / 3:33 · next: Crossroads at Dusk</div>
+      </div>
+    </div>
+    <div class="btns">
+      <div class="tbtn">⇄</div><div class="tbtn">⏮</div>
+      <div class="play">▶</div>
+      <div class="tbtn">⏭</div><div class="tbtn">↻</div>
+    </div>
+    <div class="right">
+      <div class="monbtn">🎧 Monitor on</div>
+      <div class="mvol">Master <div class="bar"><i></i></div></div>
+    </div>
+  </div>
+
+<script>
+  // ruler marks every ~2 minutes of session time; playhead at 46%
+  const ruler = document.getElementById('ruler');
+  const marks = ['20:06','20:08','20:10','20:12','20:14','20:16','20:18','20:20','20:22','20:24'];
+  marks.forEach((m, i) => {
+    const b = document.createElement('b');
+    const left = 190 + (i / (marks.length - 1)) * (1920 - 190 - 40);
+    b.style.left = left + 'px';
+    b.textContent = m;
+    ruler.appendChild(b);
+  });
+  // waveform inside current music block
+  const wv = document.getElementById('wv1');
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('i');
+    let h = 0.3 + 0.4 * Math.abs(Math.sin(i * 0.5)) + 0.3 * Math.abs(Math.sin(i * 0.17 + 1));
+    el.style.height = Math.round(h * 70) + '%';
+    if (i > 60 * 0.5) el.style.opacity = 0.35;
+    wv.appendChild(el);
+  }
+</script>
+</body>
+</html>

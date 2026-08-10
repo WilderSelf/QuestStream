@@ -1,0 +1,35 @@
+/* Nord palette + QuestStream semantic tokens — shared by all mockups */
+:root {
+  --nord0: #2e3440; --nord1: #3b4252; --nord2: #434c5e; --nord3: #4c566a;
+  --nord4: #d8dee9; --nord5: #e5e9f0; --nord6: #eceff4;
+  --nord7: #8fbcbb; --nord8: #88c0d0; --nord9: #81a1c1; --nord10: #5e81ac;
+  --nord11: #bf616a; --nord12: #d08770; --nord13: #ebcb8b; --nord14: #a3be8c; --nord15: #b48ead;
+
+  --bg: #1b2028;
+  --surface: #2a303b;
+  --surface-raised: #3a4150;
+  --surface-over: #4a5468;
+  --border: rgba(216, 222, 233, 0.14);
+  --border-strong: rgba(216, 222, 233, 0.2);
+  --border-subtle: rgba(216, 222, 233, 0.08);
+  --text: var(--nord5);
+  --text-dim: #b4bdd1;
+  --text-faint: #8a93a6;
+
+  --primary: #e8a95e;
+  --primary-hi: #f2ba75;
+  --primary-tint: rgba(232, 169, 94, 0.16);
+  --on-primary: #21262e;
+
+  --live: var(--nord8);
+  --live-tint: rgba(136, 192, 208, 0.16);
+  --tag: var(--nord15);
+  --danger: var(--nord11);
+  --warn: var(--nord13);
+  --ok: var(--nord14);
+  --track: #4c566a;
+  --field-bg: #20252d;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
