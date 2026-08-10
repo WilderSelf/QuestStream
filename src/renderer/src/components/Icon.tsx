@@ -42,10 +42,58 @@ export type IconName =
   | 'arrow-up'
   | 'grip'
   | 'wifi'
+  | 'waveform'
+  | 'bookmark'
+  | 'book-open'
+  | 'seal'
+  | 'inbox'
+  | 'sparkle'
 
 type IconDef = { body: JSX.Element; fill?: boolean }
 
 const ICONS: Record<IconName, IconDef> = {
+  // Grimoire set (Phase 0.4): shell + workspace glyphs for the redesign.
+  waveform: {
+    body: (
+      <>
+        <line x1="4" y1="9" x2="4" y2="15" />
+        <line x1="8" y1="5" x2="8" y2="19" />
+        <line x1="12" y1="2" x2="12" y2="22" />
+        <line x1="16" y1="6" x2="16" y2="18" />
+        <line x1="20" y1="10" x2="20" y2="14" />
+      </>
+    )
+  },
+  bookmark: {
+    body: <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+  },
+  'book-open': {
+    body: (
+      <>
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </>
+    )
+  },
+  seal: {
+    body: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="4.5" />
+      </>
+    )
+  },
+  inbox: {
+    body: (
+      <>
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+        <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+      </>
+    )
+  },
+  sparkle: {
+    body: <path d="M12 3l1.9 5.6L19.5 12l-5.6 1.9L12 19.5l-1.9-5.6L4.5 12l5.6-1.9z" />
+  },
   wifi: {
     body: (
       <>
