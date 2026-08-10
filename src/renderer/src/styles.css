@@ -107,6 +107,12 @@
   --on-solid: #eceff4; /* bright text on a deep/danger fill (was nord6) */
   --shadow-3: 0 20px 60px rgba(0, 0, 0, 0.5); /* modal */
 
+  /* ---- Typography roles — themes may re-voice the faces (part of the theme contract). ---- */
+  --font-display: 'Fraunces Variable', Georgia, serif; /* headings, scene names */
+  --font-marginalia: 'Spectral', Georgia, serif; /* italic notes, flavor copy */
+  --font-ui: 'Outfit Variable', system-ui, sans-serif; /* controls, body */
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace; /* times, counts, keys */
+
   /* Tag swatch palette — theme-driven; read back into JS via getComputedStyle (see tagColors.ts). */
   --tag-red: #bf616a;
   --tag-orange: #d08770;
@@ -177,6 +183,11 @@
   --tag-deepblue: #6f86ac;
   --tag-purple: #c58fb0;
   --tag-neutral: #8a7a68;
+
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --font-marginalia: 'Spectral', Georgia, serif;
+  --font-ui: 'Outfit Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 }
 
 /* ---- Daylight — Nord Snow Storm, for a bright room / session prep ---- */
@@ -228,6 +239,11 @@
   --tag-deepblue: #3d5a86;
   --tag-purple: #8a5f83;
   --tag-neutral: #6b7280;
+
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --font-marginalia: 'Spectral', Georgia, serif;
+  --font-ui: 'Outfit Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 }
 
 /* Inline action-button group in pane headers (was a repeated inline flex style). */

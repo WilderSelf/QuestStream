@@ -28,7 +28,9 @@ const CONTRACT_TOKENS = [
   'scrim', 'on-tag', 'on-accent', 'on-solid', 'hover',
   // tag swatch palette
   'tag-red', 'tag-orange', 'tag-yellow', 'tag-green', 'tag-teal', 'tag-cyan',
-  'tag-blue', 'tag-deepblue', 'tag-purple', 'tag-neutral'
+  'tag-blue', 'tag-deepblue', 'tag-purple', 'tag-neutral',
+  // typography roles (themes may re-voice the faces, so they are part of the contract)
+  'font-display', 'font-marginalia', 'font-ui', 'font-mono'
 ]
 
 /** Extract the body of the block that starts at the given selector occurrence. */
