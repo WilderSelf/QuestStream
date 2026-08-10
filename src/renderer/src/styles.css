@@ -297,7 +297,7 @@ body,
 }
 
 body {
-  font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
   font-size: var(--text-base);
   line-height: var(--lh);
   color: var(--text);
@@ -2367,4 +2367,23 @@ textarea {
   font-size: var(--text-xs);
   color: var(--text-dim);
   line-height: var(--lh);
+}
+
+/* ---- Grimoire chrome typography (Phase 1.5) ---- */
+.topbar .brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pane-header,
+.ambience-header {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+.np-info .meta .t {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.section-label {
+  font-family: var(--font-display);
 }

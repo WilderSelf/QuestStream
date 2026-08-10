@@ -41,6 +41,9 @@ export type RepeatMode = 'off' | 'all' | 'one'
 
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
+/** Center workspaces of the grimoire shell; the union grows as phases land. */
+export type Workspace = 'library'
+
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
   text: string
@@ -295,9 +298,11 @@ interface State {
   outputDeviceId: string // chosen local output device ('' = system default)
   ducking: boolean
   remoteActive: boolean // is the LAN remote enabled (gates state pushes)
+  workspace: Workspace // which center workspace is open
 
   // actions
   init: () => Promise<void>
+  setWorkspace: (w: Workspace) => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -496,8 +501,10 @@ export const useStore = create<State>((set, get) => ({
   outputDeviceId: readLocal('qs.outputDeviceId', (s) => s, ''),
   ducking: false,
   remoteActive: false,
+  workspace: 'library',
 
   setRemoteActive: (on) => set({ remoteActive: on }),
+  setWorkspace: (w) => set({ workspace: w }),
 
   init: async () => {
     if (initialized) return // run once even under StrictMode's double-mount

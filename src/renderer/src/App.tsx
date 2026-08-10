@@ -12,7 +12,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from './store'
 import { TopBar } from './components/TopBar'
 import { SceneRail } from './components/SceneRail'
-import { LibraryPane } from './components/LibraryPane'
+import { WorkspaceHost } from './components/WorkspaceHost'
 import { MarginPane } from './components/MarginPane'
 import { Splitter } from './components/Splitter'
 import { TransportBar } from './components/TransportBar'
@@ -129,7 +129,7 @@ export function App(): JSX.Element {
                 ariaLabel="Resize the scenes and playlists rail"
               />
             )}
-            <LibraryPane />
+            <WorkspaceHost />
             <Splitter
               orientation="vertical"
               value={browserSplit}
