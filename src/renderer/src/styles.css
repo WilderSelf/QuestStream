@@ -113,6 +113,17 @@
   --font-ui: 'Outfit Variable', system-ui, sans-serif; /* controls, body */
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace; /* times, counts, keys */
 
+  /* ---- Grimoire surfaces + ornaments (theme contract) ---- */
+  --paper: #2a303b; /* the scene "page" ground */
+  --paper-edge: rgba(216, 222, 233, 0.2); /* the page's double-frame hairline */
+  --ornament: #e8a95e; /* rules, fleurons, ribbon accents */
+  --seal: #e8a95e; /* wax-seal (duck) base */
+  --seal-ink: #21262e; /* text pressed into the seal */
+  --sigil-ring: rgba(216, 222, 233, 0.2); /* soundboard ring stroke */
+
+  /* Minimum interactive hit target (layout constant, not themed). */
+  --hit-target-min: 24px;
+
   /* Tag swatch palette — theme-driven; read back into JS via getComputedStyle (see tagColors.ts). */
   --tag-red: #bf616a;
   --tag-orange: #d08770;
@@ -188,6 +199,13 @@
   --font-marginalia: 'Spectral', Georgia, serif;
   --font-ui: 'Outfit Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --paper: #241d18;
+  --paper-edge: rgba(235, 220, 200, 0.18);
+  --ornament: #eab963;
+  --seal: #eab963;
+  --seal-ink: #241d18;
+  --sigil-ring: rgba(235, 220, 200, 0.18);
 }
 
 /* ---- Daylight — Nord Snow Storm, for a bright room / session prep ---- */
@@ -244,6 +262,13 @@
   --font-marginalia: 'Spectral', Georgia, serif;
   --font-ui: 'Outfit Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --paper: #ffffff;
+  --paper-edge: rgba(46, 52, 64, 0.22);
+  --ornament: #b06e26;
+  --seal: #b06e26;
+  --seal-ink: #ffffff;
+  --sigil-ring: rgba(46, 52, 64, 0.22);
 }
 
 /* Inline action-button group in pane headers (was a repeated inline flex style). */
@@ -386,19 +411,10 @@ select:focus {
 }
 
 /* Visible keyboard-focus indicator for every interactive surface. Uses :focus-visible so
-   it only shows for keyboard/AT navigation, not mouse clicks. */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-a:focus-visible,
-[role='button']:focus-visible,
-[role='slider']:focus-visible,
-[tabindex]:focus-visible,
-.row:focus-visible,
-.seg:focus-visible,
-.tag-chip:focus-visible,
-.accordion-head:focus-visible,
-.bar:focus-visible {
+   it only shows for keyboard/AT navigation, not mouse clicks. Universal selector so new
+   components inherit the ring without opting in; component-specific overrides below
+   (splitter, tag dots, theme swatches) win on specificity/order. */
+:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

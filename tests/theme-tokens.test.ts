@@ -30,7 +30,9 @@ const CONTRACT_TOKENS = [
   'tag-red', 'tag-orange', 'tag-yellow', 'tag-green', 'tag-teal', 'tag-cyan',
   'tag-blue', 'tag-deepblue', 'tag-purple', 'tag-neutral',
   // typography roles (themes may re-voice the faces, so they are part of the contract)
-  'font-display', 'font-marginalia', 'font-ui', 'font-mono'
+  'font-display', 'font-marginalia', 'font-ui', 'font-mono',
+  // grimoire surfaces + ornaments (Phase 0.3): the scene "paper", its rules and seals
+  'paper', 'paper-edge', 'ornament', 'seal', 'seal-ink', 'sigil-ring'
 ]
 
 /** Extract the body of the block that starts at the given selector occurrence. */
