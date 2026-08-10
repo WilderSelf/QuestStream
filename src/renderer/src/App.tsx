@@ -11,7 +11,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from './store'
 import { TopBar } from './components/TopBar'
-import { PlaylistsPane } from './components/Browser'
+import { SceneRail } from './components/SceneRail'
 import { LibraryPane } from './components/LibraryPane'
 import { QueuePane } from './components/QueuePane'
 import { Splitter } from './components/Splitter'
@@ -118,7 +118,7 @@ export function App(): JSX.Element {
                 : `auto 6px ${browserSplit}fr 6px ${1 - browserSplit}fr`
             }}
           >
-            <PlaylistsPane />
+            <SceneRail />
             {!playlistsCollapsed && (
               <Splitter
                 orientation="vertical"
