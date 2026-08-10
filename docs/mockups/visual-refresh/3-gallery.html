@@ -1,0 +1,280 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QuestStream — The Gallery</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; grid-template-columns: 256px 1fr 340px; font-family: 'Outfit', sans-serif; }
+
+  /* ---- sidebar ---- */
+  .side { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 18px 14px; gap: 4px; }
+  .logo { font-family: 'Outfit'; font-weight: 700; font-size: 17px; letter-spacing: 0.04em; color: var(--nord6); padding: 4px 12px 18px; }
+  .logo span { color: var(--primary); }
+  .nav { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; font-size: 14px; color: var(--text-dim); font-weight: 500; }
+  .nav .i { width: 20px; text-align: center; opacity: 0.9; }
+  .nav.on { background: var(--primary-tint); color: var(--primary-hi); }
+  .nav .n { margin-left: auto; font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono'; }
+  .sec { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); padding: 16px 12px 6px; font-weight: 600; }
+  .side .foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .outcard { border: 1px solid rgba(136,192,208,0.35); background: var(--live-tint); border-radius: 12px; padding: 12px; font-size: 12px; color: var(--live); }
+  .outcard b { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .outcard .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); }
+  .outcard small { color: var(--text-dim); display: block; margin-top: 4px; }
+  .mini { font-size: 12px; color: var(--text-dim); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; gap: 8px; align-items: center; }
+
+  /* ---- content ---- */
+  .content { padding: 0 32px; overflow: hidden; display: flex; flex-direction: column; }
+  .cbar { display: flex; align-items: center; gap: 16px; padding: 18px 0 6px; }
+  .search {
+    flex: 0 0 480px; background: var(--field-bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 11px 16px; font-size: 14px; color: var(--text-faint); display: flex; gap: 10px; align-items: center;
+  }
+  .search .kbd { margin-left: auto; font-family: 'JetBrains Mono'; font-size: 11px; border: 1px solid var(--border-strong); border-radius: 5px; padding: 1px 6px; }
+  .cbar .btn { margin-left: auto; background: var(--primary); color: var(--on-primary); font-weight: 600; font-size: 14px; padding: 10px 18px; border-radius: 10px; }
+  .cbar .ghost { margin-left: 0; background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+
+  h1 { font-family: 'Outfit'; font-weight: 600; font-size: 26px; color: var(--nord6); margin: 18px 0 2px; }
+  .sub { font-size: 13px; color: var(--text-faint); }
+  .shelf-h { display: flex; align-items: baseline; gap: 12px; margin: 22px 0 12px; }
+  .shelf-h h2 { font-family: 'Outfit'; font-weight: 600; font-size: 17px; color: var(--text); }
+  .shelf-h a { font-size: 12px; color: var(--text-faint); margin-left: auto; }
+
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .card { border-radius: 16px; background: var(--surface); border: 1px solid var(--border); overflow: hidden; position: relative; }
+  .card .art { height: 120px; position: relative; }
+  .card .art .play { position: absolute; right: 12px; bottom: -18px; width: 46px; height: 46px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-size: 17px; box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
+  .card .body { padding: 14px 16px 14px; }
+  .card .nm { font-weight: 600; font-size: 16px; color: var(--text); }
+  .card .meta { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+  .card .chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .chip { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: var(--field-bg); color: var(--text-dim); border: 1px solid var(--border-subtle); }
+  .chip.live { color: var(--live); border-color: rgba(136,192,208,0.4); }
+  .card.active { border-color: rgba(232,169,94,0.55); box-shadow: 0 0 0 1px rgba(232,169,94,0.35), 0 10px 30px rgba(0,0,0,0.35); }
+  .card.active .onair { position: absolute; top: 10px; left: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; background: var(--primary); color: var(--on-primary); border-radius: 999px; padding: 3px 9px; }
+
+  .tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 28px; }
+  .trow { display: flex; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 10px; }
+  .trow:nth-child(odd) { background: rgba(216,222,233,0.025); }
+  .trow .art { width: 38px; height: 38px; border-radius: 8px; flex: none; }
+  .trow .m { flex: 1; min-width: 0; }
+  .trow .t { font-size: 14px; font-weight: 500; }
+  .trow .s { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+  .trow .d { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-faint); }
+  .trow .src { font-size: 10px; color: var(--text-faint); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; }
+
+  /* ---- right rail ---- */
+  .rail { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; padding: 20px; gap: 14px; overflow: hidden; }
+  .rail .h { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; }
+  .npart { height: 210px; border-radius: 14px; position: relative; overflow: hidden; }
+  .npart .shade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(27,32,40,0.9)); }
+  .npart .eq { position: absolute; left: 14px; top: 12px; display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+  .npart .eq i { width: 3px; background: var(--live); border-radius: 1px; }
+  .npart .tt { position: absolute; left: 16px; right: 16px; bottom: 34px; font-weight: 600; font-size: 20px; color: var(--nord6); }
+  .npart .ss { position: absolute; left: 16px; right: 16px; bottom: 14px; font-size: 12px; color: var(--text-dim); }
+  .seek { display: flex; gap: 10px; align-items: center; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); }
+  .seek .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--track); position: relative; }
+  .seek .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 34%; background: var(--live); border-radius: 2px; }
+  .ctl { display: flex; justify-content: center; gap: 20px; align-items: center; }
+  .tb { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); font-size: 16px; }
+  .pl { width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-size: 20px; }
+  .qrow { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--border-subtle); font-size: 13px; }
+  .qrow .n { width: 14px; color: var(--text-faint); font-family: 'JetBrains Mono'; font-size: 11px; }
+  .qrow .d { margin-left: auto; color: var(--text-faint); font-family: 'JetBrains Mono'; font-size: 11px; }
+  .lrow { display: flex; gap: 10px; align-items: center; padding: 6px 0; font-size: 13px; color: var(--text-dim); }
+  .lrow .bar { flex: 1; height: 5px; border-radius: 3px; background: var(--field-bg); position: relative; }
+  .lrow .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--nord8); opacity: 0.8; }
+  .lrow small { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-faint); width: 30px; text-align: right; }
+  .pcards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 20px; }
+  .pcard { display: flex; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .pcard .nm { font-weight: 600; font-size: 15px; }
+  .pcard .meta { font-size: 12px; color: var(--text-faint); margin-top: 3px; }
+  .pcard.new { border-style: dashed; background: transparent; color: var(--text-faint); font-size: 14px; justify-content: center; }
+  .pstack { position: relative; width: 52px; height: 46px; flex: none; }
+  .pstack i { position: absolute; width: 40px; height: 40px; border-radius: 8px; }
+  .pstack i:first-child { left: 0; top: 0; }
+  .pstack i:last-child { left: 12px; top: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  .minipads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .mp { height: 48px; border-radius: 9px; background: var(--field-bg); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 15px; }
+  .mp small { font-family: 'JetBrains Mono'; font-size: 8px; color: var(--text-faint); }
+</style>
+</head>
+<body>
+  <div class="side">
+    <div class="logo">♪ Quest<span>Stream</span></div>
+    <div class="nav on"><span class="i">⌂</span> Home</div>
+    <div class="nav"><span class="i">♫</span> Library <span class="n">142</span></div>
+    <div class="nav"><span class="i">🎛</span> Scenes <span class="n">4</span></div>
+    <div class="nav"><span class="i">☰</span> Playlists <span class="n">3</span></div>
+    <div class="nav"><span class="i">⌗</span> Soundboard <span class="n">8</span></div>
+    <div class="nav"><span class="i">〰</span> Ambience <span class="n">4</span></div>
+    <div class="sec">Session</div>
+    <div class="nav"><span class="i">▤</span> Stage mode</div>
+    <div class="nav"><span class="i">📱</span> Phone remote</div>
+    <div class="nav"><span class="i">⇪</span> Share packs</div>
+    <div class="foot">
+      <div class="outcard"><b><span class="dot"></span> Discord</b><small>#tavern-voice · 3 listening</small></div>
+      <div class="mini">▣ Pop out mini-player</div>
+      <div class="nav"><span class="i">⚙</span> Settings</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="cbar">
+      <div class="search">🔍 Search tracks, scenes, tags… <span class="kbd">⌘K</span></div>
+      <div class="btn ghost">⇣ Paste a link</div>
+      <div class="btn">+ Import audio</div>
+    </div>
+    <h1>Good evening, Game Master</h1>
+    <div class="sub">Session prep for <b>Curse of the Amber Throne</b> · last opened Quiet Tavern</div>
+
+    <div class="shelf-h"><h2>Scenes</h2><span class="sub">one click restores the whole mix</span><a>View all →</a></div>
+    <div class="cards">
+      <div class="card active">
+        <div class="onair">ON AIR</div>
+        <div class="art" style="background:
+          radial-gradient(140px 90px at 20% 20%, rgba(235,203,139,0.5), transparent),
+          radial-gradient(220px 130px at 80% 90%, rgba(163,190,140,0.35), transparent),
+          linear-gradient(150deg, #3b4252, #2e3440)">
+          <div class="play">▶</div>
+        </div>
+        <div class="body">
+          <div class="nm">Quiet Tavern</div>
+          <div class="meta">1 track · 4 layers · 8 pads</div>
+          <div class="chips"><span class="chip live">♫ Sleeping Dragon Inn</span><span class="chip">🌧 Rain</span><span class="chip">🍺 Crowd</span><span class="chip">🔥 Fire</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="art" style="background:
+          radial-gradient(200px 110px at 75% 15%, rgba(191,97,106,0.45), transparent),
+          radial-gradient(160px 100px at 15% 85%, rgba(208,135,112,0.4), transparent),
+          linear-gradient(150deg, #434c5e, #2e3440)">
+          <div class="play">▶</div>
+        </div>
+        <div class="body">
+          <div class="nm">Ambush on the Road</div>
+          <div class="meta">2 tracks · 1 layer · 4s fade-in</div>
+          <div class="chips"><span class="chip">♫ Steel &amp; Thunder</span><span class="chip">🌲 Forest Wind</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="art" style="background:
+          radial-gradient(200px 120px at 30% 20%, rgba(180,142,173,0.5), transparent),
+          radial-gradient(180px 110px at 85% 80%, rgba(94,129,172,0.55), transparent),
+          linear-gradient(150deg, #2e3440, #232831)">
+          <div class="play">▶</div>
+        </div>
+        <div class="body">
+          <div class="nm">Final Boss</div>
+          <div class="meta">3 tracks · 2 layers</div>
+          <div class="chips"><span class="chip">♫ The Lich Awakens</span><span class="chip">⛈ Storm</span><span class="chip">🕯 Whispers</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="art" style="background:
+          radial-gradient(220px 120px at 70% 25%, rgba(136,192,208,0.4), transparent),
+          radial-gradient(160px 100px at 20% 80%, rgba(143,188,187,0.35), transparent),
+          linear-gradient(150deg, #3b4252, #2a303b)">
+          <div class="play">▶</div>
+        </div>
+        <div class="body">
+          <div class="nm">Long Rest</div>
+          <div class="meta">1 track · 3 layers</div>
+          <div class="chips"><span class="chip">♫ Embers at Dawn</span><span class="chip">🦗 Night Field</span><span class="chip">🔥 Fire</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="shelf-h"><h2>Recently added</h2><span class="sub">auto-tagged on import · loudness-matched</span><a>Open library →</a></div>
+    <div class="tracks">
+      <div class="trow">
+        <div class="art" style="background:linear-gradient(135deg,var(--nord10),var(--nord15))"></div>
+        <div class="m"><div class="t">The Sleeping Dragon Inn</div><div class="s">Fantasy · Social · Peaceful</div></div>
+        <span class="src">local</span><div class="d">3:33</div>
+      </div>
+      <div class="trow">
+        <div class="art" style="background:linear-gradient(135deg,var(--nord3),var(--nord10))"></div>
+        <div class="m"><div class="t">Crossroads at Dusk</div><div class="s">Fantasy · Travel · Mysterious</div></div>
+        <span class="src">youtube</span><div class="d">3:08</div>
+      </div>
+      <div class="trow">
+        <div class="art" style="background:linear-gradient(135deg,var(--nord11),var(--nord0))"></div>
+        <div class="m"><div class="t">The Lich Awakens</div><div class="s">Fantasy · Boss · Epic</div></div>
+        <span class="src">local</span><div class="d">4:07</div>
+      </div>
+      <div class="trow">
+        <div class="art" style="background:linear-gradient(135deg,var(--nord15),var(--nord8))"></div>
+        <div class="m"><div class="t">Neon Rain Bazaar</div><div class="s">Cyberpunk · Shopping · Whimsical</div></div>
+        <span class="src">bandcamp</span><div class="d">2:55</div>
+      </div>
+      <div class="trow">
+        <div class="art" style="background:linear-gradient(135deg,var(--nord12),var(--nord3))"></div>
+        <div class="m"><div class="t">Steel &amp; Thunder</div><div class="s">Fantasy · Combat · Tense</div></div>
+        <span class="src">local</span><div class="d">3:21</div>
+      </div>
+      <div class="trow">
+        <div class="art" style="background:linear-gradient(135deg,var(--nord13),var(--nord12))"></div>
+        <div class="m"><div class="t">Last Stand</div><div class="s">Fantasy · Combat · Triumphant</div></div>
+        <span class="src">soundcloud</span><div class="d">3:40</div>
+      </div>
+    </div>
+
+    <div class="shelf-h"><h2>Playlists</h2><span class="sub">plain ordered lists, for between scenes</span><a>View all →</a></div>
+    <div class="pcards">
+      <div class="pcard">
+        <div class="pstack"><i style="background:linear-gradient(135deg,var(--nord14),var(--nord7))"></i><i style="background:linear-gradient(135deg,var(--nord10),var(--nord15))"></i></div>
+        <div><div class="nm">Tavern Night</div><div class="meta">2 tracks · 7:05</div></div>
+      </div>
+      <div class="pcard">
+        <div class="pstack"><i style="background:linear-gradient(135deg,var(--nord11),var(--nord0))"></i><i style="background:linear-gradient(135deg,var(--nord15),var(--nord10))"></i></div>
+        <div><div class="nm">Final Boss Suite</div><div class="meta">3 tracks · 11:08</div></div>
+      </div>
+      <div class="pcard">
+        <div class="pstack"><i style="background:linear-gradient(135deg,var(--nord3),var(--nord10))"></i><i style="background:linear-gradient(135deg,var(--nord12),var(--nord3))"></i></div>
+        <div><div class="nm">Road Songs</div><div class="meta">5 tracks · 16:42</div></div>
+      </div>
+      <div class="pcard new">＋ New playlist</div>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="h">Now playing</div>
+    <div class="npart" style="background:
+        radial-gradient(200px 130px at 25% 25%, rgba(235,203,139,0.4), transparent),
+        radial-gradient(240px 150px at 80% 85%, rgba(94,129,172,0.5), transparent),
+        linear-gradient(150deg, #3b4252, #262b34)">
+      <div class="shade"></div>
+      <div class="eq"><i style="height:55%"></i><i style="height:100%"></i><i style="height:40%"></i><i style="height:75%"></i></div>
+      <div class="tt">The Sleeping Dragon Inn</div>
+      <div class="ss">Quiet Tavern · Fantasy · Social</div>
+    </div>
+    <div class="seek"><span>1:12</span><div class="bar"><i></i></div><span>3:33</span></div>
+    <div class="ctl"><div class="tb">⇄</div><div class="tb">⏮</div><div class="pl">▶</div><div class="tb">⏭</div><div class="tb">↻</div></div>
+    <div class="h" style="margin-top:6px">Up next · crossfade 4s</div>
+    <div>
+      <div class="qrow"><span class="n">1</span> Crossroads at Dusk <span class="d">3:08</span></div>
+      <div class="qrow"><span class="n">2</span> Steel &amp; Thunder <span class="d">3:21</span></div>
+      <div class="qrow"><span class="n">3</span> Last Stand <span class="d">3:40</span></div>
+    </div>
+    <div class="h" style="margin-top:6px">Sounding now</div>
+    <div>
+      <div class="lrow">🌧 <div class="bar"><i style="width:45%"></i></div><small>45%</small></div>
+      <div class="lrow">🍺 <div class="bar"><i style="width:60%"></i></div><small>60%</small></div>
+      <div class="lrow">🔥 <div class="bar"><i style="width:30%"></i></div><small>30%</small></div>
+      <div class="lrow">🐺 <div class="bar"><i style="width:55%"></i></div><small>55%</small></div>
+    </div>
+    <div class="h" style="margin-top:auto">Quick fire · hotkeys work anywhere</div>
+    <div class="minipads">
+      <div class="mp">⚔️<small>1</small></div>
+      <div class="mp">🔥<small>2</small></div>
+      <div class="mp">🚪<small>3</small></div>
+      <div class="mp">🐺<small>4</small></div>
+      <div class="mp">⛈<small>5</small></div>
+      <div class="mp">💰<small>6</small></div>
+      <div class="mp">🐉<small>7</small></div>
+      <div class="mp">🪵<small>8</small></div>
+    </div>
+  </div>
+</body>
+</html>

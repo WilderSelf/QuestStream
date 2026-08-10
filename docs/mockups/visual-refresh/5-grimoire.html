@@ -1,0 +1,271 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QuestStream — The Grimoire</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  body {
+    font-family: 'Spectral', serif;
+    display: grid; grid-template-rows: 60px 1fr 92px;
+    background:
+      radial-gradient(900px 500px at 62% 30%, rgba(232,169,94,0.05), transparent),
+      var(--bg);
+  }
+
+  .top { display: flex; align-items: baseline; gap: 18px; padding: 0 36px; border-bottom: 1px solid var(--border-subtle); align-items: center; }
+  .logo { font-family: 'Fraunces'; font-weight: 700; font-size: 17px; color: var(--nord6); letter-spacing: 0.02em; }
+  .logo span { color: var(--primary); }
+  .tome { font-family: 'Spectral'; font-style: italic; font-size: 14px; color: var(--text-dim); }
+  .tome b { color: var(--text); font-style: normal; }
+  .top .out { margin-left: auto; display: flex; gap: 14px; align-items: center; font-size: 13px; }
+  .pill { display: flex; gap: 8px; align-items: center; padding: 6px 14px; border-radius: 999px; background: var(--live-tint); color: var(--live); border: 1px solid rgba(136,192,208,0.35); font-family: 'Inter'; font-size: 12px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+  .gear { color: var(--text-faint); }
+
+  .main { display: grid; grid-template-columns: 300px 1fr 360px; min-height: 0; padding: 22px 36px 18px; gap: 28px; }
+
+  /* ---- chapters ---- */
+  .chapters { display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+  .ch-h { font-family: 'Fraunces'; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-faint); padding-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .ch-h::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border-strong), transparent); }
+  .mark {
+    position: relative; padding: 14px 18px 14px 20px; margin-right: 18px;
+    background: var(--surface); border: 1px solid var(--border); border-right: none;
+    border-radius: 10px 0 0 10px;
+  }
+  .mark::after { content: ''; position: absolute; right: -18px; top: -1px; bottom: -1px; width: 18px;
+    background: var(--surface); border: 1px solid var(--border); border-left: none;
+    clip-path: polygon(0 0, 100% 0, 55% 50%, 100% 100%, 0 100%); }
+  .mark .nm { font-family: 'Fraunces'; font-weight: 600; font-size: 17px; color: var(--text); }
+  .mark .meta { font-size: 12px; color: var(--text-faint); font-family: 'Inter'; margin-top: 4px; }
+  .mark .kbd { position: absolute; top: 12px; right: 6px; font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-faint); }
+  .mark.active { background: linear-gradient(120deg, rgba(232,169,94,0.18), var(--surface) 65%); border-color: rgba(232,169,94,0.5); }
+  .mark.active::after { background: #33302b; border-color: rgba(232,169,94,0.5); }
+  .mark.active .nm { color: var(--primary-hi); }
+  .mark.active .rib { position: absolute; left: 12px; top: -6px; width: 10px; height: 34px; background: var(--primary); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%); opacity: 0.9; }
+  .mark.active { padding-left: 34px; }
+  .chapters .plists { margin-top: 18px; }
+  .plist-row { display: flex; justify-content: space-between; padding: 9px 4px; border-bottom: 1px solid var(--border-subtle); font-size: 14px; color: var(--text-dim); }
+  .plist-row small { font-family: 'JetBrains Mono'; font-size: 10px; color: var(--text-faint); }
+  .addnote { margin-top: 14px; font-style: italic; font-size: 12.5px; color: var(--text-faint); line-height: 1.6; }
+
+  /* ---- the open page ---- */
+  .page {
+    position: relative; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface);
+    box-shadow: 0 0 0 5px var(--bg), 0 0 0 6px var(--border), 0 24px 60px rgba(0,0,0,0.45);
+    padding: 34px 44px 26px; display: flex; flex-direction: column; min-height: 0;
+  }
+  .page::before { content: ''; position: absolute; inset: 10px; border: 1px solid var(--border-subtle); border-radius: 2px; pointer-events: none; }
+  .folio { text-align: center; font-family: 'Fraunces'; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--text-faint); }
+  .orn { text-align: center; color: var(--primary); font-size: 15px; margin: 6px 0 2px; letter-spacing: 0.6em; }
+  h1.scene { font-family: 'Fraunces'; font-weight: 700; font-size: 54px; text-align: center; color: var(--nord6); margin: 4px 0 6px; }
+  .watermark { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); font-size: 300px; color: var(--nord6); opacity: 0.028; pointer-events: none; font-family: 'Fraunces'; line-height: 1; }
+  .epigraph { text-align: center; font-style: italic; font-size: 14.5px; color: var(--text-dim); }
+  .rule { display: flex; align-items: center; gap: 12px; margin: 30px 0 18px; color: var(--text-faint); }
+  .rule::before, .rule::after { content: ''; flex: 1; height: 1px; background: var(--border); box-shadow: 0 3px 0 -1px var(--border-subtle); }
+  .rule b { font-family: 'Fraunces'; font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; font-weight: 600; color: var(--text-dim); }
+
+  .verse { display: flex; gap: 18px; align-items: center; padding: 12px 16px; border-radius: 8px; }
+  .verse.playing { background: linear-gradient(90deg, rgba(232,169,94,0.12), transparent 70%); border: 1px solid rgba(232,169,94,0.35); }
+  .verse .drop { font-family: 'Fraunces'; font-weight: 700; font-size: 46px; color: var(--primary); line-height: 0.9; }
+  .verse .m { flex: 1; min-width: 0; }
+  .verse .t { font-family: 'Fraunces'; font-weight: 600; font-size: 21px; color: var(--text); }
+  .verse .s { font-size: 13px; color: var(--text-dim); font-style: italic; margin-top: 2px; }
+  .verse .time { font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text-dim); }
+  .seek { margin: 10px 6px 2px; display: flex; gap: 12px; align-items: center; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-faint); }
+  .seek .bar { flex: 1; height: 3px; background: var(--track); position: relative; }
+  .seek .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 34%; background: var(--primary); }
+  .seek .bar i::after { content: '◆'; position: absolute; right: -7px; top: 50%; transform: translateY(-50%); color: var(--primary-hi); font-size: 11px; }
+
+  .layers { display: flex; flex-direction: column; gap: 2px; }
+  .lay { display: flex; gap: 16px; align-items: center; padding: 13px 16px; }
+  .lay .nm { width: 210px; font-size: 17px; color: var(--text); }
+  .lay .nm small { display: block; font-family: 'Inter'; font-size: 10.5px; color: var(--text-faint); font-style: normal; margin-top: 1px; }
+  .lay .line { flex: 1; height: 2px; background: var(--track); position: relative; }
+  .lay .line i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--nord8); }
+  .lay .line b { position: absolute; top: 50%; transform: translate(-50%, -50%); color: var(--nord8); font-size: 12px; }
+  .lay .pct { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-dim); width: 34px; text-align: right; }
+  .lay.rand .line i { background: var(--tag); }
+  .lay.rand .line b { color: var(--tag); }
+  .footline { margin-top: auto; text-align: center; font-style: italic; font-size: 12.5px; color: var(--text-faint); }
+  .footline b { color: var(--nord7); font-style: normal; font-family: 'JetBrains Mono'; font-size: 11px; }
+
+  /* ---- marginalia ---- */
+  .margin { display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+  .m-h { font-family: 'Fraunces'; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-faint); display: flex; align-items: center; gap: 10px; }
+  .m-h::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border-strong), transparent); }
+  .runes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .rune { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .rune .sig {
+    width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; font-size: 22px;
+    background: var(--surface); border: 1px solid var(--border-strong);
+    box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 5px var(--border-subtle);
+  }
+  .rune .lb { font-size: 12px; color: var(--text-dim); font-family: 'Inter'; text-align: center; }
+  .rune .k { font-family: 'JetBrains Mono'; font-size: 9px; color: var(--live); border: 1px solid rgba(136,192,208,0.35); border-radius: 4px; padding: 0 5px; }
+  .rune.duck .sig { border-color: rgba(232,169,94,0.4); }
+  .fn { font-size: 14px; color: var(--text-dim); display: flex; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--border-subtle); align-items: baseline; }
+  .fn .n { font-family: 'Fraunces'; font-style: italic; color: var(--text-faint); width: 20px; font-size: 12px; }
+  .fn .d { margin-left: auto; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--text-faint); }
+  .seal-wrap { margin-top: auto; display: flex; gap: 16px; align-items: center; }
+  .seal {
+    width: 108px; height: 108px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--primary-hi), var(--primary) 55%, #b57f3e);
+    color: var(--on-primary); display: grid; place-items: center; text-align: center;
+    font-family: 'Fraunces'; font-weight: 700; font-size: 17px; line-height: 1.1;
+    box-shadow: 0 8px 26px rgba(232,169,94,0.35), inset 0 0 0 6px rgba(33,38,46,0.15);
+  }
+  .seal small { font-family: 'JetBrains Mono'; font-weight: 400; font-size: 9px; display: block; margin-top: 3px; opacity: 0.85; }
+  .seal-note { font-style: italic; font-size: 13px; color: var(--text-dim); line-height: 1.65; flex: 1; }
+
+  /* ---- transport ---- */
+  .transport { display: grid; grid-template-columns: 430px 1fr 380px; align-items: center; gap: 22px; padding: 0 36px; border-top: 1px solid var(--border-strong); background: linear-gradient(rgba(74,84,104,0.55), rgba(58,65,80,0.55)); }
+  .np { display: flex; gap: 13px; align-items: center; }
+  .np .art { width: 50px; height: 50px; border-radius: 6px; }
+  .np .t { font-family: 'Fraunces'; font-weight: 600; font-size: 17px; color: var(--nord6); }
+  .np .s { font-size: 12px; color: var(--text-dim); font-style: italic; margin-top: 2px; }
+  .btns { display: flex; gap: 16px; align-items: center; justify-content: center; }
+  .tbtn { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); font-size: 15px; }
+  .play { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-size: 19px; box-shadow: 0 4px 16px rgba(232,169,94,0.35); }
+  .right { display: flex; gap: 16px; align-items: center; justify-content: flex-end; font-size: 12px; color: var(--text-dim); font-family: 'Inter'; }
+  .mvol { display: flex; gap: 10px; align-items: center; }
+  .mvol .bar { width: 100px; height: 4px; background: var(--track); border-radius: 2px; position: relative; }
+  .mvol .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 72%; background: var(--text-dim); border-radius: 2px; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="logo">♪ Quest<span>Stream</span></div>
+    <div class="tome">— the grimoire of <b>Curse of the Amber Throne</b>, session the twelfth</div>
+    <div class="out">
+      <div class="pill"><span class="dot"></span> Discord · #tavern-voice · 3 listening</div>
+      <span class="gear">⚙</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="chapters">
+      <div class="ch-h">Chapters · Scenes</div>
+      <div class="mark active">
+        <span class="rib"></span>
+        <div class="nm">Quiet Tavern</div>
+        <div class="meta">sounding now · 1 song, 4 layers</div>
+        <div class="kbd">F1</div>
+      </div>
+      <div class="mark">
+        <div class="nm">Ambush on the Road</div>
+        <div class="meta">2 songs · 1 layer · fades in 4s</div>
+        <div class="kbd">F2</div>
+      </div>
+      <div class="mark">
+        <div class="nm">Final Boss</div>
+        <div class="meta">3 songs · 2 layers</div>
+        <div class="kbd">F3</div>
+      </div>
+      <div class="mark">
+        <div class="nm">Long Rest</div>
+        <div class="meta">1 song · 3 layers</div>
+        <div class="kbd">F4</div>
+      </div>
+      <div class="plists">
+        <div class="ch-h">Appendices · Playlists</div>
+        <div class="plist-row">Tavern Night <small>2 tracks</small></div>
+        <div class="plist-row">Final Boss Suite <small>3 tracks</small></div>
+        <div class="plist-row">Road Songs <small>5 tracks</small></div>
+      </div>
+      <div class="addnote">Drag any track from the library (⌘K) onto a chapter to bind it. A chapter remembers its whole mix — songs, layers, and every volume.</div>
+    </div>
+
+    <div class="page">
+      <div class="watermark">❦</div>
+      <div class="folio">Chapter the Fourth</div>
+      <div class="orn">❦ ❦ ❦</div>
+      <h1 class="scene">The Quiet Tavern</h1>
+      <div class="epigraph">“Rain on the canvas, a fire in the hearth, and no one asking questions.”</div>
+
+      <div class="rule"><b>The Melody</b></div>
+      <div class="verse playing">
+        <div class="drop">♪</div>
+        <div class="m">
+          <div class="t">The Sleeping Dragon Inn</div>
+          <div class="s">fantasy · social · peaceful — coloured Old Radio</div>
+        </div>
+        <div class="time">1:12 / 3:33</div>
+      </div>
+      <div class="seek"><span>1:12</span><div class="bar"><i></i></div><span>then: Crossroads at Dusk, cross-faded o'er 4 s</span></div>
+
+      <div class="rule"><b>The Undertones</b></div>
+      <div class="layers">
+        <div class="lay">
+          <div class="nm">Rain on Canvas <small>endless loop, gapless</small></div>
+          <div class="line"><i style="width:45%"></i><b style="left:45%">◆</b></div>
+          <div class="pct">45%</div>
+        </div>
+        <div class="lay">
+          <div class="nm">Tavern Crowd <small>endless loop, gapless</small></div>
+          <div class="line"><i style="width:60%"></i><b style="left:60%">◆</b></div>
+          <div class="pct">60%</div>
+        </div>
+        <div class="lay">
+          <div class="nm">Crackling Fire <small>endless loop, gapless</small></div>
+          <div class="line"><i style="width:30%"></i><b style="left:30%">◆</b></div>
+          <div class="pct">30%</div>
+        </div>
+        <div class="lay rand">
+          <div class="nm">Distant Wolves <small>a howl every 2–5 min · next ~2:40</small></div>
+          <div class="line"><i style="width:55%"></i><b style="left:55%">◆</b></div>
+          <div class="pct">55%</div>
+        </div>
+      </div>
+
+      <div class="footline">All layers hold their volumes when the chapter turns. <b>Fade all · 3s</b> rests the page to silence.</div>
+    </div>
+
+    <div class="margin">
+      <div class="m-h">Sigils · Soundboard</div>
+      <div class="runes">
+        <div class="rune duck"><div class="sig">⚔️</div><div class="lb">Sword Clash</div><div class="k">1</div></div>
+        <div class="rune duck"><div class="sig">🔥</div><div class="lb">Fireball</div><div class="k">2</div></div>
+        <div class="rune"><div class="sig">🚪</div><div class="lb">Wooden Door</div><div class="k">3</div></div>
+        <div class="rune"><div class="sig">🐺</div><div class="lb">Wolf Howl</div><div class="k">4</div></div>
+        <div class="rune duck"><div class="sig">⛈</div><div class="lb">Thunder</div><div class="k">5</div></div>
+        <div class="rune"><div class="sig">💰</div><div class="lb">Coin Purse</div><div class="k">6</div></div>
+        <div class="rune duck"><div class="sig">🐉</div><div class="lb">Dragon Roar</div><div class="k">7</div></div>
+        <div class="rune"><div class="sig">🪵</div><div class="lb">Timber</div><div class="k">8</div></div>
+      </div>
+      <div class="m-h">Footnotes · Up Next</div>
+      <div>
+        <div class="fn"><span class="n">i.</span> Crossroads at Dusk <span class="d">3:08</span></div>
+        <div class="fn"><span class="n">ii.</span> Steel &amp; Thunder <span class="d">3:21</span></div>
+        <div class="fn"><span class="n">iii.</span> Last Stand <span class="d">3:40</span></div>
+      </div>
+      <div class="m-h" style="margin-top:14px">Colophon</div>
+      <div class="seal-note" style="flex:none">Every sigil strikes at equal weight — loudness matched (R128) at import. Sigils ringed in gold bow the music as they sound.</div>
+      <div class="seal-wrap">
+        <div class="seal">DUCK<small>hold · space</small></div>
+        <div class="seal-note">Press the seal and the whole mix bows to −18 dB while you narrate; release, and it swells back over 0.8 s.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="transport">
+    <div class="np">
+      <div class="art" style="background:linear-gradient(135deg,var(--nord10),var(--nord15))"></div>
+      <div>
+        <div class="t">The Sleeping Dragon Inn</div>
+        <div class="s">from the chapter “The Quiet Tavern”</div>
+      </div>
+    </div>
+    <div class="btns">
+      <div class="tbtn">⇄</div><div class="tbtn">⏮</div>
+      <div class="play">▶</div>
+      <div class="tbtn">⏭</div><div class="tbtn">↻</div>
+    </div>
+    <div class="right">
+      <div class="mvol">🎧 Monitor <div class="bar"><i></i></div></div>
+      <div class="mvol">Master <div class="bar"><i></i></div></div>
+    </div>
+  </div>
+</body>
+</html>
