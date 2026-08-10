@@ -81,7 +81,29 @@ export interface SceneAmbience {
   maxIntervalSec?: number
 }
 
-/** A full mix snapshot: the music queue + ambience layers + their volumes. */
+/** A soundboard pad that belongs to one scene (joins the global board while the scene plays). */
+export interface ScenePad {
+  songId: string
+  hotkey?: string // single-key binding; beats a global soundboard binding on the same key
+  gain?: number // 0..1, default 1
+  duckUnderMusic?: boolean
+}
+
+/**
+ * What happens when the scene's music list runs out:
+ * - 'stop'      — silence after the last track.
+ * - 'loop-list' — start the list over.
+ * - 'loop-last' — keep looping the final track (holds a mood indefinitely).
+ * - 'shuffle'   — keep playing random tracks from the list.
+ * undefined → the player's current global repeat/shuffle settings apply (legacy behavior).
+ */
+export type EndOfListPolicy = 'stop' | 'loop-list' | 'loop-last' | 'shuffle'
+
+/**
+ * A scene: the music list + ambience layers + volumes, plus optional document fields
+ * (grimoire redesign). Every field below `ambience` is optional so legacy scenes
+ * load, recall, and re-save byte-identically.
+ */
 export interface Scene {
   id: string
   name: string
@@ -91,6 +113,11 @@ export interface Scene {
   ambience: SceneAmbience[]
   createdAt: number
   updatedAt: number
+  note?: string // GM marginalia, shown when the scene opens
+  pads?: ScenePad[]
+  endOfList?: EndOfListPolicy
+  crossfadeMs?: number // per-scene transition; undefined → engine default
+  lastPlayedAt?: number // local metadata; stripped from exported packs
 }
 
 export interface LibrarySnapshot {
