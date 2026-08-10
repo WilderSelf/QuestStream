@@ -2314,3 +2314,57 @@ textarea {
   color: var(--text);
   border-color: var(--text-faint);
 }
+
+/* ---- Grimoire margin: sigil-ringed soundboard triggers + the wax-seal duck ---- */
+.sfx.sigil .sfx-trigger {
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--sigil-ring), inset 0 0 0 3px var(--bg);
+}
+.seal-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.duck-seal {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(circle at 35% 30%, var(--primary-hi), var(--seal) 55%, var(--primary-press));
+  color: var(--seal-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--primary-tint), inset 0 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: transform 0.08s, box-shadow 0.08s;
+  touch-action: none;
+}
+.duck-seal.held {
+  transform: scale(0.94);
+  box-shadow: 0 1px 4px var(--primary-tint), inset 0 0 0 5px rgba(0, 0, 0, 0.2);
+}
+.duck-seal-word {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+}
+.duck-seal-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  opacity: 0.85;
+}
+.seal-note {
+  font-family: var(--font-marginalia);
+  font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  line-height: var(--lh);
+}

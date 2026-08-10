@@ -13,7 +13,7 @@ import { useStore } from './store'
 import { TopBar } from './components/TopBar'
 import { SceneRail } from './components/SceneRail'
 import { LibraryPane } from './components/LibraryPane'
-import { QueuePane } from './components/QueuePane'
+import { MarginPane } from './components/MarginPane'
 import { Splitter } from './components/Splitter'
 import { TransportBar } from './components/TransportBar'
 import {
@@ -137,7 +137,7 @@ export function App(): JSX.Element {
               onReset={() => setBrowserSplit(1.7 / (1.7 + 1.2))}
               ariaLabel="Resize library and mix columns"
             />
-            <QueuePane />
+            <MarginPane />
           </div>
         </div>
         <TransportBar />
