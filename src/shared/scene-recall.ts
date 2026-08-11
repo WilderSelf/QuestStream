@@ -21,11 +21,14 @@ export interface RecallOptions {
   includeMusic?: boolean // default true; false = leave the live queue playing untouched
   includeAmbience?: boolean // default true; false = leave the live layers untouched
   startIndex?: number // override the scene's start track ("start scene here")
+  /** true = replace the queue but leave the live music volume where the GM set it. */
+  keepVolumes?: boolean
 }
 
 export interface RecallPlan {
-  /** null = don't touch the live queue (includeMusic: false). */
-  music: { songs: Song[]; startIndex: number; musicVolume: number } | null
+  /** null plan side = don't touch the live queue (includeMusic: false);
+   *  musicVolume null = keepVolumes — the caller must not touch the fader. */
+  music: { songs: Song[]; startIndex: number; musicVolume: number | null } | null
   /** null = don't touch the live layers (includeAmbience: false). */
   ambience: RecallLayer[] | null
   /** The scene's transition length; null = legacy scene → caller uses the app default. */
@@ -50,7 +53,7 @@ export function buildRecallPlan(
     const songs = scene.songIds.map((id) => songsById[id]).filter((s): s is Song => !!s)
     const raw = opts.startIndex ?? scene.currentIndex
     const startIndex = raw >= 0 && raw < songs.length ? raw : 0
-    music = { songs, startIndex, musicVolume: scene.musicVolume }
+    music = { songs, startIndex, musicVolume: opts.keepVolumes ? null : scene.musicVolume }
   }
 
   let ambience: RecallPlan['ambience'] = null

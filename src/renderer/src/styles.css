@@ -3204,7 +3204,6 @@ textarea {
 .scene-page-body {
   overflow-y: auto;
   padding: var(--space-4);
-  max-width: 760px;
 }
 .scene-page-name {
   font-family: var(--font-display);
@@ -3213,20 +3212,45 @@ textarea {
   color: var(--text);
   margin: 0 0 4px;
   line-height: var(--lh-tight);
+  text-align: center;
 }
 .scene-page-meta {
   font-size: var(--text-xs);
   color: var(--text-faint);
   margin-bottom: var(--space-3);
+  text-align: center;
 }
-.scene-page-note {
+.doc-note {
   font-family: var(--font-marginalia);
   font-style: italic;
+  font-size: var(--text-sm);
   color: var(--text-dim);
-  border-left: 3px solid var(--ornament);
-  padding-left: 10px;
-  margin: 0 0 var(--space-4);
-  max-width: 560px;
+  text-align: center;
+  margin: 0 0 var(--space-2);
+}
+.doc-empty {
+  text-align: center;
+}
+.scene-doc .scene-page-filter {
+  max-width: 340px;
+  margin: 0 auto var(--space-2);
+}
+.scene-doc-pills {
+  justify-content: center;
+}
+.draft-pill b.scene-doc-pill-value {
+  min-width: 0;
+  font-family: var(--font-ui);
+}
+.scene-doc-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+.scene-page-listen.active {
+  color: var(--primary-hi);
 }
 .scene-page-toolbar {
   display: flex;
