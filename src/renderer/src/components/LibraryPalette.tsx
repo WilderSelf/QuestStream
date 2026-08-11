@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { useStore } from '../store'
+import { useStore, fmtTime } from '../store'
 import type { ItemKind, Song } from '@shared/types'
 import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
 import { Icon } from './Icon'
@@ -32,6 +32,7 @@ function PaletteRow({ song, onAdd }: { song: Song; onAdd: (song: Song) => void }
       <div className="title">
         <span className="song-title">{song.title}</span>
       </div>
+      <span className="sub palette-duration">{fmtTime(song.duration)}</span>
       <button
         className="icon palette-add"
         title={`Add to ${dest}`}
@@ -84,6 +85,9 @@ export function LibraryPalette({ onAdd }: { onAdd: (song: Song) => void }): JSX.
         {visible.map((s) => (
           <PaletteRow key={s.id} song={s} onAdd={onAdd} />
         ))}
+      </div>
+      <div className="palette-hint">
+        Drag anything onto the scene → double-click sends it to the right section by type.
       </div>
     </aside>
   )

@@ -10,6 +10,8 @@ import { VolumeSlider } from './VolumeSlider'
  * Random layers fire one-shots every min–max seconds. All edits go through
  * reduceDraft — nothing here can reach the live ambience mixer.
  */
+const INTERVAL_STEP_SEC = 5
+
 export function DraftAmbienceLayer({ layer, index }: { layer: DraftLayer; index: number }): JSX.Element {
   const builderKey = useStore((s) => s.builderKey)!
   const editDraft = useStore((s) => s.editDraft)
@@ -21,8 +23,13 @@ export function DraftAmbienceLayer({ layer, index }: { layer: DraftLayer; index:
   return (
     <div className="draft-layer">
       <div className="draft-layer-head">
-        <span className={`song-title ${song ? '' : 'missing'}`}>
-          {song?.title ?? 'Missing item'}
+        <span className="draft-layer-name">
+          <span className={`song-title ${song ? '' : 'missing'}`}>
+            {song?.title ?? 'Missing item'}
+          </span>
+          <span className="draft-layer-caption">
+            {layer.mode === 'random' ? 'plays once in a while' : 'plays continuously'}
+          </span>
         </span>
         <SegmentedControl<AmbienceMode>
           options={[
@@ -50,24 +57,46 @@ export function DraftAmbienceLayer({ layer, index }: { layer: DraftLayer; index:
         </button>
       </div>
       {layer.mode === 'random' && (
-        <div className="draft-layer-interval">
-          <span className="builder-label">Plays once every</span>
-          <input
-            type="number"
-            min={1}
-            value={layer.minIntervalSec}
-            aria-label="Minimum seconds between plays"
-            onChange={(e) => setInterval_(Number(e.target.value), layer.maxIntervalSec)}
-          />
-          <span className="builder-label">to</span>
-          <input
-            type="number"
-            min={layer.minIntervalSec}
-            value={layer.maxIntervalSec}
-            aria-label="Maximum seconds between plays"
-            onChange={(e) => setInterval_(layer.minIntervalSec, Number(e.target.value))}
-          />
-          <span className="builder-label">seconds</span>
+        <div className="draft-layer-interval draft-pill">
+          every
+          <button
+            className="icon"
+            title="Shorter minimum wait"
+            aria-label="Shorter minimum wait"
+            disabled={layer.minIntervalSec <= INTERVAL_STEP_SEC}
+            onClick={() => setInterval_(layer.minIntervalSec - INTERVAL_STEP_SEC, layer.maxIntervalSec)}
+          >
+            −
+          </button>
+          <b>{layer.minIntervalSec}</b>
+          <button
+            className="icon"
+            title="Longer minimum wait"
+            aria-label="Longer minimum wait"
+            onClick={() => setInterval_(layer.minIntervalSec + INTERVAL_STEP_SEC, layer.maxIntervalSec)}
+          >
+            +
+          </button>
+          to
+          <button
+            className="icon"
+            title="Shorter maximum wait"
+            aria-label="Shorter maximum wait"
+            disabled={layer.maxIntervalSec <= layer.minIntervalSec}
+            onClick={() => setInterval_(layer.minIntervalSec, layer.maxIntervalSec - INTERVAL_STEP_SEC)}
+          >
+            −
+          </button>
+          <b>{layer.maxIntervalSec}</b>
+          <button
+            className="icon"
+            title="Longer maximum wait"
+            aria-label="Longer maximum wait"
+            onClick={() => setInterval_(layer.minIntervalSec, layer.maxIntervalSec + INTERVAL_STEP_SEC)}
+          >
+            +
+          </button>
+          s
         </div>
       )}
     </div>

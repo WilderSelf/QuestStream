@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { useStore } from '../store'
 import { draftToPreviewRequest } from '@shared/scene-preview'
+import { isDirty } from '@shared/scene-edit'
 import type { Song } from '@shared/types'
 import { Icon } from './Icon'
 import { DraftMusicList } from './DraftMusicList'
@@ -31,6 +32,15 @@ export function SceneBuilder(): JSX.Element | null {
   const showNotice = useStore((s) => s.showNotice)
   const songs = useStore((s) => s.library.songs)
   const songsById = useMemo(() => Object.fromEntries(songs.map((s) => [s.id, s])), [songs])
+  const liveSceneName = useStore((s) =>
+    s.loadedSceneId ? s.library.scenes.find((sc) => sc.id === s.loadedSceneId)?.name : undefined
+  )
+  const anythingPlaying = useStore((s) => s.currentUid !== null || s.ambience.length > 0)
+  const liveCaption = liveSceneName
+    ? `“${liveSceneName}” keeps playing for the table while you build this.`
+    : anythingPlaying
+      ? 'The current mix keeps playing for the table while you build this.'
+      : 'Nothing is playing for the table right now.'
 
   const ambienceDrop = useDroppable({ id: DRAFT_AMBIENCE_DROP })
   const padsDrop = useDroppable({ id: DRAFT_PADS_DROP })
@@ -42,6 +52,10 @@ export function SceneBuilder(): JSX.Element | null {
   }
 
   const isNew = draft.sceneId === undefined
+  const savedScene = draft.sceneId
+    ? useStore.getState().library.scenes.find((sc) => sc.id === draft.sceneId)
+    : undefined
+  const dirty = isDirty(draft, savedScene)
 
   /** Palette activation adds to the draft by kind — never to the live mix. */
   function addFromPalette(song: Song): void {
@@ -98,7 +112,6 @@ export function SceneBuilder(): JSX.Element | null {
           </button>
           <Icon name="bookmark" size={15} />
           {isNew ? 'New scene' : 'Edit scene'}
-          <span className="builder-draft-badge">draft</span>
         </span>
         <span className="header-actions builder-actions">
           {previewing && (
@@ -106,86 +119,87 @@ export function SceneBuilder(): JSX.Element | null {
               <Icon name="headphones" size={13} /> Only you hear this
             </span>
           )}
-          <button
-            className={`btn ${previewing ? 'active' : ''}`}
-            title="Listen to this scene yourself — the table keeps hearing the live mix"
-            aria-pressed={previewing}
-            onClick={togglePreview}
-          >
-            <Icon name={previewing ? 'pause' : 'headphones'} size={14} />{' '}
-            {previewing ? 'Stop preview' : 'Preview'}
-          </button>
-          <button
-            className="btn"
-            title="Replace this draft's contents with what's playing right now"
-            onClick={copyLiveMix}
-          >
-            <Icon name="download" size={14} /> Copy current mix
-          </button>
           <button className="btn" title="Discard this draft" onClick={discard}>
             Discard
-          </button>
-          <button className="btn primary" title="Save this scene" onClick={() => void save()}>
-            <Icon name="save" size={14} /> Save
           </button>
         </span>
       </div>
       <div className="builder-columns">
+        <LibraryPalette onAdd={addFromPalette} />
         <div className="pane-body builder-body">
-          <label className="builder-field">
-            <span className="builder-label">Name</span>
+          <div className="builder-doc">
+            <div className="doc-eyebrow">
+              {isNew ? 'new scene · unsaved' : dirty ? 'edit scene · unsaved changes' : 'edit scene'}
+            </div>
             <input
               className="builder-name"
               type="text"
               placeholder="Untitled Scene"
+              aria-label="Scene name"
               value={draft.name}
               onChange={(e) => editDraft(builderKey, { type: 'set-name', name: e.target.value })}
             />
-          </label>
-
-          <div className="section-label">
-            <Icon name="music" size={13} /> Music · {draft.songIds.length}
-          </div>
-          <DraftMusicList draft={draft} />
-
-          <div
-            ref={ambienceDrop.setNodeRef}
-            className={ambienceDrop.isOver ? 'drop-target' : undefined}
-          >
-            <div className="section-label">
-              <Icon name="layers" size={13} /> Ambience · {draft.ambience.length}
-            </div>
-            {draft.ambience.length === 0 ? (
-              <div className="muted small">
-                No ambience layers — drag sounds here from the library palette.
-              </div>
-            ) : (
-              <div className="draft-layers">
-                {draft.ambience.map((l, i) => (
-                  <DraftAmbienceLayer key={`${l.songId}:${i}`} layer={l} index={i} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div ref={padsDrop.setNodeRef} className={padsDrop.isOver ? 'drop-target' : undefined}>
-            <div className="section-label">
-              <Icon name="sparkle" size={13} /> Sound pads · {draft.pads.length}
-            </div>
-            <DraftPadGrid pads={draft.pads} />
-          </div>
-
-          <label className="builder-field builder-note">
-            <span className="builder-label">GM note — only you see this</span>
-            <textarea
-              rows={3}
-              placeholder="Cues, reminders, table notes…"
+            <input
+              className="builder-note-line"
+              type="text"
+              placeholder="click to add a note — shown whenever you open this scene"
+              aria-label="GM note — only you see this"
+              title="GM note — only you see this"
               value={draft.note ?? ''}
               onChange={(e) => editDraft(builderKey, { type: 'set-note', note: e.target.value })}
             />
-          </label>
+
+            <div className="doc-section-label">Music</div>
+            <DraftMusicList draft={draft} />
+
+            <div
+              ref={ambienceDrop.setNodeRef}
+              className={ambienceDrop.isOver ? 'drop-target' : undefined}
+            >
+              <div className="doc-section-label">Ambience</div>
+              {draft.ambience.length > 0 && (
+                <div className="draft-layers">
+                  {draft.ambience.map((l, i) => (
+                    <DraftAmbienceLayer key={`${l.songId}:${i}`} layer={l} index={i} />
+                  ))}
+                </div>
+              )}
+              <div className="doc-drop-hint">
+                drop ambience — its volume and timing are saved with the scene
+              </div>
+            </div>
+
+            <div ref={padsDrop.setNodeRef} className={padsDrop.isOver ? 'drop-target' : undefined}>
+              <div className="doc-section-label">Soundboard</div>
+              <DraftPadGrid pads={draft.pads} />
+            </div>
+
+            <div className="doc-actions">
+              <button
+                className="btn"
+                title="Replace this draft's contents with what's playing right now"
+                onClick={copyLiveMix}
+              >
+                <Icon name="download" size={14} /> Copy current mix into this scene
+              </button>
+              <button
+                className={`btn ${previewing ? 'active' : ''}`}
+                title="Listen to this scene yourself — the table keeps hearing the live mix"
+                aria-pressed={previewing}
+                onClick={togglePreview}
+              >
+                <Icon name={previewing ? 'pause' : 'headphones'} size={14} />{' '}
+                {previewing ? 'Stop preview' : 'Preview — only you hear it'}
+              </button>
+              <button className="btn primary" title="Save this scene" onClick={() => void save()}>
+                <Icon name="save" size={14} /> Save scene
+              </button>
+            </div>
+            <div className="doc-caption">
+              {liveCaption} Nothing changes until you press Play scene.
+            </div>
+          </div>
         </div>
-        <LibraryPalette onAdd={addFromPalette} />
       </div>
     </div>
   )
