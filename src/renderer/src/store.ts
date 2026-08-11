@@ -21,6 +21,7 @@ import type {
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
+import { buildRecallPlan, type RecallPlan } from '@shared/scene-recall'
 import {
   newDraft,
   reduceDraft,
@@ -402,6 +403,7 @@ interface State {
   setSaveScenePromptOpen: (open: boolean) => void
   saveScene: (name: string, id?: string) => Promise<void>
   recallScene: (sceneId: string) => void
+  applyRecallPlan: (sceneId: string | null, plan: RecallPlan) => void
   refreshGuilds: () => Promise<void>
   selectGuild: (id: string) => Promise<void>
   selectChannel: (id: string) => void
@@ -1235,45 +1237,46 @@ export const useStore = create<State>((set, get) => ({
     const { library } = get()
     const scene = library.scenes.find((s) => s.id === sceneId)
     if (!scene) return
-    const byId = new Map(library.songs.map((s) => [s.id, s]))
+    const songsById = Object.fromEntries(library.songs.map((s) => [s.id, s]))
+    get().applyRecallPlan(sceneId, buildRecallPlan(scene, songsById))
+  },
 
-    // Music queue
-    const items = scene.songIds
-      .map((sid) => byId.get(sid))
-      .filter((s): s is Song => !!s)
-      .map((song) => ({ uid: newUid(), song }))
-
-    // Swap ambience: stop the current layers, build the scene's. A legacy multi-song pool
-    // expands into one single-sound layer per song (one sound per layer is the current model).
-    for (const slot of get().ambience) void window.api.ambience.stop(slot.id)
-    const ambSlots: AmbienceSlot[] = scene.ambience.flatMap((a) => {
-      const songs = (a.pool ?? [a.songId]).map((id) => byId.get(id)).filter((s): s is Song => !!s)
-      return songs.map((song) => ({
+  // Apply a pure RecallPlan to the live mix (the one seam through which scenes
+  // reach the player — full recall via recallScene, partial via the scene page).
+  applyRecallPlan: (sceneId, plan) => {
+    // Swap ambience: stop the current layers, build the plan's (a null plan side
+    // leaves that side of the live mix completely untouched).
+    let ambSlots: AmbienceSlot[] | null = null
+    if (plan.ambience) {
+      for (const slot of get().ambience) void window.api.ambience.stop(slot.id)
+      ambSlots = plan.ambience.map((l) => ({
         id: newSlotId(),
-        song,
-        volume: a.volume,
-        playing: a.playing,
-        mode: a.mode ?? 'loop',
-        minSec: a.minIntervalSec ?? 20,
-        maxSec: a.maxIntervalSec ?? 60
+        song: l.song,
+        volume: l.volume,
+        playing: l.playing,
+        mode: l.mode,
+        minSec: l.minSec,
+        maxSec: l.maxSec
       }))
-    })
+    }
+    const items = plan.music ? plan.music.songs.map((song) => ({ uid: newUid(), song })) : null
 
     set({
-      queue: items,
-      currentUid: null,
-      selectedUid: null,
-      loadedPlaylistId: null,
       loadedSceneId: sceneId,
-      ambience: ambSlots,
-      musicVolume: scene.musicVolume
+      ...(items
+        ? { queue: items, currentUid: null, selectedUid: null, loadedPlaylistId: null }
+        : {}),
+      ...(ambSlots ? { ambience: ambSlots } : {}),
+      ...(plan.music ? { musicVolume: plan.music.musicVolume } : {})
     })
 
     // Apply to the engine (crossfades from whatever was playing)
-    void window.api.player.setMusicVolume(scene.musicVolume)
-    for (const slot of ambSlots) applyAmbience(slot)
-    const start = items[scene.currentIndex] ?? items[0]
-    if (start) void get().playUid(start.uid)
+    if (plan.music) void window.api.player.setMusicVolume(plan.music.musicVolume)
+    if (ambSlots) for (const slot of ambSlots) applyAmbience(slot)
+    if (items && plan.music) {
+      const start = items[plan.music.startIndex] ?? items[0]
+      if (start) void get().playUid(start.uid)
+    }
   },
 
   refreshGuilds: async () => {
