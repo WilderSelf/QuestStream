@@ -18,6 +18,13 @@ import type {
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
+import {
+  newDraft,
+  reduceDraft,
+  draftToSceneInput,
+  type SceneDraft,
+  type DraftAction
+} from '@shared/scene-edit'
 import { NORD_SWATCH_HEX, migrateTagColor } from '@shared/tagColors'
 import type { SwatchTable } from '@shared/tagColors'
 import { clamp01 } from '@shared/num'
@@ -162,6 +169,7 @@ function persistTagColors(colors: Record<string, string>): void {
 let initialized = false // guard against React StrictMode double-invoking init() (double IPC subs)
 let noticeSeq = 0
 let slotSeq = 0
+let draftSeq = 0
 const newSlotId = (): string => `amb${Date.now()}_${slotSeq++}`
 
 /** Leading+trailing throttle (renderer-only; Date.now is fine here). */
@@ -300,10 +308,17 @@ interface State {
   ducking: boolean
   remoteActive: boolean // is the LAN remote enabled (gates state pushes)
   workspace: Workspace // which center workspace is open
+  // Scene drafts (grimoire): editable working copies, keyed by sceneId or 'new:<n>'.
+  // Editing a draft never touches the live mix; persisted so drafts survive restarts.
+  sceneDrafts: Record<string, SceneDraft>
 
   // actions
   init: () => Promise<void>
   setWorkspace: (w: Workspace) => void
+  openDraft: (sceneId?: string) => string // returns the draft key
+  editDraft: (key: string, action: DraftAction) => void
+  discardDraft: (key: string) => void
+  saveDraft: (key: string) => Promise<void>
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -503,9 +518,43 @@ export const useStore = create<State>((set, get) => ({
   ducking: false,
   remoteActive: false,
   workspace: 'library',
+  sceneDrafts: readLocal('qs.sceneDrafts', (raw) => JSON.parse(raw) as Record<string, SceneDraft>, {}),
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
+
+  // ---- Scene drafts (grimoire Phase 2): pure logic lives in @shared/scene-edit;
+  // this slice is glue + persistence. Nothing here calls player/ambience IPC.
+  openDraft: (sceneId) => {
+    const { sceneDrafts, library } = get()
+    const key = sceneId ?? `new:${Date.now()}_${draftSeq++}`
+    if (sceneDrafts[key]) return key
+    const from = sceneId ? library.scenes.find((sc) => sc.id === sceneId) : undefined
+    const drafts = { ...sceneDrafts, [key]: newDraft(from) }
+    set({ sceneDrafts: drafts })
+    persistJson('qs.sceneDrafts', drafts)
+    return key
+  },
+  editDraft: (key, action) => {
+    const { sceneDrafts } = get()
+    const draft = sceneDrafts[key]
+    if (!draft) return
+    const drafts = { ...sceneDrafts, [key]: reduceDraft(draft, action) }
+    set({ sceneDrafts: drafts })
+    persistJson('qs.sceneDrafts', drafts)
+  },
+  discardDraft: (key) => {
+    const drafts = { ...get().sceneDrafts }
+    delete drafts[key]
+    set({ sceneDrafts: drafts })
+    persistJson('qs.sceneDrafts', drafts)
+  },
+  saveDraft: async (key) => {
+    const draft = get().sceneDrafts[key]
+    if (!draft) return
+    await window.api.scenes.save(draftToSceneInput(draft))
+    get().discardDraft(key) // saved: the scene document is now the source of truth
+  },
 
   init: async () => {
     if (initialized) return // run once even under StrictMode's double-mount
