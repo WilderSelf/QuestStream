@@ -1,0 +1,54 @@
+name: Release
+
+# Cuts a GitHub Release from a hosted runner via scripts/release.sh — for sessions
+# that can't push to `main` or upload release assets directly (e.g. remote Claude
+# Code containers). The version bump ("release: vX.Y.Z" on package.json +
+# package-lock.json) must already be merged to `main` via the normal PR flow;
+# this workflow only verifies, tags, builds, and publishes. release.sh sees the
+# version already set, so it skips the commit and pushes just the tag before
+# electron-builder uploads the AppImage + latest-linux.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "MAJOR.MINOR.PATCH — must already match package.json on main"
+        required: true
+        type: string
+
+permissions:
+  contents: write # push the vX.Y.Z tag + create the release with assets
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: tag + build + publish v${{ inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0 # release.sh checks existing tags
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Verify version is already bumped on main
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          CUR="$(node -p "require('./package.json').version")"
+          if [ "$CUR" != "$VERSION" ]; then
+            echo "::error::package.json on main is $CUR, not $VERSION — merge the 'release: v$VERSION' bump PR first." >&2
+            exit 1
+          fi
+      - name: Cut release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm run release -- "$VERSION"
