@@ -2741,6 +2741,18 @@ textarea {
   width: 140px;
   accent-color: var(--primary);
 }
+.workbench-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.workbench-listen.active {
+  color: var(--primary-hi);
+  border-color: var(--primary);
+}
+.workbench-apply {
+  align-self: flex-start;
+}
 
 /* ---- Open scene page ---- */
 .scene-page {
