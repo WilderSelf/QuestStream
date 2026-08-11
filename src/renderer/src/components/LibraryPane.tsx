@@ -40,7 +40,7 @@ export function LibraryPane(): JSX.Element {
   const clearKindFilters = useStore((s) => s.clearKindFilters)
   const showArtistView = useStore((s) => s.showArtistView)
   const toggleArtistView = useStore((s) => s.toggleArtistView)
-  const openImportWizard = useStore((s) => s.openImportWizard)
+  const setWorkspace = useStore((s) => s.setWorkspace)
   const search = useStore((s) => s.search)
   const setSearch = useStore((s) => s.setSearch)
   const matching = useMatchingSongIds()
@@ -146,9 +146,9 @@ export function LibraryPane(): JSX.Element {
           </button>
           <button
             className="icon icon-text"
-            title="Import audio with the tagging wizard"
+            title="Import audio — link or local files"
             aria-label="Import audio"
-            onClick={() => openImportWizard()}
+            onClick={() => setWorkspace('import')}
           >
             <Icon name="plus" size={16} /> <span className="btn-label">Import</span>
           </button>
