@@ -19,8 +19,10 @@ import type {
   PreviewStatus
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
-import { resolveKey } from '@shared/keymap'
+import { resolveKey, scenePadTriggerId } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
+import { buildRecallPlan, type RecallOptions, type RecallPlan } from '@shared/scene-recall'
+import { DEFAULT_CROSSFADE_MS } from '@shared/num'
 import {
   newDraft,
   reduceDraft,
@@ -53,7 +55,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
 /** Center workspaces of the grimoire shell; the union grows as phases land. */
-export type Workspace = 'library' | 'builder'
+export type Workspace = 'library' | 'builder' | 'scene'
 
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
@@ -318,6 +320,8 @@ interface State {
   previewStatus: PreviewStatus | null
   // The draft open in the scene builder (a sceneId or 'new:<n>' key); null = closed.
   builderKey: string | null
+  // The scene open on the scene page; null = closed.
+  scenePageId: string | null
 
   // actions
   init: () => Promise<void>
@@ -330,6 +334,8 @@ interface State {
   stopPreview: () => Promise<void>
   openBuilder: (sceneIdOrKey?: string) => void
   closeBuilder: () => void
+  openScenePage: (sceneId: string) => void
+  closeScenePage: () => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -402,6 +408,8 @@ interface State {
   setSaveScenePromptOpen: (open: boolean) => void
   saveScene: (name: string, id?: string) => Promise<void>
   recallScene: (sceneId: string) => void
+  playScene: (sceneId: string, opts?: RecallOptions) => void
+  applyRecallPlan: (sceneId: string | null, plan: RecallPlan) => void
   refreshGuilds: () => Promise<void>
   selectGuild: (id: string) => Promise<void>
   selectChannel: (id: string) => void
@@ -532,6 +540,7 @@ export const useStore = create<State>((set, get) => ({
   sceneDrafts: readLocal('qs.sceneDrafts', (raw) => JSON.parse(raw) as Record<string, SceneDraft>, {}),
   previewStatus: null,
   builderKey: null,
+  scenePageId: null,
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -591,6 +600,13 @@ export const useStore = create<State>((set, get) => ({
   closeBuilder: () => {
     void get().stopPreview()
     set({ builderKey: null, workspace: 'library' })
+  },
+
+  // ---- scene page: opening a scene READS it; no audio side effects ----
+  openScenePage: (sceneId) => set({ scenePageId: sceneId, workspace: 'scene' }),
+  closeScenePage: () => {
+    void get().stopPreview()
+    set({ scenePageId: null, workspace: 'library' })
   },
 
   init: async () => {
@@ -688,7 +704,14 @@ export const useStore = create<State>((set, get) => ({
           soundboardHotkeys: s.library.soundboard
             .filter((sb) => sb.hotkey)
             .map((sb) => ({ key: sb.hotkey!, id: sb.id })),
-          scenePadHotkeys: [] // pads of the on-air scene join in Phase 5
+          scenePadHotkeys: (() => {
+            const sc = s.loadedSceneId
+              ? s.library.scenes.find((x) => x.id === s.loadedSceneId)
+              : undefined
+            return (sc?.pads ?? []).flatMap((p, i) =>
+              p.hotkey ? [{ key: p.hotkey, id: scenePadTriggerId(sc!.id, i) }] : []
+            )
+          })()
         }
       )
       if (!action) return
@@ -698,22 +721,16 @@ export const useStore = create<State>((set, get) => ({
           s.triggerSfx(action.id)
           break
         case 'scene-pad':
-          break // unreachable until scenePadHotkeys is populated (Phase 5)
+          s.triggerSfx(action.id) // same channel; main parses the scenepad: id
+          break
         case 'duck':
           s.setDuck(action.down)
           break
-        case 'recall-scene': {
-          // Same dirty-mix guard as the rail rows; goes away when scenes get an
-          // explicit Play action (Phase 5).
-          const dirty = s.queue.length > 0 || s.ambience.length > 0
-          if (
-            !dirty ||
-            s.loadedSceneId === action.sceneId ||
-            confirm('Replace the current mix with this scene? Unsaved changes will be lost.')
-          )
-            s.recallScene(action.sceneId)
+        case 'recall-scene':
+          // Direct one-press recall, no confirm: scenes are durable documents now
+          // (nothing is lost by switching), and the F-keys exist for speed.
+          s.recallScene(action.sceneId)
           break
-        }
       }
     }
     window.addEventListener('keydown', (e) => dispatchKey(e, 'down'))
@@ -1231,49 +1248,58 @@ export const useStore = create<State>((set, get) => ({
     set({ loadedSceneId: scene.id })
   },
 
-  recallScene: (sceneId) => {
+  // F-key one-press recall = a full scene play.
+  recallScene: (sceneId) => get().playScene(sceneId),
+
+  playScene: (sceneId, opts = {}) => {
     const { library } = get()
     const scene = library.scenes.find((s) => s.id === sceneId)
     if (!scene) return
-    const byId = new Map(library.songs.map((s) => [s.id, s]))
+    const songsById = Object.fromEntries(library.songs.map((s) => [s.id, s]))
+    const plan = buildRecallPlan(scene, songsById, opts)
+    // Crossfade FIRST so the transition INTO this scene already uses its length;
+    // a legacy scene (null sentinel) resets to the app default.
+    void window.api.player.setCrossfadeMs(plan.crossfadeMs ?? DEFAULT_CROSSFADE_MS)
+    get().applyRecallPlan(sceneId, plan)
+    void window.api.scenes.markPlayed(sceneId)
+  },
 
-    // Music queue
-    const items = scene.songIds
-      .map((sid) => byId.get(sid))
-      .filter((s): s is Song => !!s)
-      .map((song) => ({ uid: newUid(), song }))
-
-    // Swap ambience: stop the current layers, build the scene's. A legacy multi-song pool
-    // expands into one single-sound layer per song (one sound per layer is the current model).
-    for (const slot of get().ambience) void window.api.ambience.stop(slot.id)
-    const ambSlots: AmbienceSlot[] = scene.ambience.flatMap((a) => {
-      const songs = (a.pool ?? [a.songId]).map((id) => byId.get(id)).filter((s): s is Song => !!s)
-      return songs.map((song) => ({
+  // Apply a pure RecallPlan to the live mix (the one seam through which scenes
+  // reach the player — full recall via recallScene, partial via the scene page).
+  applyRecallPlan: (sceneId, plan) => {
+    // Swap ambience: stop the current layers, build the plan's (a null plan side
+    // leaves that side of the live mix completely untouched).
+    let ambSlots: AmbienceSlot[] | null = null
+    if (plan.ambience) {
+      for (const slot of get().ambience) void window.api.ambience.stop(slot.id)
+      ambSlots = plan.ambience.map((l) => ({
         id: newSlotId(),
-        song,
-        volume: a.volume,
-        playing: a.playing,
-        mode: a.mode ?? 'loop',
-        minSec: a.minIntervalSec ?? 20,
-        maxSec: a.maxIntervalSec ?? 60
+        song: l.song,
+        volume: l.volume,
+        playing: l.playing,
+        mode: l.mode,
+        minSec: l.minSec,
+        maxSec: l.maxSec
       }))
-    })
+    }
+    const items = plan.music ? plan.music.songs.map((song) => ({ uid: newUid(), song })) : null
 
     set({
-      queue: items,
-      currentUid: null,
-      selectedUid: null,
-      loadedPlaylistId: null,
       loadedSceneId: sceneId,
-      ambience: ambSlots,
-      musicVolume: scene.musicVolume
+      ...(items
+        ? { queue: items, currentUid: null, selectedUid: null, loadedPlaylistId: null }
+        : {}),
+      ...(ambSlots ? { ambience: ambSlots } : {}),
+      ...(plan.music ? { musicVolume: plan.music.musicVolume } : {})
     })
 
     // Apply to the engine (crossfades from whatever was playing)
-    void window.api.player.setMusicVolume(scene.musicVolume)
-    for (const slot of ambSlots) applyAmbience(slot)
-    const start = items[scene.currentIndex] ?? items[0]
-    if (start) void get().playUid(start.uid)
+    if (plan.music) void window.api.player.setMusicVolume(plan.music.musicVolume)
+    if (ambSlots) for (const slot of ambSlots) applyAmbience(slot)
+    if (items && plan.music) {
+      const start = items[plan.music.startIndex] ?? items[0]
+      if (start) void get().playUid(start.uid)
+    }
   },
 
   refreshGuilds: async () => {

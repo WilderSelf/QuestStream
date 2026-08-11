@@ -25,18 +25,15 @@ function rowActivation(onActivate: () => void): {
 /**
  * The grimoire scene rail: scenes as notched bookmark cards (F1–F8 recall the first
  * eight), the Playlists list beneath, and pack import. Replaces the old PlaylistsPane.
- * Clicking a bookmark recalls the scene (same dirty-mix confirm as before — the guard
- * retires when scenes get an explicit Play action in Phase 5).
+ * Clicking a bookmark OPENS the scene page (no audio side effects) — playing is an
+ * explicit action there; F-keys keep one-press direct recall (that is their purpose).
  */
 export function SceneRail(): JSX.Element {
   const playlists = useStore((s) => s.library.playlists)
   const scenes = useStore((s) => s.library.scenes)
   const loadPlaylist = useStore((s) => s.loadPlaylist)
-  const recallScene = useStore((s) => s.recallScene)
   const loadedId = useStore((s) => s.loadedPlaylistId)
   const loadedSceneId = useStore((s) => s.loadedSceneId)
-  const queue = useStore((s) => s.queue)
-  const ambience = useStore((s) => s.ambience)
   const showNotice = useStore((s) => s.showNotice)
   const collapsed = useStore((s) => s.playlistsCollapsed)
   const toggleCollapsed = useStore((s) => s.togglePlaylistsCollapsed)
@@ -44,20 +41,11 @@ export function SceneRail(): JSX.Element {
   const sceneDrafts = useStore((s) => s.sceneDrafts)
   const builderKey = useStore((s) => s.builderKey)
   const openBuilder = useStore((s) => s.openBuilder)
+  const openScenePage = useStore((s) => s.openScenePage)
 
   // Unsaved new-scene drafts get their own bookmark cards; scene-keyed drafts
   // decorate the scene's card instead (a "draft" chip).
   const newDraftKeys = Object.keys(sceneDrafts).filter((k) => k.startsWith('new:'))
-
-  function recallSceneConfirmed(id: string): void {
-    const dirty = queue.length > 0 || ambience.length > 0
-    if (
-      !dirty ||
-      loadedSceneId === id ||
-      confirm('Replace the current mix with this scene? Unsaved changes will be lost.')
-    )
-      recallScene(id)
-  }
 
   async function removePlaylist(id: string, e: React.MouseEvent): Promise<void> {
     e.stopPropagation()
@@ -138,8 +126,8 @@ export function SceneRail(): JSX.Element {
           <div
             key={sc.id}
             className={`bookmark ${loadedSceneId === sc.id ? 'on-air' : ''}`}
-            title="Play this scene (crossfades)"
-            {...rowActivation(() => recallSceneConfirmed(sc.id))}
+            title="Open this scene"
+            {...rowActivation(() => openScenePage(sc.id))}
           >
             {loadedSceneId === sc.id && <span className="bookmark-ribbon" aria-hidden="true" />}
             <div className="bookmark-name">{sc.name}</div>

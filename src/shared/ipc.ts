@@ -62,6 +62,7 @@ export const IPC = {
   sceneSave: 'scene:save',
   sceneDelete: 'scene:delete',
   sceneExport: 'scene:export',
+  sceneMarkPlayed: 'scene:markPlayed', // stamp lastPlayedAt when a scene goes live
 
   // shareable packs (import auto-detects scene vs playlist)
   packImport: 'pack:import',
@@ -109,6 +110,7 @@ export const IPC = {
   playerSeek: 'player:seek',
   playerSetVolume: 'player:setVolume',
   playerSetMusicVolume: 'player:setMusicVolume',
+  playerSetCrossfadeMs: 'player:setCrossfadeMs', // per-scene transition length
   playerDuck: 'player:duck', // manual narration duck
   playerStatus: 'player:status', // main -> renderer event
   playerEnded: 'player:ended', // main -> renderer event (current track finished)
@@ -196,6 +198,7 @@ export interface RendererApi {
     save(scene: SceneInput): Promise<Scene>
     remove(id: string): Promise<void>
     export(id: string): Promise<{ ok: boolean; error?: string }>
+    markPlayed(id: string): Promise<void>
   }
   packs: {
     import(): Promise<{ ok: boolean; kind?: 'scene' | 'playlist'; name?: string; error?: string }>
@@ -243,6 +246,7 @@ export interface RendererApi {
     seek(seconds: number): Promise<void>
     setVolume(volume: number): Promise<void>
     setMusicVolume(volume: number): Promise<void>
+    setCrossfadeMs(ms: number): Promise<void>
     duck(on: boolean): Promise<void>
     onStatus(cb: (s: PlayerStatus) => void): () => void
     onEnded(cb: (songId: string) => void): () => void

@@ -27,6 +27,7 @@ import type {
   AppNotice
 } from '../../shared/types'
 import { DEFAULT_VOLUME } from '../../shared/constants'
+import { clampCrossfadeMs, DEFAULT_CROSSFADE_MS } from '../../shared/num'
 
 export declare interface DiscordBot {
   on(event: 'botStatus', l: (s: BotStatus) => void): this
@@ -72,7 +73,7 @@ export class DiscordBot extends EventEmitter {
   private musicPaused = false
   private musicBuffering = false // true between play() of a cold track and its first PCM
   private prefetched: { videoId: string; id: string } | null = null
-  private crossfadeMs = 2500
+  private crossfadeMs = DEFAULT_CROSSFADE_MS
   private nearEndFired = false
   private statusTimer: NodeJS.Timeout | null = null
   private monitor = false
@@ -471,6 +472,15 @@ export class DiscordBot extends EventEmitter {
   setMusicVolume(volume: number): void {
     this.musicVolume = clamp01(volume)
     this.applyMusicGain(120)
+  }
+
+  /**
+   * Transition length for subsequent track changes (per-scene; reset to the default
+   * for ad-hoc play). tickMusic's near-end 'ended' lead derives from this same field,
+   * so a long fade starts early enough instead of clipping at the old fixed lead.
+   */
+  setCrossfadeMs(ms: number): void {
+    this.crossfadeMs = clampCrossfadeMs(ms)
   }
 
   // ---- soundboard one-shots + ducking ----

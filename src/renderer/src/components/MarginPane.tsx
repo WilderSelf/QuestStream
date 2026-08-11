@@ -6,7 +6,8 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { SoundboardItem } from '@shared/types'
+import type { ScenePad, SoundboardItem } from '@shared/types'
+import { scenePadTriggerId } from '@shared/keymap'
 import { useStore, fmtTime, type QueueItem, type AmbienceSlot } from '../store'
 import { Icon } from './Icon'
 import { SeekBar } from './SeekBar'
@@ -339,10 +340,37 @@ function SoundboardButton({ item }: { item: SoundboardItem }): JSX.Element {
   )
 }
 
+/** A pad of the ON-AIR scene, joining the sigil grid while its scene is live.
+ *  Read-only here (edit them in the scene builder); triggers via the scenepad: id. */
+function ScenePadSigil({ pad, id }: { pad: ScenePad; id: string }): JSX.Element {
+  const song = useStore((s) => s.library.songs.find((x) => x.id === pad.songId))
+  const triggerSfx = useStore((s) => s.triggerSfx)
+  return (
+    <div className="sfx sigil scene-pad-sigil" title="Scene pad — lives with the on-air scene">
+      <button
+        className="sfx-trigger"
+        title={song?.title ?? 'missing track'}
+        onClick={() => triggerSfx(id)}
+      >
+        <Icon name="bookmark" size={12} /> {song?.title ?? '— missing —'}
+      </button>
+      {pad.hotkey && (
+        <span className="icon sfx-key bound" aria-label={`Hotkey ${pad.hotkey}`}>
+          {pad.hotkey}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function SoundboardSection(): JSX.Element {
   const soundboard = useStore((s) => s.library.soundboard)
+  const liveScene = useStore((s) =>
+    s.loadedSceneId ? s.library.scenes.find((sc) => sc.id === s.loadedSceneId) : undefined
+  )
   const { setNodeRef, isOver } = useDroppable({ id: 'soundboard-drop' })
-  const empty = soundboard.length === 0
+  const pads = liveScene?.pads ?? []
+  const empty = soundboard.length === 0 && pads.length === 0
   // Empty → collapse to the header alone, which remains the drop target (ref on the pane).
   return (
     <div className="pane soundboard-pane" ref={setNodeRef}>
@@ -350,10 +378,17 @@ function SoundboardSection(): JSX.Element {
         className={`ambience-header ${empty && isOver ? 'drop-active' : ''}`}
         title={empty ? 'Drag a track here for a hotkey one-shot (door knock, sword clash).' : undefined}
       >
-        <span>Soundboard · {soundboard.length}</span>
+        <span>Soundboard · {soundboard.length + pads.length}</span>
       </div>
       {!empty && (
         <div className={`sfx-grid ${isOver ? 'drop-active' : ''}`}>
+          {pads.map((p, i) => (
+            <ScenePadSigil
+              key={`pad:${i}`}
+              pad={p}
+              id={scenePadTriggerId(liveScene!.id, i)}
+            />
+          ))}
           {soundboard.map((item) => (
             <SoundboardButton key={item.id} item={item} />
           ))}
