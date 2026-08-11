@@ -1,5 +1,6 @@
 import { useStore } from '../store'
 import { Icon } from './Icon'
+import { DraftMusicList } from './DraftMusicList'
 
 /**
  * The scene builder workspace (grimoire Phase 4): edits a SceneDraft document.
@@ -55,18 +56,7 @@ export function SceneBuilder(): JSX.Element | null {
         <div className="section-label">
           <Icon name="music" size={13} /> Music · {draft.songIds.length}
         </div>
-        {draft.songIds.length === 0 ? (
-          <div className="muted small">No tracks yet — add songs from the library.</div>
-        ) : (
-          <ol className="builder-track-list">
-            {draft.songIds.map((id, i) => (
-              <li key={`${id}:${i}`} className={i === draft.currentIndex ? 'start-track' : ''}>
-                {titleFor(id)}
-                {i === draft.currentIndex && <span className="builder-start-mark">starts here</span>}
-              </li>
-            ))}
-          </ol>
-        )}
+        <DraftMusicList draft={draft} />
 
         <div className="section-label">
           <Icon name="layers" size={13} /> Ambience · {draft.ambience.length}

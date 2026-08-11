@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from './store'
+import { draftSongIndex } from './components/DraftMusicList'
 import { TopBar } from './components/TopBar'
 import { SceneRail } from './components/SceneRail'
 import { WorkspaceHost } from './components/WorkspaceHost'
@@ -67,6 +68,17 @@ export function App(): JSX.Element {
     if (!over) return
     const activeId = String(active.id)
     const overId = String(over.id)
+
+    // Reordering inside the scene builder's draft track list (never the live queue).
+    const draftFrom = draftSongIndex(activeId)
+    if (draftFrom !== null) {
+      const { builderKey, editDraft } = useStore.getState()
+      const draftTo = draftSongIndex(overId)
+      if (builderKey && draftTo !== null && draftFrom !== draftTo) {
+        editDraft(builderKey, { type: 'move-song', from: draftFrom, to: draftTo })
+      }
+      return
+    }
 
     // Dragging a library song somewhere
     if (activeId.startsWith('song:')) {

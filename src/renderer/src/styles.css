@@ -2395,6 +2395,87 @@ textarea {
   border-radius: 4px;
   padding: 0 4px;
 }
+.draft-music {
+  max-width: 640px;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+}
+.draft-music.drop-target {
+  outline: 2px dashed var(--primary);
+  outline-offset: 4px;
+}
+.draft-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: var(--hit-target-min);
+}
+.draft-track.start-track {
+  background: var(--primary-tint);
+  border-radius: var(--radius);
+}
+.draft-track.missing .song-title {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+.draft-track-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  min-width: 18px;
+  text-align: right;
+}
+.draft-track .title {
+  flex: 1;
+  min-width: 0;
+}
+.draft-start-btn {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  min-height: var(--hit-target-min);
+  cursor: pointer;
+  opacity: 0;
+}
+.draft-track:hover .draft-start-btn,
+.draft-track:focus-within .draft-start-btn,
+.draft-start-btn.on {
+  opacity: 1;
+}
+.draft-start-btn.on {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.draft-list-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+.draft-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.draft-stepper {
+  display: inline-flex;
+  gap: 4px;
+}
+.draft-stepper .icon {
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: var(--text-md);
+}
 
 /* ---- Grimoire margin: sigil-ringed soundboard triggers + the wax-seal duck ---- */
 .sfx.sigil .sfx-trigger {
