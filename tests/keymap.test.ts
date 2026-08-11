@@ -105,3 +105,41 @@ test('scene-pad trigger ids round-trip and reject malformed input', async () => 
   assert.equal(parseScenePadTriggerId('scenepad:x:-1'), null)
   assert.equal(parseScenePadTriggerId('scenepad:x:1.5'), null)
 })
+
+// ---- triage key context (grimoire Phase 7) ----
+
+const triageCtx = (inputFocused = false, inputEmpty = true): KeyContext =>
+  ctx({ triage: { inputFocused, inputEmpty } })
+
+test('in triage: Space toggles preview, Enter saves-and-advances, S skips', () => {
+  assert.deepEqual(resolveKey(down(' '), triageCtx()), { kind: 'triage-preview-toggle' })
+  assert.deepEqual(resolveKey(down('Enter'), triageCtx()), { kind: 'triage-save-next' })
+  assert.deepEqual(resolveKey(down('s'), triageCtx()), { kind: 'triage-skip' })
+  assert.deepEqual(resolveKey(down('S'), triageCtx()), { kind: 'triage-skip' })
+})
+
+test('triage keys are suppressed while the tag input has focus — except Enter on empty', () => {
+  const focused = triageCtx(true, false)
+  assert.equal(resolveKey(down(' ', { typing: true }), focused), null)
+  assert.equal(resolveKey(down('s', { typing: true }), focused), null)
+  assert.equal(resolveKey(down('Enter', { typing: true }), focused), null) // input has text
+  assert.deepEqual(resolveKey(down('Enter', { typing: true }), triageCtx(true, true)), {
+    kind: 'triage-save-next'
+  })
+})
+
+test('in triage, F-keys and user soundboard bindings still resolve (and beat S)', () => {
+  const c = ctx({
+    triage: { inputFocused: false, inputEmpty: true },
+    soundboardHotkeys: [{ key: 's', id: 'sfx-s' }]
+  })
+  assert.deepEqual(resolveKey(down('F1'), triageCtx()), { kind: 'recall-scene', sceneId: 'sc1' })
+  assert.deepEqual(resolveKey(down('s'), c), { kind: 'sfx', id: 'sfx-s' })
+})
+
+test('outside triage, Space/Enter/S resolve to nothing', () => {
+  assert.equal(resolveKey(down(' '), ctx()), null)
+  assert.equal(resolveKey(down('Enter'), ctx()), null)
+  // 's' is not bound and is not the duck key:
+  assert.equal(resolveKey(down('s'), ctx()), null)
+})
