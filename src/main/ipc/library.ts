@@ -148,7 +148,15 @@ export function registerLibraryIpc(ctx: IpcContext): void {
 
       // Single video: the probe already resolved it fully — no second network call.
       if (result.kind === 'video' && result.track) {
-        stamp(result.track)
+        const track = result.track
+        if (track.videoId && store.hasSong(track.videoId)) {
+          // The store de-dupes this; SAY so instead of a silent empty "done" — the
+          // workbench row reads "Already in your library" (grimoire Phase 6).
+          const existing = store.addSong({ ...track, kind: opts?.kind, tags: opts?.tags })
+          sendProgress({ url: clean, status: 'duplicate', duplicateOfSongId: existing.id })
+          return { ok: true }
+        }
+        stamp(track)
         broadcastLibrary()
         sendProgress({ url: clean, status: 'done', total: 1, completed: 1, addedSongIds })
         return { ok: true }
