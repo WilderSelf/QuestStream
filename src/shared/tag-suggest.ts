@@ -26,8 +26,9 @@ function isSubsequence(q: string, s: string): boolean {
   return i === q.length
 }
 
-/** Best score of `q` against a value's slug + label (dimension handled separately). */
-function scoreText(q: string, slugText: string, labelText: string): number | null {
+/** Best score of `q` against a value's slug + label (dimension handled separately).
+ *  Exported for the seeker (Phase 8), which ranks titles/names with the same rules. */
+export function scoreQuery(q: string, slugText: string, labelText: string): number | null {
   const slugL = slugText.toLowerCase()
   const labelL = labelText.toLowerCase()
   if (slugL.startsWith(q) || labelL.startsWith(q)) return SCORE_VALUE_PREFIX
@@ -57,7 +58,7 @@ export function suggestTags(
     const dimPrefix =
       d.key.toLowerCase().startsWith(q) || d.label.toLowerCase().startsWith(q)
     for (const v of d.values) {
-      const own = scoreText(q, v.value, v.label)
+      const own = scoreQuery(q, v.value, v.label)
       const score = Math.min(own ?? Infinity, dimPrefix ? SCORE_DIM_PREFIX : Infinity)
       if (score !== Infinity) {
         scored.push({
@@ -69,7 +70,7 @@ export function suggestTags(
     }
   }
   for (const t of customTags) {
-    const score = scoreText(q, t, t)
+    const score = scoreQuery(q, t, t)
     if (score !== null) scored.push({ s: { tag: t, label: t }, score, seq: seq++ })
   }
 
