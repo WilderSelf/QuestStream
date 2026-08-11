@@ -334,6 +334,8 @@ interface State {
   // Mirrors of the triage tag input for the keymap (Enter-on-empty = save & next).
   triageInputFocused: boolean
   triageInputEmpty: boolean
+  // ⌘K seeker overlay.
+  seekerOpen: boolean
 
   // actions
   init: () => Promise<void>
@@ -353,6 +355,7 @@ interface State {
   triagePreviewToggle: () => void
   exitTriage: () => void
   setTriageInput: (focused: boolean, empty: boolean) => void
+  setSeekerOpen: (open: boolean) => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -557,6 +560,7 @@ export const useStore = create<State>((set, get) => ({
   triage: null,
   triageInputFocused: false,
   triageInputEmpty: true,
+  seekerOpen: false,
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -667,6 +671,7 @@ export const useStore = create<State>((set, get) => ({
   },
   setTriageInput: (focused, empty) =>
     set({ triageInputFocused: focused, triageInputEmpty: empty }),
+  setSeekerOpen: (open) => set({ seekerOpen: open }),
 
   // ---- scene page: opening a scene READS it; no audio side effects ----
   openScenePage: (sceneId) => set({ scenePageId: sceneId, workspace: 'scene' }),
@@ -763,7 +768,8 @@ export const useStore = create<State>((set, get) => ({
           ctrl: e.ctrlKey,
           alt: e.altKey,
           repeat: e.repeat,
-          typing
+          typing,
+          composing: e.isComposing
         },
         {
           sceneIds: s.library.scenes.map((sc) => sc.id),
@@ -780,7 +786,8 @@ export const useStore = create<State>((set, get) => ({
           })(),
           ...(s.workspace === 'triage' && s.triage
             ? { triage: { inputFocused: s.triageInputFocused, inputEmpty: s.triageInputEmpty } }
-            : {})
+            : {}),
+          seekerOpen: s.seekerOpen
         }
       )
       if (!action) return
@@ -808,6 +815,12 @@ export const useStore = create<State>((set, get) => ({
           break
         case 'triage-skip':
           s.triageAct({ type: 'skip' })
+          break
+        case 'seeker-open':
+          set({ seekerOpen: true })
+          break
+        case 'seeker-close':
+          set({ seekerOpen: false })
           break
       }
     }
