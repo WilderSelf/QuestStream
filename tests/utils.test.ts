@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { clamp01 } from '../src/main/bot/Mixer.ts'
-import { clampNum } from '../src/shared/num.ts'
+import { clampNum, clampCrossfadeMs, DEFAULT_CROSSFADE_MS } from '../src/shared/num.ts'
 
 test('clamp01 bounds to [0,1]', () => {
   assert.equal(clamp01(0.5), 0.5)
@@ -26,4 +26,15 @@ test('clampNum bounds to [lo,hi] and falls back to lo on non-numbers', () => {
   assert.equal(clampNum(NaN, 0, 1), 0)
   assert.equal(clampNum('0.5', 0, 1), 0)
   assert.equal(clampNum(undefined, 2, 8), 2)
+})
+
+test('clampCrossfadeMs bounds to [0, 20000]; garbage falls to the sane default, not 0', () => {
+  assert.equal(clampCrossfadeMs(4000), 4000)
+  assert.equal(clampCrossfadeMs(0), 0) // an explicit hard cut is a valid choice
+  assert.equal(clampCrossfadeMs(-5), 0)
+  assert.equal(clampCrossfadeMs(50_000), 20_000)
+  // Untrusted IPC/JSON: a non-number must not silently kill crossfading.
+  assert.equal(clampCrossfadeMs(NaN), DEFAULT_CROSSFADE_MS)
+  assert.equal(clampCrossfadeMs('2500'), DEFAULT_CROSSFADE_MS)
+  assert.equal(clampCrossfadeMs(undefined), DEFAULT_CROSSFADE_MS)
 })

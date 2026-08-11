@@ -28,6 +28,7 @@ export function registerPlaybackIpc(ctx: IpcContext): void {
   handle(IPC.playerSeek, (_e, seconds: number) => bot.seek(seconds))
   handle(IPC.playerSetVolume, (_e, volume: number) => bot.setVolume(volume))
   handle(IPC.playerSetMusicVolume, (_e, volume: number) => bot.setMusicVolume(volume))
+  handle(IPC.playerSetCrossfadeMs, (_e, ms: number) => bot.setCrossfadeMs(ms))
   handle(IPC.playerDuck, (_e, on: boolean) => bot.duck(on))
 
   // ---- ambience ----

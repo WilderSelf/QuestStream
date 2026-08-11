@@ -109,6 +109,7 @@ export const IPC = {
   playerSeek: 'player:seek',
   playerSetVolume: 'player:setVolume',
   playerSetMusicVolume: 'player:setMusicVolume',
+  playerSetCrossfadeMs: 'player:setCrossfadeMs', // per-scene transition length
   playerDuck: 'player:duck', // manual narration duck
   playerStatus: 'player:status', // main -> renderer event
   playerEnded: 'player:ended', // main -> renderer event (current track finished)
@@ -243,6 +244,7 @@ export interface RendererApi {
     seek(seconds: number): Promise<void>
     setVolume(volume: number): Promise<void>
     setMusicVolume(volume: number): Promise<void>
+    setCrossfadeMs(ms: number): Promise<void>
     duck(on: boolean): Promise<void>
     onStatus(cb: (s: PlayerStatus) => void): () => void
     onEnded(cb: (songId: string) => void): () => void

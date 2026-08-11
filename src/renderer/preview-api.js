@@ -135,6 +135,7 @@
       seek: ok,
       setVolume: ok,
       setMusicVolume: ok,
+      setCrossfadeMs: ok,
       duck: ok,
       onStatus: noop,
       onEnded: noop

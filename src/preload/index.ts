@@ -75,6 +75,7 @@ const api: RendererApi = {
     seek: (seconds) => ipcRenderer.invoke(IPC.playerSeek, seconds),
     setVolume: (volume) => ipcRenderer.invoke(IPC.playerSetVolume, volume),
     setMusicVolume: (volume) => ipcRenderer.invoke(IPC.playerSetMusicVolume, volume),
+    setCrossfadeMs: (ms) => ipcRenderer.invoke(IPC.playerSetCrossfadeMs, ms),
     duck: (on) => ipcRenderer.invoke(IPC.playerDuck, on),
     onStatus: (cb) => subscribe(IPC.playerStatus, cb),
     onEnded: (cb) => subscribe(IPC.playerEnded, cb)
