@@ -1,6 +1,8 @@
 import { useStore } from '../store'
 import { Icon } from './Icon'
 import { DraftMusicList } from './DraftMusicList'
+import { DraftAmbienceLayer } from './DraftAmbienceLayer'
+import { DraftPadGrid } from './DraftPadGrid'
 
 /**
  * The scene builder workspace (grimoire Phase 4): edits a SceneDraft document.
@@ -13,7 +15,6 @@ export function SceneBuilder(): JSX.Element | null {
   const draft = useStore((s) => (s.builderKey ? s.sceneDrafts[s.builderKey] : undefined))
   const editDraft = useStore((s) => s.editDraft)
   const closeBuilder = useStore((s) => s.closeBuilder)
-  const songs = useStore((s) => s.library.songs)
 
   if (!builderKey || !draft) {
     // Defensive: a stale workspace with no draft falls back visually to nothing;
@@ -22,7 +23,6 @@ export function SceneBuilder(): JSX.Element | null {
   }
 
   const isNew = draft.sceneId === undefined
-  const titleFor = (id: string): string => songs.find((s) => s.id === id)?.title ?? 'Missing item'
 
   return (
     <div className="pane builder-pane">
@@ -62,22 +62,31 @@ export function SceneBuilder(): JSX.Element | null {
           <Icon name="layers" size={13} /> Ambience · {draft.ambience.length}
         </div>
         {draft.ambience.length === 0 ? (
-          <div className="muted small">No ambience layers.</div>
+          <div className="muted small">
+            No ambience layers — drag sounds here from the library palette.
+          </div>
         ) : (
-          <ul className="builder-track-list">
+          <div className="draft-layers">
             {draft.ambience.map((l, i) => (
-              <li key={`${l.songId}:${i}`}>
-                {titleFor(l.songId)} · {l.mode === 'random' ? 'random' : 'loop'} ·{' '}
-                {Math.round(l.volume * 100)}%
-              </li>
+              <DraftAmbienceLayer key={`${l.songId}:${i}`} layer={l} index={i} />
             ))}
-          </ul>
+          </div>
         )}
 
         <div className="section-label">
           <Icon name="sparkle" size={13} /> Sound pads · {draft.pads.length}
         </div>
-        {draft.pads.length === 0 && <div className="muted small">No pads for this scene.</div>}
+        <DraftPadGrid pads={draft.pads} />
+
+        <label className="builder-field builder-note">
+          <span className="builder-label">GM note — only you see this</span>
+          <textarea
+            rows={3}
+            placeholder="Cues, reminders, table notes…"
+            value={draft.note ?? ''}
+            onChange={(e) => editDraft(builderKey, { type: 'set-note', note: e.target.value })}
+          />
+        </label>
       </div>
     </div>
   )
