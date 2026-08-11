@@ -2689,6 +2689,34 @@ textarea {
   max-width: 260px;
   flex: 1;
 }
+.scene-page-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  min-height: var(--hit-target-min);
+  cursor: pointer;
+}
+.scene-page-toggle input {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+}
+.scene-page-transition {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+}
+.scene-page-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.scene-page-track:hover .scene-page-start,
+.scene-page-track:focus-within .scene-page-start {
+  opacity: 1;
+}
 .scene-page-track {
   display: flex;
   align-items: center;

@@ -21,7 +21,8 @@ import type {
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
-import { buildRecallPlan, type RecallPlan } from '@shared/scene-recall'
+import { buildRecallPlan, type RecallOptions, type RecallPlan } from '@shared/scene-recall'
+import { DEFAULT_CROSSFADE_MS } from '@shared/num'
 import {
   newDraft,
   reduceDraft,
@@ -407,6 +408,7 @@ interface State {
   setSaveScenePromptOpen: (open: boolean) => void
   saveScene: (name: string, id?: string) => Promise<void>
   recallScene: (sceneId: string) => void
+  playScene: (sceneId: string, opts?: RecallOptions) => void
   applyRecallPlan: (sceneId: string | null, plan: RecallPlan) => void
   refreshGuilds: () => Promise<void>
   selectGuild: (id: string) => Promise<void>
@@ -716,18 +718,11 @@ export const useStore = create<State>((set, get) => ({
         case 'duck':
           s.setDuck(action.down)
           break
-        case 'recall-scene': {
-          // Same dirty-mix guard as the rail rows; goes away when scenes get an
-          // explicit Play action (Phase 5).
-          const dirty = s.queue.length > 0 || s.ambience.length > 0
-          if (
-            !dirty ||
-            s.loadedSceneId === action.sceneId ||
-            confirm('Replace the current mix with this scene? Unsaved changes will be lost.')
-          )
-            s.recallScene(action.sceneId)
+        case 'recall-scene':
+          // Direct one-press recall, no confirm: scenes are durable documents now
+          // (nothing is lost by switching), and the F-keys exist for speed.
+          s.recallScene(action.sceneId)
           break
-        }
       }
     }
     window.addEventListener('keydown', (e) => dispatchKey(e, 'down'))
@@ -1245,12 +1240,20 @@ export const useStore = create<State>((set, get) => ({
     set({ loadedSceneId: scene.id })
   },
 
-  recallScene: (sceneId) => {
+  // F-key one-press recall = a full scene play.
+  recallScene: (sceneId) => get().playScene(sceneId),
+
+  playScene: (sceneId, opts = {}) => {
     const { library } = get()
     const scene = library.scenes.find((s) => s.id === sceneId)
     if (!scene) return
     const songsById = Object.fromEntries(library.songs.map((s) => [s.id, s]))
-    get().applyRecallPlan(sceneId, buildRecallPlan(scene, songsById))
+    const plan = buildRecallPlan(scene, songsById, opts)
+    // Crossfade FIRST so the transition INTO this scene already uses its length;
+    // a legacy scene (null sentinel) resets to the app default.
+    void window.api.player.setCrossfadeMs(plan.crossfadeMs ?? DEFAULT_CROSSFADE_MS)
+    get().applyRecallPlan(sceneId, plan)
+    void window.api.scenes.markPlayed(sceneId)
   },
 
   // Apply a pure RecallPlan to the live mix (the one seam through which scenes
