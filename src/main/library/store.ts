@@ -383,13 +383,12 @@ export class LibraryStore {
         return existing
       }
     }
+    // Spread, don't whitelist: optional scene-document fields (note, pads, endOfList,
+    // crossfadeMs, lastPlayedAt) must survive the create path too. `id`/timestamps
+    // come last so a caller-supplied (unknown) id can't leak through.
     const created: Scene = {
+      ...scene,
       id: randomUUID(),
-      name: scene.name,
-      songIds: scene.songIds,
-      musicVolume: scene.musicVolume,
-      currentIndex: scene.currentIndex,
-      ambience: scene.ambience,
       createdAt: now,
       updatedAt: now
     }

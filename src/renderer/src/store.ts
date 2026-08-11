@@ -17,6 +17,14 @@ import type {
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey } from '@shared/keymap'
+import { nextQueueIndex } from '@shared/queue-policy'
+import {
+  newDraft,
+  reduceDraft,
+  draftToSceneInput,
+  type SceneDraft,
+  type DraftAction
+} from '@shared/scene-edit'
 import { NORD_SWATCH_HEX, migrateTagColor } from '@shared/tagColors'
 import type { SwatchTable } from '@shared/tagColors'
 import { clamp01 } from '@shared/num'
@@ -161,6 +169,7 @@ function persistTagColors(colors: Record<string, string>): void {
 let initialized = false // guard against React StrictMode double-invoking init() (double IPC subs)
 let noticeSeq = 0
 let slotSeq = 0
+let draftSeq = 0
 const newSlotId = (): string => `amb${Date.now()}_${slotSeq++}`
 
 /** Leading+trailing throttle (renderer-only; Date.now is fine here). */
@@ -299,10 +308,17 @@ interface State {
   ducking: boolean
   remoteActive: boolean // is the LAN remote enabled (gates state pushes)
   workspace: Workspace // which center workspace is open
+  // Scene drafts (grimoire): editable working copies, keyed by sceneId or 'new:<n>'.
+  // Editing a draft never touches the live mix; persisted so drafts survive restarts.
+  sceneDrafts: Record<string, SceneDraft>
 
   // actions
   init: () => Promise<void>
   setWorkspace: (w: Workspace) => void
+  openDraft: (sceneId?: string) => string // returns the draft key
+  editDraft: (key: string, action: DraftAction) => void
+  discardDraft: (key: string) => void
+  saveDraft: (key: string) => Promise<void>
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -502,9 +518,43 @@ export const useStore = create<State>((set, get) => ({
   ducking: false,
   remoteActive: false,
   workspace: 'library',
+  sceneDrafts: readLocal('qs.sceneDrafts', (raw) => JSON.parse(raw) as Record<string, SceneDraft>, {}),
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
+
+  // ---- Scene drafts (grimoire Phase 2): pure logic lives in @shared/scene-edit;
+  // this slice is glue + persistence. Nothing here calls player/ambience IPC.
+  openDraft: (sceneId) => {
+    const { sceneDrafts, library } = get()
+    const key = sceneId ?? `new:${Date.now()}_${draftSeq++}`
+    if (sceneDrafts[key]) return key
+    const from = sceneId ? library.scenes.find((sc) => sc.id === sceneId) : undefined
+    const drafts = { ...sceneDrafts, [key]: newDraft(from) }
+    set({ sceneDrafts: drafts })
+    persistJson('qs.sceneDrafts', drafts)
+    return key
+  },
+  editDraft: (key, action) => {
+    const { sceneDrafts } = get()
+    const draft = sceneDrafts[key]
+    if (!draft) return
+    const drafts = { ...sceneDrafts, [key]: reduceDraft(draft, action) }
+    set({ sceneDrafts: drafts })
+    persistJson('qs.sceneDrafts', drafts)
+  },
+  discardDraft: (key) => {
+    const drafts = { ...get().sceneDrafts }
+    delete drafts[key]
+    set({ sceneDrafts: drafts })
+    persistJson('qs.sceneDrafts', drafts)
+  },
+  saveDraft: async (key) => {
+    const draft = get().sceneDrafts[key]
+    if (!draft) return
+    await window.api.scenes.save(draftToSceneInput(draft))
+    get().discardDraft(key) // saved: the scene document is now the source of truth
+  },
 
   init: async () => {
     if (initialized) return // run once even under StrictMode's double-mount
@@ -863,46 +913,44 @@ export const useStore = create<State>((set, get) => ({
   },
 
   playNext: async (auto = false) => {
-    const { queue, currentUid, shuffle, repeat } = get()
+    const { queue, currentUid, shuffle, repeat, library, loadedSceneId } = get()
     if (queue.length === 0) return
-
-    // Per-track loop wins over the global repeat mode, but only on a natural finish.
-    if (auto && currentUid) {
-      const cur = queue.find((q) => q.uid === currentUid)
-      const loop = cur?.loop ?? 'off'
-      if (loop === 'on') {
-        await get().playUid(currentUid)
-        return
-      }
-      if (loop === 'once') {
-        // Consume the one-shot loop, then replay; the next natural end advances normally.
+    const idx = queue.findIndex((q) => q.uid === currentUid)
+    const cur = idx >= 0 ? queue[idx] : undefined
+    // The playing scene's end-of-list policy governs the tail; undefined = legacy
+    // behavior (global repeat/shuffle), pinned by tests/queue-policy.test.ts.
+    const endOfList = loadedSceneId
+      ? library.scenes.find((s) => s.id === loadedSceneId)?.endOfList
+      : undefined
+    const decision = nextQueueIndex(
+      {
+        index: idx,
+        length: queue.length,
+        shuffle,
+        repeat,
+        trackLoop: cur?.loop ?? 'off',
+        auto,
+        endOfList
+      },
+      Math.random
+    )
+    if (decision.kind === 'stop') {
+      set({ currentUid: null })
+      return
+    }
+    if (decision.kind === 'replay') {
+      if (!currentUid) return
+      if (decision.consumeTrackLoop) {
+        // Consume the one-shot loop; the next natural end advances normally.
         set((st) => ({
           queue: st.queue.map((q) => (q.uid === currentUid ? { ...q, loop: 'off' as LoopMode } : q))
         }))
-        await get().playUid(currentUid)
-        return
       }
-    }
-
-    // Repeat-one only auto-repeats when a track finishes on its own.
-    if (auto && repeat === 'one' && currentUid) {
       await get().playUid(currentUid)
       return
     }
-
-    if (shuffle) {
-      const candidates = queue.filter((q) => q.uid !== currentUid)
-      const pool = candidates.length ? candidates : queue
-      const pick = pool[Math.floor(Math.random() * pool.length)]
-      await get().playUid(pick.uid)
-      return
-    }
-
-    const idx = queue.findIndex((q) => q.uid === currentUid)
-    const next = queue[idx + 1]
-    if (next) await get().playUid(next.uid)
-    else if (repeat === 'all') await get().playUid(queue[0].uid)
-    else set({ currentUid: null })
+    const target = queue[decision.index]
+    if (target) await get().playUid(target.uid)
   },
 
   playPrev: async () => {

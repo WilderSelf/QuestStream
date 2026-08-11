@@ -270,3 +270,73 @@ test('flush persists and a fresh store reloads it', () => {
   assert.equal(s2.snapshot().songs.length, 1)
   assert.equal(s2.snapshot().songs[0].id, song.id)
 })
+
+// ---- Scene document fields (grimoire Phase 2): all optional, all persisted ----
+
+test('saveScene persists the optional scene-document fields through a reload', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qs-lib-'))
+  dirs.push(dir)
+  const path = join(dir, 'library.json')
+  const s = new LibraryStore(path)
+  const song = s.addSong(track())
+  const saved = s.saveScene({
+    name: 'Doc',
+    songIds: [song.id],
+    musicVolume: 0.8,
+    currentIndex: 0,
+    ambience: [],
+    note: 'The amber throne remembers.',
+    pads: [{ songId: song.id, hotkey: 'x', gain: 0.7, duckUnderMusic: true }],
+    endOfList: 'loop-last',
+    crossfadeMs: 4000,
+    lastPlayedAt: 123
+  })
+  assert.equal(saved.note, 'The amber throne remembers.')
+  s.flush()
+  const reloaded = new LibraryStore(path).snapshot().scenes[0]
+  assert.equal(reloaded.note, 'The amber throne remembers.')
+  assert.deepEqual(reloaded.pads, [{ songId: song.id, hotkey: 'x', gain: 0.7, duckUnderMusic: true }])
+  assert.equal(reloaded.endOfList, 'loop-last')
+  assert.equal(reloaded.crossfadeMs, 4000)
+  assert.equal(reloaded.lastPlayedAt, 123)
+})
+
+test('a legacy-shaped scene gains no fields on save (undefined stays absent)', () => {
+  const s = newStore()
+  const song = s.addSong(track())
+  const saved = s.saveScene({
+    name: 'Legacy',
+    songIds: [song.id],
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: [{ songId: song.id, volume: 0.5, playing: true }]
+  })
+  assert.ok(!('note' in saved), 'no note key on a legacy save')
+  assert.ok(!('pads' in saved), 'no pads key on a legacy save')
+  assert.ok(!('endOfList' in saved), 'no endOfList key on a legacy save')
+})
+
+test('updating a scene by id preserves document fields it does not touch', () => {
+  const s = newStore()
+  const song = s.addSong(track())
+  const first = s.saveScene({
+    name: 'Keep',
+    songIds: [song.id],
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: [],
+    note: 'keep me'
+  })
+  const updated = s.saveScene({
+    id: first.id,
+    name: 'Keep v2',
+    songIds: [song.id],
+    musicVolume: 0.5,
+    currentIndex: 0,
+    ambience: []
+  })
+  assert.equal(updated.id, first.id)
+  assert.equal(updated.name, 'Keep v2')
+  // Object.assign-style update: an omitted optional field is left as it was.
+  assert.equal(updated.note, 'keep me')
+})
