@@ -2823,13 +2823,17 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  color: var(--ornament); /* the bar fill — read by the draw loop */
 }
-.triage-playhead {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--primary);
+.triage-listen-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.triage-elapsed {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
 }
 .triage-typeahead {
   position: relative;
