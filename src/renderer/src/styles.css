@@ -1089,6 +1089,9 @@ textarea {
   border-bottom: 1px solid var(--border);
 }
 .ambience-header .link-btn {
+  /* The header row is display-serif; a small serif link is hard to read — keep the
+     action in the UI face. */
+  font-family: var(--font-ui);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -2210,7 +2213,8 @@ textarea {
 }
 .bookmark {
   position: relative;
-  margin: 0 12px var(--space-3) 0;
+  /* Inset from BOTH edges (mockup parity) — the right 12px is reclaimed by the notch. */
+  margin: 0 12px var(--space-3) 12px;
   padding: 9px 30px 9px 12px;
   background: var(--surface-raised);
   border: 1px solid var(--border);
@@ -2304,8 +2308,8 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: calc(100% - 12px);
-  margin: 0 12px var(--space-4) 0;
+  width: calc(100% - 24px);
+  margin: 0 12px var(--space-4) 12px;
   padding: 8px;
   min-height: var(--hit-target-min);
   background: transparent;
@@ -2319,6 +2323,31 @@ textarea {
   color: var(--text);
   border-color: var(--text-faint);
 }
+/* The rail's untagged inbox chip (mockup parity): a dashed pill that starts triage. */
+.rail-untagged {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  margin: var(--space-3) 12px var(--space-4) 12px;
+  padding: 6px 10px;
+  min-height: var(--hit-target-min);
+  background: transparent;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--ornament);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.rail-untagged:hover {
+  border-color: var(--ornament);
+}
+.rail-untagged-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
 /* Unsaved drafts: dashed, un-notched-looking versions of the bookmark card. */
 .bookmark-draft,
 .bookmark-draft::after {
