@@ -143,3 +143,28 @@ test('outside triage, Space/Enter/S resolve to nothing', () => {
   // 's' is not bound and is not the duck key:
   assert.equal(resolveKey(down('s'), ctx()), null)
 })
+
+// ---- the seeker key (grimoire Phase 8) ----
+
+test('Cmd+K and Ctrl+K open the seeker — even while typing in a field', () => {
+  assert.deepEqual(resolveKey(down('k', { meta: true }), ctx()), { kind: 'seeker-open' })
+  assert.deepEqual(resolveKey(down('k', { ctrl: true }), ctx()), { kind: 'seeker-open' })
+  assert.deepEqual(resolveKey(down('K', { ctrl: true, typing: true }), ctx()), {
+    kind: 'seeker-open'
+  })
+})
+
+test('the seeker key never fires mid-IME-composition', () => {
+  assert.equal(resolveKey(down('k', { ctrl: true, composing: true }), ctx()), null)
+})
+
+test('Escape closes an open seeker (also from its own input); otherwise inert', () => {
+  const open = ctx({ seekerOpen: true })
+  assert.deepEqual(resolveKey(down('Escape'), open), { kind: 'seeker-close' })
+  assert.deepEqual(resolveKey(down('Escape', { typing: true }), open), { kind: 'seeker-close' })
+  assert.equal(resolveKey(down('Escape'), ctx()), null)
+})
+
+test('a bare k stays inert', () => {
+  assert.equal(resolveKey(down('k'), ctx()), null)
+})
