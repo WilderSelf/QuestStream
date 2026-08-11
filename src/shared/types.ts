@@ -187,6 +187,38 @@ export interface AmbienceLayerStatus {
   durationSec: number
 }
 
+// ---- Preview bus (GM-only audition; never touches the live mix) ----
+
+/** Randomized one-shot scheduling for a preview ambience layer (mirrors SceneAmbience). */
+export interface PreviewRandom {
+  pool: Song[]
+  minSec: number
+  maxSec: number
+}
+
+/**
+ * One layer of a preview mix. layers[0] is the primary (music) layer — it takes
+ * `startSec` and its natural end stops the preview. When `random` is set the layer
+ * plays one-shots drawn from the pool instead of `song`.
+ */
+export interface PreviewLayer {
+  song: Song
+  volume: number // 0..1
+  loop: boolean
+  random?: PreviewRandom
+}
+
+export interface PreviewRequest {
+  layers: PreviewLayer[]
+  startSec?: number
+}
+
+export interface PreviewStatus {
+  playing: boolean
+  positionSec: number
+  durationSec: number // primary layer's song duration; 0 when unknown
+}
+
 // ---- App notices (main → renderer toast) ----
 export interface AppNotice {
   message: string
