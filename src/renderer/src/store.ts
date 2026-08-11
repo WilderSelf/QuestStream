@@ -111,8 +111,7 @@ export const DEFAULT_THEME = 'nord-refined'
 export const BUILTIN_THEMES: { id: string; name: string; swatch: [string, string] }[] = [
   { id: 'nord-refined', name: 'Nord Refined', swatch: ['#1b2028', '#e8a95e'] },
   { id: 'torchlit', name: 'Torchlit', swatch: ['#1a1512', '#eab963'] },
-  { id: 'daylight', name: 'Daylight', swatch: ['#e5e9f0', '#b06e26'] },
-  { id: 'bone', name: 'Bone', swatch: ['#ebe5d7', '#7c5c2e'] }
+  { id: 'daylight', name: 'Daylight', swatch: ['#e5e9f0', '#b06e26'] }
 ]
 /** Apply a theme by name: the default is the bare :root (no attribute); everything else is a
  *  `[data-theme="<name>"]` block (built-in, compiled into styles.css; or user, injected below). */

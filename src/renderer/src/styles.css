@@ -271,69 +271,6 @@
   --sigil-ring: rgba(46, 52, 64, 0.22);
 }
 
-/* ---- Bone — warm ivory, ink text, quiet antique-brass accents; deliberately flat ---- */
-:root[data-theme='bone'] {
-  --bg: #e2dccd;
-  --surface: #ebe5d7;
-  --surface-raised: #f3eee1;
-  --surface-over: #faf7ee;
-  --field-bg: #faf7ee;
-  --border: rgba(43, 38, 32, 0.14);
-  --border-strong: rgba(43, 38, 32, 0.24);
-  --border-subtle: rgba(43, 38, 32, 0.08);
-  --track: #c9c0ac;
-  --shadow-1: 0 1px 2px rgba(62, 52, 38, 0.1);
-  --shadow-2: 0 6px 20px rgba(62, 52, 38, 0.13);
-  --shadow-3: 0 20px 60px rgba(62, 52, 38, 0.18);
-
-  --text: #2b2620;
-  --text-dim: #4f4739;
-  --text-faint: #6e6455;
-
-  --primary: #7c5c2e; /* antique brass — AA on ivory */
-  --primary-hi: #674b21; /* hover darkens on a light ground */
-  --primary-press: #553d18;
-  --primary-tint: rgba(124, 92, 46, 0.13);
-  --on-primary: #faf7ee;
-
-  --live: #45707a; /* muted slate teal */
-  --live-tint: rgba(69, 112, 122, 0.13);
-  --accent-deep: #4f6785;
-  --tag: #7d5a76;
-  --danger: #9c4a43;
-  --danger-tint: rgba(156, 74, 67, 0.12);
-  --warn: #866418;
-  --ok: #5f7247;
-  --scrim: rgba(43, 38, 32, 0.35);
-  --on-tag: #faf7ee;
-  --on-accent: #faf7ee;
-  --on-solid: #faf7ee;
-  --hover: rgba(43, 38, 32, 0.06);
-
-  --tag-red: #9c4a43;
-  --tag-orange: #a05c33;
-  --tag-yellow: #866418;
-  --tag-green: #5f7247;
-  --tag-teal: #47726b;
-  --tag-cyan: #45707a;
-  --tag-blue: #4f6785;
-  --tag-deepblue: #40536e;
-  --tag-purple: #7d5a76;
-  --tag-neutral: #6e6455;
-
-  --font-display: 'Fraunces Variable', Georgia, serif;
-  --font-marginalia: 'Spectral', Georgia, serif;
-  --font-ui: 'Outfit Variable', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
-
-  --paper: #f6f2e6;
-  --paper-edge: rgba(43, 38, 32, 0.24);
-  --ornament: #8a6a3d;
-  --seal: #8a6a3d;
-  --seal-ink: #faf7ee;
-  --sigil-ring: rgba(43, 38, 32, 0.24);
-}
-
 /* Inline action-button group in pane headers (was a repeated inline flex style). */
 .header-actions {
   display: flex;
@@ -1860,11 +1797,6 @@ textarea {
 .volume input[type='range'] {
   width: 96px;
   /* Monitor/send volume: amber control accent, matching the deck-row sliders. */
-  accent-color: var(--primary);
-}
-/* Un-scoped range inputs (soundboard chips, layer rows) otherwise fall back to the
-   UA's default blue, which no theme contains. */
-input[type='range'] {
   accent-color: var(--primary);
 }
 
