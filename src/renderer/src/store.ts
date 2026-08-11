@@ -53,7 +53,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
 /** Center workspaces of the grimoire shell; the union grows as phases land. */
-export type Workspace = 'library'
+export type Workspace = 'library' | 'builder'
 
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
@@ -316,6 +316,8 @@ interface State {
   sceneDrafts: Record<string, SceneDraft>
   // Preview bus (GM-only audition): last status heartbeat, null = nothing previewing.
   previewStatus: PreviewStatus | null
+  // The draft open in the scene builder (a sceneId or 'new:<n>' key); null = closed.
+  builderKey: string | null
 
   // actions
   init: () => Promise<void>
@@ -326,6 +328,8 @@ interface State {
   saveDraft: (key: string) => Promise<void>
   startPreview: (request: PreviewRequest) => Promise<void>
   stopPreview: () => Promise<void>
+  openBuilder: (sceneIdOrKey?: string) => void
+  closeBuilder: () => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -527,6 +531,7 @@ export const useStore = create<State>((set, get) => ({
   workspace: 'library',
   sceneDrafts: readLocal('qs.sceneDrafts', (raw) => JSON.parse(raw) as Record<string, SceneDraft>, {}),
   previewStatus: null,
+  builderKey: null,
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -576,6 +581,16 @@ export const useStore = create<State>((set, get) => ({
   stopPreview: async () => {
     await window.api.preview.stop()
     previewPlayer.stop()
+  },
+
+  // ---- scene builder workspace (edits drafts + preview bus only — never the live mix) ----
+  openBuilder: (sceneIdOrKey) => {
+    const key = get().openDraft(sceneIdOrKey)
+    set({ builderKey: key, workspace: 'builder' })
+  },
+  closeBuilder: () => {
+    void get().stopPreview()
+    set({ builderKey: null, workspace: 'library' })
   },
 
   init: async () => {

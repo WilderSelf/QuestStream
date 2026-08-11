@@ -10,6 +10,8 @@ import {
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from './store'
+import { draftSongIndex, DRAFT_MUSIC_DROP } from './components/DraftMusicList'
+import { DRAFT_AMBIENCE_DROP, DRAFT_PADS_DROP } from './components/SceneBuilder'
 import { TopBar } from './components/TopBar'
 import { SceneRail } from './components/SceneRail'
 import { WorkspaceHost } from './components/WorkspaceHost'
@@ -68,11 +70,54 @@ export function App(): JSX.Element {
     const activeId = String(active.id)
     const overId = String(over.id)
 
+    // Reordering inside the scene builder's draft track list (never the live queue).
+    const draftFrom = draftSongIndex(activeId)
+    if (draftFrom !== null) {
+      const { builderKey, editDraft } = useStore.getState()
+      const draftTo = draftSongIndex(overId)
+      if (builderKey && draftTo !== null && draftFrom !== draftTo) {
+        editDraft(builderKey, { type: 'move-song', from: draftFrom, to: draftTo })
+      }
+      return
+    }
+
     // Dragging a library song somewhere
     if (activeId.startsWith('song:')) {
       const songId = activeId.slice('song:'.length)
       const song = library.songs.find((s) => s.id === songId)
       if (!song) return
+      // Builder targets first: palette drops edit the DRAFT. While the builder is
+      // open, a drop that isn't on an explicit live-margin target is ignored — a
+      // stray drag must never touch the live mix.
+      const { workspace, builderKey, editDraft } = useStore.getState()
+      if (workspace === 'builder' && builderKey) {
+        const at = draftSongIndex(overId)
+        if (overId === DRAFT_MUSIC_DROP || at !== null) {
+          editDraft(builderKey, { type: 'add-song', songId, ...(at !== null ? { index: at } : {}) })
+          return
+        }
+        if (overId === DRAFT_AMBIENCE_DROP) {
+          editDraft(builderKey, { type: 'add-layer', songId })
+          return
+        }
+        if (overId === DRAFT_PADS_DROP) {
+          editDraft(builderKey, { type: 'add-pad', pad: { songId } })
+          return
+        }
+        if (overId === 'ambience-drop') {
+          addAmbience(song)
+          return
+        }
+        if (overId === 'soundboard-drop') {
+          void window.api.soundboard.add(song.id)
+          return
+        }
+        if (overId === 'queue-drop' || queue.some((q) => q.uid === overId)) {
+          const at2 = queue.findIndex((q) => q.uid === overId)
+          enqueueSongs([song], at2 >= 0 ? at2 : queue.length)
+        }
+        return
+      }
       // ...onto the ambience area → its own new layer (each sound is one layer)
       if (overId === 'ambience-drop') {
         addAmbience(song)
