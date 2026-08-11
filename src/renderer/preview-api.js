@@ -96,7 +96,25 @@
       retag: ok,
       deleteSong: ok,
       onChanged: noop,
-      onImportProgress: noop
+      // Seed a little arriving-table history so the import workbench screenshots
+      // show every row state (in progress / done / duplicate / error).
+      onImportProgress: (cb) => {
+        const evs = [
+          { url: 'https://youtu.be/tavern-set', status: 'resolving' },
+          { url: 'https://youtu.be/tavern-set', status: 'importing', total: 12, completed: 4 },
+          {
+            url: 'https://youtu.be/battle-drums',
+            status: 'done',
+            total: 1,
+            completed: 1,
+            addedSongIds: ['s3']
+          },
+          { url: 'https://youtu.be/old-favourite', status: 'duplicate', duplicateOfSongId: 's1' },
+          { url: 'https://youtu.be/gone-video', status: 'error', message: 'Video unavailable' }
+        ]
+        evs.forEach((ev, i) => setTimeout(() => cb(ev), 150 + i * 60))
+        return () => {}
+      }
     },
     soundboard: { add: ok, update: ok, remove: ok, trigger: ok },
     playlists: { save: ok, remove: ok, export: ok },

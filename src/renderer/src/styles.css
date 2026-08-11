@@ -2641,6 +2641,107 @@ textarea {
   color: var(--ornament);
 }
 
+/* ---- Import workbench ---- */
+.workbench-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.workbench-body {
+  overflow-y: auto;
+  padding: var(--space-4);
+  max-width: 820px;
+}
+.workbench-caption {
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  margin-bottom: var(--space-3);
+}
+.workbench-url-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.workbench-url-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--hit-target-min);
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+.workbench-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-4);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+.workbench-drop.drop-target {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.workbench-choose {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  min-height: var(--hit-target-min);
+}
+.workbench-opts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.workbench-tags {
+  max-width: 720px;
+}
+.workbench-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.workbench-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  min-height: var(--hit-target-min);
+}
+.workbench-row .title {
+  flex: 1;
+  min-width: 0;
+}
+.workbench-row .song-title {
+  overflow-wrap: anywhere;
+}
+.workbench-row-icon {
+  color: var(--text-faint);
+  display: inline-flex;
+}
+.workbench-row.done .workbench-row-icon {
+  color: var(--ok, var(--primary));
+}
+.workbench-row.error .workbench-row-icon,
+.workbench-error {
+  color: var(--danger, #bf616a);
+}
+.workbench-row progress {
+  width: 140px;
+  accent-color: var(--primary);
+}
+
 /* ---- Open scene page ---- */
 .scene-page {
   display: flex;

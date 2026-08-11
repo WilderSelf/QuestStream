@@ -22,6 +22,7 @@ import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey, scenePadTriggerId } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
 import { buildRecallPlan, type RecallOptions, type RecallPlan } from '@shared/scene-recall'
+import { reduceImportRows, type ImportRow } from '@shared/import-flow'
 import { DEFAULT_CROSSFADE_MS } from '@shared/num'
 import {
   newDraft,
@@ -55,7 +56,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
 /** Center workspaces of the grimoire shell; the union grows as phases land. */
-export type Workspace = 'library' | 'builder' | 'scene'
+export type Workspace = 'library' | 'builder' | 'scene' | 'import'
 
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
@@ -322,6 +323,8 @@ interface State {
   builderKey: string | null
   // The scene open on the scene page; null = closed.
   scenePageId: string | null
+  // Import workbench: arriving-items rows, a pure fold of importProgress events.
+  importRows: ImportRow[]
 
   // actions
   init: () => Promise<void>
@@ -541,6 +544,7 @@ export const useStore = create<State>((set, get) => ({
   previewStatus: null,
   builderKey: null,
   scenePageId: null,
+  importRows: [],
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -618,7 +622,7 @@ export const useStore = create<State>((set, get) => ({
 
     window.api.library.onChanged((snap) => set({ library: snap }))
     window.api.library.onImportProgress((p) => {
-      set({ importStatus: p })
+      set({ importStatus: p, importRows: reduceImportRows(get().importRows, p) })
       if (p.status === 'done' || p.status === 'error') {
         setTimeout(() => {
           if (get().importStatus === p) set({ importStatus: null })
