@@ -946,6 +946,9 @@ textarea {
   border: none;
   color: var(--danger);
   padding: 4px 6px;
+  /* a11y: every tap target meets the minimum, even icon-only removes. */
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
 }
 .play-btn {
   opacity: 1;
@@ -954,6 +957,8 @@ textarea {
   color: var(--ok);
   padding: 2px 6px;
   flex-shrink: 0;
+  min-width: var(--hit-target-min);
+  min-height: var(--hit-target-min);
 }
 .play-btn:hover {
   color: var(--live);
