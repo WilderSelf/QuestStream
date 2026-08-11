@@ -316,6 +316,27 @@ test('a legacy-shaped scene gains no fields on save (undefined stays absent)', (
   assert.ok(!('endOfList' in saved), 'no endOfList key on a legacy save')
 })
 
+test('markScenePlayed stamps lastPlayedAt and survives a reload; unknown ids are a no-op', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qs-lib-'))
+  dirs.push(dir)
+  const path = join(dir, 'library.json')
+  const s = new LibraryStore(path)
+  const song = s.addSong(track())
+  const scene = s.saveScene({
+    name: 'Played',
+    songIds: [song.id],
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: []
+  })
+  s.markScenePlayed(scene.id, 456)
+  assert.equal(s.snapshot().scenes[0].lastPlayedAt, 456)
+  s.markScenePlayed('no-such-scene', 789) // must not throw or touch anything
+  s.flush()
+  const reloaded = new LibraryStore(path).snapshot().scenes[0]
+  assert.equal(reloaded.lastPlayedAt, 456)
+})
+
 test('updating a scene by id preserves document fields it does not touch', () => {
   const s = newStore()
   const song = s.addSong(track())

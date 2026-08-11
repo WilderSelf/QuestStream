@@ -401,4 +401,13 @@ export class LibraryStore {
     this.db.scenes = this.db.scenes.filter((s) => s.id !== id)
     this.persist()
   }
+
+  /** Stamp when a scene last went live ("Last played" on its page). Unknown id = no-op.
+   *  Deliberately does NOT touch updatedAt — playing a scene is not an edit. */
+  markScenePlayed(id: string, at = Date.now()): void {
+    const scene = this.db.scenes.find((s) => s.id === id)
+    if (!scene) return
+    scene.lastPlayedAt = at
+    this.persist()
+  }
 }

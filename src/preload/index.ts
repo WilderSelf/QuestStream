@@ -32,7 +32,8 @@ const api: RendererApi = {
   scenes: {
     save: (scene) => ipcRenderer.invoke(IPC.sceneSave, scene),
     remove: (id) => ipcRenderer.invoke(IPC.sceneDelete, id),
-    export: (id) => ipcRenderer.invoke(IPC.sceneExport, id)
+    export: (id) => ipcRenderer.invoke(IPC.sceneExport, id),
+    markPlayed: (id) => ipcRenderer.invoke(IPC.sceneMarkPlayed, id)
   },
   packs: {
     import: () => ipcRenderer.invoke(IPC.packImport)

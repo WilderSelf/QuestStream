@@ -277,6 +277,10 @@ export function registerLibraryIpc(ctx: IpcContext): void {
     store.deleteScene(id)
     broadcastLibrary()
   })
+  handle(IPC.sceneMarkPlayed, (_e, id: string) => {
+    store.markScenePlayed(id)
+    broadcastLibrary() // the scene page shows "Last played" live
+  })
 
   // ---- shareable packs (metadata-only .questpack JSON) ----
   const exportPack = async (

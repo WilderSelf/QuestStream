@@ -94,7 +94,7 @@
     },
     soundboard: { add: ok, update: ok, remove: ok, trigger: ok },
     playlists: { save: ok, remove: ok, export: ok },
-    scenes: { save: ok, remove: ok, export: ok },
+    scenes: { save: ok, remove: ok, export: ok, markPlayed: ok },
     packs: { import: () => Promise.resolve({ ok: true }) },
     tools: {
       getStatus: () =>

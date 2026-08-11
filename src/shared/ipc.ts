@@ -62,6 +62,7 @@ export const IPC = {
   sceneSave: 'scene:save',
   sceneDelete: 'scene:delete',
   sceneExport: 'scene:export',
+  sceneMarkPlayed: 'scene:markPlayed', // stamp lastPlayedAt when a scene goes live
 
   // shareable packs (import auto-detects scene vs playlist)
   packImport: 'pack:import',
@@ -197,6 +198,7 @@ export interface RendererApi {
     save(scene: SceneInput): Promise<Scene>
     remove(id: string): Promise<void>
     export(id: string): Promise<{ ok: boolean; error?: string }>
+    markPlayed(id: string): Promise<void>
   }
   packs: {
     import(): Promise<{ ok: boolean; kind?: 'scene' | 'playlist'; name?: string; error?: string }>
