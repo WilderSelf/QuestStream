@@ -17,6 +17,7 @@ import type {
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey } from '@shared/keymap'
+import { nextQueueIndex } from '@shared/queue-policy'
 import { NORD_SWATCH_HEX, migrateTagColor } from '@shared/tagColors'
 import type { SwatchTable } from '@shared/tagColors'
 import { clamp01 } from '@shared/num'
@@ -863,46 +864,44 @@ export const useStore = create<State>((set, get) => ({
   },
 
   playNext: async (auto = false) => {
-    const { queue, currentUid, shuffle, repeat } = get()
+    const { queue, currentUid, shuffle, repeat, library, loadedSceneId } = get()
     if (queue.length === 0) return
-
-    // Per-track loop wins over the global repeat mode, but only on a natural finish.
-    if (auto && currentUid) {
-      const cur = queue.find((q) => q.uid === currentUid)
-      const loop = cur?.loop ?? 'off'
-      if (loop === 'on') {
-        await get().playUid(currentUid)
-        return
-      }
-      if (loop === 'once') {
-        // Consume the one-shot loop, then replay; the next natural end advances normally.
+    const idx = queue.findIndex((q) => q.uid === currentUid)
+    const cur = idx >= 0 ? queue[idx] : undefined
+    // The playing scene's end-of-list policy governs the tail; undefined = legacy
+    // behavior (global repeat/shuffle), pinned by tests/queue-policy.test.ts.
+    const endOfList = loadedSceneId
+      ? library.scenes.find((s) => s.id === loadedSceneId)?.endOfList
+      : undefined
+    const decision = nextQueueIndex(
+      {
+        index: idx,
+        length: queue.length,
+        shuffle,
+        repeat,
+        trackLoop: cur?.loop ?? 'off',
+        auto,
+        endOfList
+      },
+      Math.random
+    )
+    if (decision.kind === 'stop') {
+      set({ currentUid: null })
+      return
+    }
+    if (decision.kind === 'replay') {
+      if (!currentUid) return
+      if (decision.consumeTrackLoop) {
+        // Consume the one-shot loop; the next natural end advances normally.
         set((st) => ({
           queue: st.queue.map((q) => (q.uid === currentUid ? { ...q, loop: 'off' as LoopMode } : q))
         }))
-        await get().playUid(currentUid)
-        return
       }
-    }
-
-    // Repeat-one only auto-repeats when a track finishes on its own.
-    if (auto && repeat === 'one' && currentUid) {
       await get().playUid(currentUid)
       return
     }
-
-    if (shuffle) {
-      const candidates = queue.filter((q) => q.uid !== currentUid)
-      const pool = candidates.length ? candidates : queue
-      const pick = pool[Math.floor(Math.random() * pool.length)]
-      await get().playUid(pick.uid)
-      return
-    }
-
-    const idx = queue.findIndex((q) => q.uid === currentUid)
-    const next = queue[idx + 1]
-    if (next) await get().playUid(next.uid)
-    else if (repeat === 'all') await get().playUid(queue[0].uid)
-    else set({ currentUid: null })
+    const target = queue[decision.index]
+    if (target) await get().playUid(target.uid)
   },
 
   playPrev: async () => {
