@@ -429,7 +429,7 @@ export function MarginPane(): JSX.Element {
   const ambience = useStore((s) => s.ambience)
   const clearQueue = useStore((s) => s.clearQueue)
   const setSavePromptOpen = useStore((s) => s.setSavePromptOpen)
-  const setSaveScenePromptOpen = useStore((s) => s.setSaveScenePromptOpen)
+  const openBuilderFromLiveMix = useStore((s) => s.openBuilderFromLiveMix)
   const musicVolume = useStore((s) => s.musicVolume)
   const setMusicVolume = useStore((s) => s.setMusicVolume)
   const mixSplit = useStore((s) => s.mixSplit)
@@ -458,9 +458,9 @@ export function MarginPane(): JSX.Element {
             <button
               className="icon"
               disabled={queue.length === 0 && ambience.length === 0}
-              title="Save as scene (music + ambience + volumes)"
-              aria-label="Save as scene"
-              onClick={() => setSaveScenePromptOpen(true)}
+              title="Save this mix as a scene (opens the builder pre-filled)"
+              aria-label="Save this mix as a scene"
+              onClick={openBuilderFromLiveMix}
             >
               <Icon name="bookmark" size={16} />
             </button>

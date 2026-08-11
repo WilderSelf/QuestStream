@@ -287,7 +287,6 @@ interface State {
   uiScale: number // renderer zoom factor (whole-UI scale), 0.8–1.5
   textScale: number // text-only multiplier over the --text-* tokens (layout unchanged), 0.8–1.5
   savePromptOpen: boolean
-  saveScenePromptOpen: boolean
   loadedSceneId: string | null
 
   search: string
@@ -347,6 +346,8 @@ interface State {
   startPreview: (request: PreviewRequest) => Promise<void>
   stopPreview: () => Promise<void>
   openBuilder: (sceneIdOrKey?: string) => void
+  openBuilderFromLiveMix: () => void
+  copyLiveMixToDraft: (key: string) => void
   closeBuilder: () => void
   openScenePage: (sceneId: string) => void
   closeScenePage: () => void
@@ -423,8 +424,6 @@ interface State {
   setUiScale: (scale: number) => void
   setTextScale: (scale: number) => void
   setSavePromptOpen: (open: boolean) => void
-  setSaveScenePromptOpen: (open: boolean) => void
-  saveScene: (name: string, id?: string) => Promise<void>
   recallScene: (sceneId: string) => void
   playScene: (sceneId: string, opts?: RecallOptions) => void
   applyRecallPlan: (sceneId: string | null, plan: RecallPlan) => void
@@ -474,7 +473,6 @@ export const useStore = create<State>((set, get) => ({
   uiScale: readLocal('qs.uiScale', (s) => clampScale(parseFloat(s)), 1),
   textScale: readLocal('qs.textScale', (s) => clampScale(parseFloat(s)), 1),
   savePromptOpen: false,
-  saveScenePromptOpen: false,
   loadedSceneId: null,
   search: '',
   editSongId: null,
@@ -616,6 +614,32 @@ export const useStore = create<State>((set, get) => ({
   openBuilder: (sceneIdOrKey) => {
     const key = get().openDraft(sceneIdOrKey)
     set({ builderKey: key, workspace: 'builder' })
+  },
+  // "Save this mix as a scene": a new draft pre-filled from what's playing now
+  // (replaces the old SaveSceneModal snapshot flow — the builder can edit first).
+  openBuilderFromLiveMix: () => {
+    get().openBuilder()
+    const key = get().builderKey
+    if (key) get().copyLiveMixToDraft(key)
+  },
+  copyLiveMixToDraft: (key) => {
+    const st = get()
+    st.editDraft(key, {
+      type: 'copy-live-mix',
+      snapshot: {
+        songIds: st.queue.map((q) => q.song.id),
+        currentIndex: Math.max(0, st.queue.findIndex((q) => q.uid === st.currentUid)),
+        musicVolume: st.musicVolume,
+        layers: st.ambience.map((a) => ({
+          songId: a.song.id,
+          volume: a.volume,
+          playing: a.playing,
+          mode: a.mode,
+          minIntervalSec: a.minSec,
+          maxIntervalSec: a.maxSec
+        }))
+      }
+    })
   },
   closeBuilder: () => {
     void get().stopPreview()
@@ -1302,31 +1326,6 @@ export const useStore = create<State>((set, get) => ({
     set({ textScale })
   },
   setSavePromptOpen: (open) => set({ savePromptOpen: open }),
-  setSaveScenePromptOpen: (open) => set({ saveScenePromptOpen: open }),
-
-  saveScene: async (name, id) => {
-    const { queue, currentUid, musicVolume, ambience } = get()
-    const currentIndex = Math.max(0, queue.findIndex((q) => q.uid === currentUid))
-    const scene = await window.api.scenes.save({
-      id,
-      name: name.trim() || 'Untitled Scene',
-      songIds: queue.map((q) => q.song.id),
-      musicVolume,
-      currentIndex,
-      // One sound per layer now — persist a single-song pool (kept for back-compat with
-      // scenes/packs that still read `pool`).
-      ambience: ambience.map((a) => ({
-        songId: a.song.id,
-        volume: a.volume,
-        playing: a.playing,
-        mode: a.mode,
-        pool: [a.song.id],
-        minIntervalSec: a.minSec,
-        maxIntervalSec: a.maxSec
-      }))
-    })
-    set({ loadedSceneId: scene.id })
-  },
 
   // F-key one-press recall = a full scene play.
   recallScene: (sceneId) => get().playScene(sceneId),

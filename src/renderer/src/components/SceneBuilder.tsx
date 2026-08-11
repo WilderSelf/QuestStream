@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { useStore } from '../store'
 import { draftToPreviewRequest } from '@shared/scene-preview'
-import type { LiveMixSnapshot } from '@shared/scene-edit'
 import type { Song } from '@shared/types'
 import { Icon } from './Icon'
 import { DraftMusicList } from './DraftMusicList'
@@ -53,22 +52,7 @@ export function SceneBuilder(): JSX.Element | null {
   }
 
   function copyLiveMix(): void {
-    if (!builderKey) return
-    const st = useStore.getState()
-    const snapshot: LiveMixSnapshot = {
-      songIds: st.queue.map((q) => q.song.id),
-      currentIndex: Math.max(0, st.queue.findIndex((q) => q.uid === st.currentUid)),
-      musicVolume: st.musicVolume,
-      layers: st.ambience.map((a) => ({
-        songId: a.song.id,
-        volume: a.volume,
-        playing: a.playing,
-        mode: a.mode,
-        minIntervalSec: a.minSec,
-        maxIntervalSec: a.maxSec
-      }))
-    }
-    editDraft(builderKey, { type: 'copy-live-mix', snapshot })
+    if (builderKey) useStore.getState().copyLiveMixToDraft(builderKey)
   }
 
   function togglePreview(): void {

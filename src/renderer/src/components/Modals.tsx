@@ -721,35 +721,6 @@ function SaveAsModal(props: {
   )
 }
 
-export function SaveSceneModal(): JSX.Element | null {
-  const open = useStore((s) => s.saveScenePromptOpen)
-  const setOpen = useStore((s) => s.setSaveScenePromptOpen)
-  const queue = useStore((s) => s.queue)
-  const ambience = useStore((s) => s.ambience)
-  const scenes = useStore((s) => s.library.scenes)
-  const loadedSceneId = useStore((s) => s.loadedSceneId)
-  const saveScene = useStore((s) => s.saveScene)
-
-  if (!open) return null
-  const existing = scenes.find((s) => s.id === loadedSceneId)
-
-  return (
-    <SaveAsModal
-      title="Save as Scene"
-      description={`Snapshots the whole mix: ${queue.length} queued track(s), ${ambience.length} ambience layer(s), and all volumes. Recall it later in one click.`}
-      label="Scene name"
-      placeholder="Tavern brawl"
-      seedName={existing?.name ?? ''}
-      existingName={existing?.name}
-      onClose={() => setOpen(false)}
-      onSave={(name, overwrite) => {
-        void saveScene(name.trim() || 'Untitled Scene', overwrite ? loadedSceneId ?? undefined : undefined)
-        setOpen(false)
-      }}
-    />
-  )
-}
-
 export function SavePlaylistModal(): JSX.Element | null {
   const open = useStore((s) => s.savePromptOpen)
   const setOpen = useStore((s) => s.setSavePromptOpen)

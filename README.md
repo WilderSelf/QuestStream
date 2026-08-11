@@ -33,16 +33,24 @@ applications menu** (one click), and it **auto-updates** from GitHub Releases.
 ## Features
 
 - **Bring your own audio** — import **local files** (MP3/FLAC/WAV/OGG/…) or paste a
-  link (YouTube, SoundCloud, Bandcamp, and other `yt-dlp`-supported sites). Tracks
-  are auto-tagged with title/artist/album and filed into a three-pane browser.
+  link (YouTube, SoundCloud, Bandcamp, and other `yt-dlp`-supported sites) into the
+  **import workbench**: drop files or paste a link and keep working while arrivals
+  stream in (duplicates say so honestly). Then run untagged items through
+  **tag triage** — audition each one over a GM-only preview and tag as you listen.
 - **Live mixer for GMs** — a music queue with crossfade, plus **ambience layers**
   that loop under it (rain, crowd, fire), each with its own volume.
 - **Organic one-shots** — turn a layer into a **random** mode that fires sounds from
   a pool at random intervals (a distant wolf howl, a creaking timber).
 - **Soundboard** — drag a track to make a one-shot effect, bind a **hotkey**, and
   optionally **duck** the music while it plays. A manual narration-duck button too.
-- **Scenes** — snapshot the whole mix (queue + layers + volumes) and recall it in one
-  click. Plus classic playlists.
+- **Scenes** — editable documents, not just snapshots: build them in the **scene
+  builder** (track list with a start marker, per-scene crossfade and end-of-list
+  behavior, ambience layers, per-scene sound pads, a GM note), open them on a
+  **scene page** with zero audio side effects, and **preview them privately**
+  while the table keeps hearing the live mix. Play with Music/Ambience include
+  toggles, or one-press recall on **F1–F8**. Plus classic playlists.
+- **Find anything** — **⌘/Ctrl+K** opens the seeker: tracks, scenes, and actions
+  from one input, anywhere in the app.
 - **Share packs** — export a scene or playlist as a portable `.questpack` (metadata
   only, no audio) and import others’.
 - **DSP presets** — colour a track with Cavern / Telephone / Old Radio / Underwater.
@@ -53,6 +61,17 @@ applications menu** (one click), and it **auto-updates** from GitHub Releases.
   as `Authorization: Bearer <token>` to `POST /api/cmd`.
 - **Local-first** — your library, scenes, imported audio and bot token live on your
   machine. No accounts, no cloud.
+
+## Keyboard shortcuts
+
+| Keys | Where | What |
+| --- | --- | --- |
+| `F1`–`F8` | anywhere | Recall the first eight scenes (one press, crossfades) |
+| hold `D` | anywhere | Duck the whole mix while you speak (release to restore) |
+| `⌘K` / `Ctrl+K` | anywhere (even in a field) | Open the seeker |
+| `Esc` | seeker open | Close the seeker |
+| `Space` / `Enter` / `S` | tag triage | Listen toggle / save & next / skip |
+| soundboard & scene-pad hotkeys | anywhere | User bindings — they always beat the built-ins above |
 
 ## External tools
 

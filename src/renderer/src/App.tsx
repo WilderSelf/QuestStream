@@ -21,7 +21,6 @@ import { TransportBar } from './components/TransportBar'
 import {
   SettingsModal,
   SavePlaylistModal,
-  SaveSceneModal,
   SongEditModal,
   DisclaimerModal
 } from './components/Modals'
@@ -189,7 +188,6 @@ export function App(): JSX.Element {
       </div>
       <SettingsModal />
       <SavePlaylistModal />
-      <SaveSceneModal />
       <SongEditModal />
       <DisclaimerModal />
       <Seeker />
