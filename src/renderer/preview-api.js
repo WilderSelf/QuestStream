@@ -141,6 +141,7 @@
     },
     ambience: { play: ok, playRandom: ok, stop: ok, setVolume: ok, setPaused: ok, onStatus: noop },
     monitor: { enable: ok, onPcm: noop },
+    preview: { start: ok, stop: ok, setVolume: ok, onPcm: noop, onStatus: noop },
     remote: {
       onCommand: noop,
       pushState: () => {},

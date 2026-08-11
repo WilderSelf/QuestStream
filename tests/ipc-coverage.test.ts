@@ -4,6 +4,7 @@ import { MAIN_HANDLED_CHANNELS } from '../src/shared/ipc.ts'
 import { registerLibraryIpc } from '../src/main/ipc/library.ts'
 import { registerPlaybackIpc } from '../src/main/ipc/playback.ts'
 import { registerRemoteIpc } from '../src/main/ipc/remote.ts'
+import { registerPreviewIpc } from '../src/main/ipc/preview.ts'
 import type { IpcContext } from '../src/main/ipc/context.ts'
 
 // A recording context: the domain registrars only *register* handlers here (the handler
@@ -36,6 +37,7 @@ test('the domain modules register exactly the main-handled IPC channels', () => 
   registerLibraryIpc(ctx)
   registerPlaybackIpc(ctx)
   registerRemoteIpc(ctx)
+  registerPreviewIpc(ctx)
 
   const missing = MAIN_HANDLED_CHANNELS.filter((c) => !registered.has(c))
   const extra = [...registered].filter((c) => !MAIN_HANDLED_CHANNELS.includes(c))

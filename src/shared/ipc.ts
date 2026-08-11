@@ -23,7 +23,9 @@ import type {
   CookiesMode,
   CookieBrowser,
   DesktopStatus,
-  UpdateState
+  UpdateState,
+  PreviewRequest,
+  PreviewStatus
 } from './types'
 
 export type SceneInput = Omit<Scene, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
@@ -123,6 +125,13 @@ export const IPC = {
   monitorEnable: 'monitor:enable',
   monitorPcm: 'monitor:pcm', // main -> renderer event (mixed PCM)
 
+  // preview bus (GM-only audition; isolated from the live mix)
+  previewStart: 'preview:start',
+  previewStop: 'preview:stop',
+  previewSetVolume: 'preview:setVolume',
+  previewPcm: 'preview:pcm', // main -> renderer event (preview PCM)
+  previewStatus: 'preview:status', // main -> renderer event (playing/position heartbeat)
+
   // remote control (LAN web remote / Stream Deck)
   remoteCommand: 'remote:command', // main -> renderer event (a command to execute)
   remotePushState: 'remote:pushState', // renderer -> main (send; snapshot for /api/state)
@@ -144,6 +153,8 @@ export const EVENT_CHANNELS: readonly string[] = [
   IPC.playerEnded,
   IPC.ambienceStatus,
   IPC.monitorPcm,
+  IPC.previewPcm,
+  IPC.previewStatus,
   IPC.remoteCommand,
   IPC.notice,
   IPC.updateStatus
@@ -247,6 +258,13 @@ export interface RendererApi {
   monitor: {
     enable(on: boolean): Promise<void>
     onPcm(cb: (pcm: Uint8Array) => void): () => void
+  }
+  preview: {
+    start(request: PreviewRequest): Promise<void>
+    stop(): Promise<void>
+    setVolume(volume: number): Promise<void>
+    onPcm(cb: (pcm: Uint8Array) => void): () => void
+    onStatus(cb: (s: PreviewStatus) => void): () => void
   }
   remote: {
     onCommand(cb: (cmd: RemoteCommand) => void): () => void
