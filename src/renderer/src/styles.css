@@ -2314,6 +2314,87 @@ textarea {
   color: var(--text);
   border-color: var(--text-faint);
 }
+/* Unsaved drafts: dashed, un-notched-looking versions of the bookmark card. */
+.bookmark-draft,
+.bookmark-draft::after {
+  background: var(--surface);
+  border-style: dashed;
+}
+.bookmark-draft:hover,
+.bookmark-draft:hover::after {
+  background: var(--surface-over);
+}
+.bookmark-draft.editing,
+.bookmark-draft.editing::after {
+  border-color: var(--ornament);
+}
+
+/* ---- Scene builder workspace ---- */
+.builder-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.builder-header .pane-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.builder-draft-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ornament);
+  border: 1px dashed var(--ornament);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.builder-body {
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+.builder-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-4);
+  max-width: 460px;
+}
+.builder-label {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.builder-name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+.builder-track-list {
+  margin: 0 0 var(--space-4);
+  padding-left: 24px;
+}
+.builder-track-list li {
+  padding: 4px 0;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+.builder-track-list li.start-track {
+  color: var(--text);
+}
+.builder-start-mark {
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 0 4px;
+}
 
 /* ---- Grimoire margin: sigil-ringed soundboard triggers + the wax-seal duck ---- */
 .sfx.sigil .sfx-trigger {

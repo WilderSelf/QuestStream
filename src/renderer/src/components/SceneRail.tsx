@@ -41,7 +41,13 @@ export function SceneRail(): JSX.Element {
   const collapsed = useStore((s) => s.playlistsCollapsed)
   const toggleCollapsed = useStore((s) => s.togglePlaylistsCollapsed)
   const railWidth = useStore((s) => s.railWidth)
-  const setSaveScenePromptOpen = useStore((s) => s.setSaveScenePromptOpen)
+  const sceneDrafts = useStore((s) => s.sceneDrafts)
+  const builderKey = useStore((s) => s.builderKey)
+  const openBuilder = useStore((s) => s.openBuilder)
+
+  // Unsaved new-scene drafts get their own bookmark cards; scene-keyed drafts
+  // decorate the scene's card instead (a "draft" chip).
+  const newDraftKeys = Object.keys(sceneDrafts).filter((k) => k.startsWith('new:'))
 
   function recallSceneConfirmed(id: string): void {
     const dirty = queue.length > 0 || ambience.length > 0
@@ -140,6 +146,7 @@ export function SceneRail(): JSX.Element {
             <div className="bookmark-meta">
               {loadedSceneId === sc.id ? 'playing · ' : ''}
               {sc.songIds.length} tracks · {sc.ambience.length} layers
+              {sceneDrafts[sc.id] ? ' · unsaved edits' : ''}
             </div>
             {i < 8 && (
               <span className="bookmark-key" aria-hidden="true">
@@ -147,6 +154,17 @@ export function SceneRail(): JSX.Element {
               </span>
             )}
             <span className="bookmark-actions">
+              <button
+                className="remove-btn"
+                title={sceneDrafts[sc.id] ? 'Continue editing (unsaved draft)' : 'Edit scene'}
+                aria-label={`Edit scene ${sc.name}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openBuilder(sc.id)
+                }}
+              >
+                <Icon name="edit" size={14} />
+              </button>
               <button
                 className="remove-btn"
                 title="Export pack"
@@ -166,10 +184,24 @@ export function SceneRail(): JSX.Element {
             </span>
           </div>
         ))}
+        {newDraftKeys.map((key) => (
+          <div
+            key={key}
+            className={`bookmark bookmark-draft ${builderKey === key ? 'editing' : ''}`}
+            title="Continue editing this draft"
+            {...rowActivation(() => openBuilder(key))}
+          >
+            <div className="bookmark-name">{sceneDrafts[key].name.trim() || 'Untitled Scene'}</div>
+            <div className="bookmark-meta">
+              draft · {sceneDrafts[key].songIds.length} tracks · {sceneDrafts[key].ambience.length}{' '}
+              layers
+            </div>
+          </div>
+        ))}
         <button
           className="bookmark-add"
-          title="Save the current mix as a new scene"
-          onClick={() => setSaveScenePromptOpen(true)}
+          title="Build a new scene"
+          onClick={() => openBuilder()}
         >
           <Icon name="plus" size={14} /> New scene
         </button>
