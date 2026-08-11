@@ -92,6 +92,13 @@ const api: RendererApi = {
     enable: (on) => ipcRenderer.invoke(IPC.monitorEnable, on),
     onPcm: (cb) => subscribe(IPC.monitorPcm, cb)
   },
+  preview: {
+    start: (request) => ipcRenderer.invoke(IPC.previewStart, request),
+    stop: () => ipcRenderer.invoke(IPC.previewStop),
+    setVolume: (volume) => ipcRenderer.invoke(IPC.previewSetVolume, volume),
+    onPcm: (cb) => subscribe(IPC.previewPcm, cb),
+    onStatus: (cb) => subscribe(IPC.previewStatus, cb)
+  },
   remote: {
     onCommand: (cb) => subscribe(IPC.remoteCommand, cb),
     pushState: (state) => ipcRenderer.send(IPC.remotePushState, state),

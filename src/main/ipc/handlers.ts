@@ -7,6 +7,7 @@ import { makeContext } from './context'
 import { registerLibraryIpc } from './library'
 import { registerPlaybackIpc } from './playback'
 import { registerRemoteIpc } from './remote'
+import { registerPreviewIpc } from './preview'
 
 interface Deps {
   store: LibraryStore
@@ -37,6 +38,7 @@ export function registerIpc(deps: Deps): { dispose: () => void } {
   registerLibraryIpc(ctx)
   registerPlaybackIpc(ctx)
   const remote = registerRemoteIpc(ctx)
+  const preview = registerPreviewIpc(ctx)
 
   // Coverage guard: every renderer→main channel must be wired exactly once. Catches a
   // dropped/duplicated handler at launch if the IPC layer is refactored.
@@ -46,5 +48,10 @@ export function registerIpc(deps: Deps): { dispose: () => void } {
     throw new Error(`IPC channel coverage mismatch — missing: [${missing}] extra: [${extra}]`)
   }
 
-  return { dispose: () => remote.dispose() }
+  return {
+    dispose: () => {
+      preview.dispose()
+      remote.dispose()
+    }
+  }
 }
