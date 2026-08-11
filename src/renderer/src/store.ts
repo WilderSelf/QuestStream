@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { localMonitor } from './monitor'
+import { previewPlayer } from './preview-player'
 import type {
   LibrarySnapshot,
   Song,
@@ -13,7 +14,9 @@ import type {
   RemoteCommand,
   RemoteState,
   ItemKind,
-  DesktopStatus
+  DesktopStatus,
+  PreviewRequest,
+  PreviewStatus
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey } from '@shared/keymap'
@@ -311,6 +314,8 @@ interface State {
   // Scene drafts (grimoire): editable working copies, keyed by sceneId or 'new:<n>'.
   // Editing a draft never touches the live mix; persisted so drafts survive restarts.
   sceneDrafts: Record<string, SceneDraft>
+  // Preview bus (GM-only audition): last status heartbeat, null = nothing previewing.
+  previewStatus: PreviewStatus | null
 
   // actions
   init: () => Promise<void>
@@ -319,6 +324,8 @@ interface State {
   editDraft: (key: string, action: DraftAction) => void
   discardDraft: (key: string) => void
   saveDraft: (key: string) => Promise<void>
+  startPreview: (request: PreviewRequest) => Promise<void>
+  stopPreview: () => Promise<void>
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -519,6 +526,7 @@ export const useStore = create<State>((set, get) => ({
   remoteActive: false,
   workspace: 'library',
   sceneDrafts: readLocal('qs.sceneDrafts', (raw) => JSON.parse(raw) as Record<string, SceneDraft>, {}),
+  previewStatus: null,
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -554,6 +562,20 @@ export const useStore = create<State>((set, get) => ({
     if (!draft) return
     await window.api.scenes.save(draftToSceneInput(draft))
     get().discardDraft(key) // saved: the scene document is now the source of truth
+  },
+
+  // ---- preview bus (GM-only audition; never the live mix) ----
+  startPreview: async (request) => {
+    // Bring the local output up BEFORE asking main to start, so the ~250ms worklet
+    // prime overlaps the yt-dlp/ffmpeg spin-up instead of following it.
+    previewPlayer.setVolume(get().monitorVolume)
+    void previewPlayer.setSinkId(get().outputDeviceId)
+    void previewPlayer.start()
+    await window.api.preview.start(request)
+  },
+  stopPreview: async () => {
+    await window.api.preview.stop()
+    previewPlayer.stop()
   },
 
   init: async () => {
@@ -604,6 +626,12 @@ export const useStore = create<State>((set, get) => ({
     })
     window.api.monitor.onPcm((pcm) => {
       if (get().monitorEnabled) localMonitor.feed(pcm)
+    })
+    window.api.preview.onPcm((pcm) => previewPlayer.feed(pcm))
+    window.api.preview.onStatus((s: PreviewStatus) => {
+      set({ previewStatus: s })
+      // Natural end (or a main-side stop): release the audio device + context.
+      if (!s.playing) previewPlayer.stop()
     })
     window.api.app.onNotice((n) => {
       if (n.code === 'playback-failed') get().notePlaybackFailure()
