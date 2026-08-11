@@ -131,11 +131,13 @@ export interface LibrarySnapshot {
 
 export interface ImportProgress {
   url: string
-  status: 'resolving' | 'importing' | 'done' | 'error'
+  status: 'resolving' | 'importing' | 'done' | 'duplicate' | 'error'
   message?: string
   total?: number
   completed?: number
   addedSongIds?: string[]
+  /** With status 'duplicate': the library song this source already imported as. */
+  duplicateOfSongId?: string
 }
 
 // ---- Discord ----

@@ -13,7 +13,7 @@ export function TopBar(): JSX.Element {
   const openSettings = useStore((s) => s.openSettings)
   const remoteActive = useStore((s) => s.remoteActive)
   const showNotice = useStore((s) => s.showNotice)
-  const openImportWizard = useStore((s) => s.openImportWizard)
+  const setWorkspace = useStore((s) => s.setWorkspace)
 
   const inChannel = !!bot.activeChannelId
 
@@ -53,7 +53,7 @@ export function TopBar(): JSX.Element {
       <button
         className="primary icon-text add-audio"
         title="Import audio from a link or local files"
-        onClick={() => openImportWizard()}
+        onClick={() => setWorkspace('import')}
       >
         <Icon name="plus" size={16} /> Add audio
       </button>

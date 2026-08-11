@@ -22,6 +22,7 @@ import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
 import { resolveKey, scenePadTriggerId } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
 import { buildRecallPlan, type RecallOptions, type RecallPlan } from '@shared/scene-recall'
+import { reduceImportRows, type ImportRow } from '@shared/import-flow'
 import { DEFAULT_CROSSFADE_MS } from '@shared/num'
 import {
   newDraft,
@@ -55,7 +56,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
 /** Center workspaces of the grimoire shell; the union grows as phases land. */
-export type Workspace = 'library' | 'builder' | 'scene'
+export type Workspace = 'library' | 'builder' | 'scene' | 'import'
 
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
@@ -300,9 +301,6 @@ interface State {
   theme: string // active theme id ('nord-refined' default, a built-in id, or a user-theme file stem)
   themeSwatches: SwatchTable // active theme's tag palette, read from the --tag-* CSS tokens
   userThemes: string[] // user-authored theme stems discovered in userData/themes
-  importWizardOpen: boolean
-  importWizardUrl: string // URL to pre-fill the wizard with (from the top-bar quick-add)
-  importWizardSource: 'url' | 'files' // which source the wizard opens on
 
   ambience: AmbienceSlot[]
   ambienceProgress: Record<string, { positionSec: number; durationSec: number }> // per-slot, from the heartbeat
@@ -322,6 +320,8 @@ interface State {
   builderKey: string | null
   // The scene open on the scene page; null = closed.
   scenePageId: string | null
+  // Import workbench: arriving-items rows, a pure fold of importProgress events.
+  importRows: ImportRow[]
 
   // actions
   init: () => Promise<void>
@@ -359,8 +359,6 @@ interface State {
   setRailWidth: (px: number) => void
   toggleArtistView: () => void
   togglePlaylistsCollapsed: () => void
-  setImportWizardOpen: (open: boolean) => void
-  openImportWizard: (opts?: { url?: string; source?: 'url' | 'files' }) => void
 
   addAmbience: (song: Song) => void
   removeAmbience: (slotId: string) => void
@@ -521,9 +519,6 @@ export const useStore = create<State>((set, get) => ({
     },
     {}
   ),
-  importWizardOpen: false,
-  importWizardUrl: '',
-  importWizardSource: 'url',
   ambience: [],
   ambienceProgress: {},
   musicVolume: 1,
@@ -541,6 +536,7 @@ export const useStore = create<State>((set, get) => ({
   previewStatus: null,
   builderKey: null,
   scenePageId: null,
+  importRows: [],
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -618,7 +614,7 @@ export const useStore = create<State>((set, get) => ({
 
     window.api.library.onChanged((snap) => set({ library: snap }))
     window.api.library.onImportProgress((p) => {
-      set({ importStatus: p })
+      set({ importStatus: p, importRows: reduceImportRows(get().importRows, p) })
       if (p.status === 'done' || p.status === 'error') {
         setTimeout(() => {
           if (get().importStatus === p) set({ importStatus: null })
@@ -800,17 +796,6 @@ export const useStore = create<State>((set, get) => ({
       }
       return { playlistsCollapsed: v }
     }),
-  // Always normalize the prefill fields: opening via this setter means "no prefill", closing
-  // clears them. openImportWizard is the prefill-aware opener (it sets the fields explicitly).
-  setImportWizardOpen: (open) =>
-    set({ importWizardOpen: open, importWizardUrl: '', importWizardSource: 'url' }),
-  openImportWizard: (opts) =>
-    set({
-      importWizardOpen: true,
-      importWizardUrl: opts?.url ?? '',
-      importWizardSource: opts?.source ?? 'url'
-    }),
-
   showNotice: (text, kind = 'info', persistent = false) => {
     // Blocking conditions become a sticky banner (its own slot, so a later transient
     // notice can't clobber it) and never auto-dismiss — best practice for errors the

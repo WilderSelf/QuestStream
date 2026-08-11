@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, webFrame } from 'electron'
+import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron'
 import { IPC, type RendererApi } from '../shared/ipc'
 
 function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -12,8 +12,18 @@ const api: RendererApi = {
     get: () => ipcRenderer.invoke(IPC.libraryGet),
     addUrl: (url, opts) => ipcRenderer.invoke(IPC.libraryAddUrl, url, opts),
     addFiles: (opts) => ipcRenderer.invoke(IPC.libraryAddFiles, opts),
+    addFilePaths: (paths, opts) => ipcRenderer.invoke(IPC.libraryAddFilePaths, paths, opts),
+    // Electron 33: File.path is gone — dropped files resolve to OS paths ONLY here
+    // in the preload, via webUtils.getPathForFile.
+    addDroppedFiles: (files, opts) =>
+      ipcRenderer.invoke(
+        IPC.libraryAddFilePaths,
+        files.map((f) => webUtils.getPathForFile(f)),
+        opts
+      ),
     setEffect: (songId, effect) => ipcRenderer.invoke(IPC.librarySetEffect, songId, effect),
     retag: (songId, payload) => ipcRenderer.invoke(IPC.libraryRetag, songId, payload),
+    retagMany: (songIds, payload) => ipcRenderer.invoke(IPC.libraryRetagMany, songIds, payload),
     deleteSong: (songId) => ipcRenderer.invoke(IPC.libraryDeleteSong, songId),
     onChanged: (cb) => subscribe(IPC.libraryChanged, cb),
     onImportProgress: (cb) => subscribe(IPC.importProgress, cb)

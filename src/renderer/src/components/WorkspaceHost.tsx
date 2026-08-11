@@ -2,6 +2,7 @@ import { useStore } from '../store'
 import { LibraryPane } from './LibraryPane'
 import { SceneBuilder } from './SceneBuilder'
 import { ScenePage } from './ScenePage'
+import { ImportWorkbench } from './ImportWorkbench'
 
 /**
  * The center region of the grimoire shell. Renders whichever workspace is open;
@@ -21,6 +22,8 @@ export function WorkspaceHost(): JSX.Element {
       // A page whose scene was deleted falls back to the library.
       if (scenePageId) return <ScenePage />
       return <LibraryPane />
+    case 'import':
+      return <ImportWorkbench />
     case 'library':
     default:
       return <LibraryPane />

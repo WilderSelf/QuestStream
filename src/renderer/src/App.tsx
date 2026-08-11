@@ -25,7 +25,6 @@ import {
   SongEditModal,
   DisclaimerModal
 } from './components/Modals'
-import { ImportWizardModal } from './components/ImportWizard'
 import { AlertBanner } from './components/AlertBanner'
 import { DesktopPrompt } from './components/DesktopPrompt'
 import { UpdateBanner } from './components/UpdateBanner'
@@ -191,7 +190,6 @@ export function App(): JSX.Element {
       <SavePlaylistModal />
       <SaveSceneModal />
       <SongEditModal />
-      <ImportWizardModal />
       <DisclaimerModal />
       <Toast />
     </DndContext>

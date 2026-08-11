@@ -14,7 +14,7 @@ import { COOKIE_BROWSERS } from '@shared/types'
 import { KIND_ORDER, KIND_LABELS } from '@shared/taxonomy'
 import { useStore, BUILTIN_THEMES, type SettingsTab } from '../store'
 import { Modal } from './Modal'
-import { TagPicker } from './ImportWizard'
+import { TagPicker } from './TagPicker'
 import { SegmentedControl } from './SegmentedControl'
 import { Icon, type IconName } from './Icon'
 
