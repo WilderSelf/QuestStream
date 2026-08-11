@@ -54,7 +54,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
 /** Center workspaces of the grimoire shell; the union grows as phases land. */
-export type Workspace = 'library' | 'builder'
+export type Workspace = 'library' | 'builder' | 'scene'
 
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
@@ -319,6 +319,8 @@ interface State {
   previewStatus: PreviewStatus | null
   // The draft open in the scene builder (a sceneId or 'new:<n>' key); null = closed.
   builderKey: string | null
+  // The scene open on the scene page; null = closed.
+  scenePageId: string | null
 
   // actions
   init: () => Promise<void>
@@ -331,6 +333,8 @@ interface State {
   stopPreview: () => Promise<void>
   openBuilder: (sceneIdOrKey?: string) => void
   closeBuilder: () => void
+  openScenePage: (sceneId: string) => void
+  closeScenePage: () => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -534,6 +538,7 @@ export const useStore = create<State>((set, get) => ({
   sceneDrafts: readLocal('qs.sceneDrafts', (raw) => JSON.parse(raw) as Record<string, SceneDraft>, {}),
   previewStatus: null,
   builderKey: null,
+  scenePageId: null,
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -593,6 +598,13 @@ export const useStore = create<State>((set, get) => ({
   closeBuilder: () => {
     void get().stopPreview()
     set({ builderKey: null, workspace: 'library' })
+  },
+
+  // ---- scene page: opening a scene READS it; no audio side effects ----
+  openScenePage: (sceneId) => set({ scenePageId: sceneId, workspace: 'scene' }),
+  closeScenePage: () => {
+    void get().stopPreview()
+    set({ scenePageId: null, workspace: 'library' })
   },
 
   init: async () => {
