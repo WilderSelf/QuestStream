@@ -2534,6 +2534,102 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.builder-columns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-3);
+}
+.builder-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.builder-actions .btn.active {
+  color: var(--primary-hi);
+  border-color: var(--primary);
+}
+.preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ornament);
+  border: 1px solid var(--ornament);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.drop-target {
+  outline: 2px dashed var(--primary);
+  outline-offset: 4px;
+  border-radius: var(--radius);
+}
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-3);
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+.palette-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  color: var(--text-faint);
+}
+.palette-search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: var(--text-sm);
+  min-height: calc(var(--hit-target-min) - 10px);
+}
+.palette-search input:focus {
+  outline: none;
+}
+.palette-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.palette-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  min-height: var(--hit-target-min);
+  cursor: grab;
+}
+.palette-row.dragging {
+  opacity: 0.5;
+}
+.palette-row .title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.palette-add {
+  opacity: 0;
+}
+.palette-row:hover .palette-add,
+.palette-row:focus-within .palette-add {
+  opacity: 1;
+}
+
 .builder-note textarea {
   background: var(--surface-raised);
   color: var(--text);

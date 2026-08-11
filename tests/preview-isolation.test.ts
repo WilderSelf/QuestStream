@@ -3,7 +3,7 @@
 // into the live send path, these greps go red before any human hears the bug.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -26,4 +26,21 @@ test('preview sources never reference the Discord voice pipeline', () => {
     }
   }
   assert.ok(checked >= 1, 'no preview sources found — paths in PREVIEW_SOURCES are stale')
+})
+
+// The scene builder edits drafts and auditions through the preview bus ONLY.
+// Reaching for the live player/ambience IPC from builder code is the exact bug
+// class the redesign exists to prevent (Commander's Intent #1).
+const BUILDER_COMPONENT = /^(SceneBuilder|Draft|LibraryPalette)/
+
+test('scene-builder components never call the live player or ambience IPC', () => {
+  const dir = join(ROOT, 'src/renderer/src/components')
+  const files = readdirSync(dir).filter((f) => BUILDER_COMPONENT.test(f))
+  assert.ok(files.length >= 4, `expected the builder component family, found: ${files}`)
+  for (const f of files) {
+    const src = readFileSync(join(dir, f), 'utf8')
+    for (const banned of ['window.api.player', 'window.api.ambience']) {
+      assert.ok(!src.includes(banned), `${f} must not use ${banned}`)
+    }
+  }
 })
