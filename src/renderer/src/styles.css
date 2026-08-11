@@ -2925,6 +2925,31 @@ textarea {
   font-size: var(--text-xs);
   color: var(--text-faint);
   flex-shrink: 0;
+  /* The action hint earns attention only when its row is the one Enter acts on. */
+  opacity: 0;
+}
+.seeker-hit.selected .seeker-hit-sub,
+.seeker-hit:hover .seeker-hit-sub {
+  opacity: 1;
+  color: var(--ornament);
+}
+.seeker-hit-detail {
+  color: var(--text-faint);
+}
+.seeker-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+.seeker-footer kbd {
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
 }
 
 /* ---- Tag triage workspace ---- */
@@ -3077,15 +3102,77 @@ textarea {
   padding: var(--space-4);
   max-width: 820px;
 }
+.workbench-head {
+  margin-bottom: var(--space-4);
+}
+.workbench-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ornament);
+  margin-bottom: 2px;
+}
+.workbench-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+}
 .workbench-caption {
   font-size: var(--text-sm);
   color: var(--text-dim);
   margin-bottom: var(--space-3);
 }
+.workbench-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.workbench-link-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+}
+.workbench-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.workbench-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.workbench-section-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.workbench-section-action {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.workbench-footnote {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  margin-top: var(--space-2);
+}
 .workbench-url-row {
   display: flex;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
 }
 .workbench-url-row input {
   flex: 1;

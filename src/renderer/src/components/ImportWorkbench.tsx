@@ -195,24 +195,63 @@ export function ImportWorkbench(): JSX.Element {
         </span>
       </div>
       <div className="pane-body workbench-body">
-        <div className="workbench-caption">
-          Items land in your library automatically — loudness-matched at playback.
+        <div className="workbench-head">
+          <div className="workbench-eyebrow">library · import</div>
+          <h1 className="workbench-title">Import audio</h1>
+          <div className="workbench-caption">
+            Drop files or paste a link — importing never opens a dialog and never stops the
+            music. Items land in your library automatically, loudness-matched at playback.
+          </div>
         </div>
 
-        <div className="workbench-url-row">
-          <input
-            type="text"
-            value={url}
-            placeholder="Paste a link (YouTube / SoundCloud / …) — a playlist imports all its tracks"
-            aria-label="Audio URL"
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void importUrl()
+        <div className="workbench-inputs">
+          <div
+            className={`workbench-drop ${dragOver ? 'drop-target' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={(e) => {
+              e.preventDefault()
+              dragDepth.current += 1
+              setDragOver(true)
             }}
-          />
-          <button className="btn primary" disabled={!url.trim()} onClick={() => void importUrl()}>
-            <Icon name="download" size={14} /> Import
-          </button>
+            onDragLeave={() => {
+              dragDepth.current -= 1
+              if (dragDepth.current <= 0) setDragOver(false)
+            }}
+            onDrop={(e) => void onDrop(e)}
+          >
+            <Icon name="upload" size={20} />
+            <div>
+              <b>Drop audio files here</b>
+              <div className="sub">
+                or{' '}
+                <button className="workbench-choose" onClick={() => void chooseFiles()}>
+                  browse…
+                </button>{' '}
+                — MP3, FLAC, OGG, WAV
+              </div>
+            </div>
+          </div>
+          <div className="workbench-link-card">
+            <div className="builder-label">Paste a link</div>
+            <div className="workbench-url-row">
+              <input
+                type="text"
+                value={url}
+                placeholder="https://…"
+                aria-label="Audio URL"
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void importUrl()
+                }}
+              />
+              <button className="btn primary" disabled={!url.trim()} onClick={() => void importUrl()}>
+                <Icon name="download" size={14} /> Import
+              </button>
+            </div>
+            <div className="sub">
+              YouTube · SoundCloud · Bandcamp — a playlist brings every track
+            </div>
+          </div>
         </div>
         {urlError && (
           <div className="wizard-error" role="alert">
@@ -228,29 +267,6 @@ export function ImportWorkbench(): JSX.Element {
             </div>
           </div>
         )}
-
-        <div
-          className={`workbench-drop ${dragOver ? 'drop-target' : ''}`}
-          onDragOver={(e) => e.preventDefault()}
-          onDragEnter={(e) => {
-            e.preventDefault()
-            dragDepth.current += 1
-            setDragOver(true)
-          }}
-          onDragLeave={() => {
-            dragDepth.current -= 1
-            if (dragDepth.current <= 0) setDragOver(false)
-          }}
-          onDrop={(e) => void onDrop(e)}
-        >
-          <Icon name="upload" size={20} />
-          <div>
-            Drop audio files here, or{' '}
-            <button className="workbench-choose" onClick={() => void chooseFiles()}>
-              choose files…
-            </button>
-          </div>
-        </div>
 
         <div className="workbench-opts">
           <div className="draft-control">
@@ -297,11 +313,16 @@ export function ImportWorkbench(): JSX.Element {
           )
         })()}
 
-        <div className="section-label">
-          <Icon name="download" size={13} /> Arriving · {importRows.length}
+        <div className="workbench-section-head">
+          <h2 className="workbench-section-title">Importing now</h2>
+          <span className="workbench-section-meta">
+            {importRows.length === 0
+              ? 'nothing arriving'
+              : `${importRows.length} source${importRows.length === 1 ? '' : 's'}`}
+          </span>
         </div>
         {importRows.length === 0 ? (
-          <div className="muted small">Nothing arriving — paste a link or drop files above.</div>
+          <div className="muted small">Paste a link or drop files above.</div>
         ) : (
           <div className="workbench-table">
             {importRows.map((r, i) => (
@@ -315,35 +336,53 @@ export function ImportWorkbench(): JSX.Element {
           </div>
         )}
 
-        <div className="section-label">
-          <Icon name="inbox" size={13} /> Untagged · {inbox.length}
+        <div className="workbench-section-head">
+          <h2 className="workbench-section-title">Untagged</h2>
+          <span className="workbench-section-meta">
+            {inbox.length === 0 ? 'all clear' : `${inbox.length} waiting`}
+          </span>
+          {inbox.length > 0 && (
+            <button
+              className="btn workbench-section-action"
+              title="Audition each untagged item and tag as you listen"
+              onClick={() => startTriage(inbox.map((x) => x.id))}
+            >
+              <Icon name="headphones" size={13} /> Tag with preview →
+            </button>
+          )}
         </div>
         {inbox.length === 0 ? (
           <div className="muted small">Everything in your library has at least one tag.</div>
         ) : (
-          <div className="workbench-table">
-            {inbox.map((s) => (
-              <div key={s.id} className="row workbench-row">
-                <span className="workbench-row-icon" aria-hidden="true">
-                  {KIND_GLYPHS[(s.kind ?? 'track') as ItemKind]}
-                </span>
-                <div className="title">
-                  <span className="song-title">{s.title}</span>
+          <>
+            <div className="workbench-table">
+              {inbox.map((s) => (
+                <div key={s.id} className="row workbench-row">
+                  <span className="workbench-row-icon" aria-hidden="true">
+                    {KIND_GLYPHS[(s.kind ?? 'track') as ItemKind]}
+                  </span>
+                  <div className="title">
+                    <span className="song-title">{s.title}</span>
+                  </div>
+                  <ListenButton song={s} listeningId={listeningId} setListeningId={setListeningId} />
+                  <button
+                    className="btn"
+                    title="Tag with preview, starting from this item"
+                    onClick={() => {
+                      const at = inbox.findIndex((x) => x.id === s.id)
+                      startTriage(inbox.slice(Math.max(0, at)).map((x) => x.id))
+                    }}
+                  >
+                    Tag →
+                  </button>
                 </div>
-                <ListenButton song={s} listeningId={listeningId} setListeningId={setListeningId} />
-                <button
-                  className="btn"
-                  title="Tag with preview — audition each item and tag as you listen"
-                  onClick={() => {
-                    const at = inbox.findIndex((x) => x.id === s.id)
-                    startTriage(inbox.slice(Math.max(0, at)).map((x) => x.id))
-                  }}
-                >
-                  Tag with preview →
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className="workbench-footnote">
+              Untagged audio still plays and still turns up in title search — tags just make it
+              faster to find mid-session.
+            </div>
+          </>
         )}
       </div>
     </div>
