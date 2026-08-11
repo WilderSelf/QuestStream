@@ -182,3 +182,99 @@ test('validatePack clamps volumes and defaults fields', () => {
   assert.equal(pack.ambience[0].volume, 0)
   assert.equal(pack.songs[0].sourceType, 'youtube')
 })
+
+// ---- Scene-document fields in packs (grimoire Phase 2) ----
+
+test('scene-document fields round-trip through a pack; lastPlayedAt never travels', () => {
+  const a = newStore()
+  const s1 = a.addSong(track({ videoId: 'v1' }))
+  const sfx = a.addSong(track({ videoId: 'vx', title: 'Door', kind: 'sfx' }))
+  const scene = a.saveScene({
+    name: 'Doc',
+    songIds: [s1.id],
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: [],
+    note: 'The throne remembers.',
+    pads: [{ songId: sfx.id, hotkey: '1', gain: 0.7, duckUnderMusic: true }],
+    endOfList: 'loop-last',
+    crossfadeMs: 4000,
+    lastPlayedAt: 999
+  })
+
+  const pack = buildScenePack(a.snapshot(), scene.id)!
+  assert.equal(pack.note, 'The throne remembers.')
+  assert.equal(pack.endOfList, 'loop-last')
+  assert.equal(pack.crossfadeMs, 4000)
+  assert.deepEqual(pack.pads, [{ songId: 'vx', hotkey: '1', gain: 0.7, duckUnderMusic: true }])
+  assert.ok(!('lastPlayedAt' in pack), 'local metadata never exported')
+
+  const b = newStore()
+  importPack(b, validatePack(JSON.parse(JSON.stringify(pack))))
+  const imported = b.snapshot().scenes[0]
+  assert.equal(imported.note, 'The throne remembers.')
+  assert.equal(imported.endOfList, 'loop-last')
+  assert.equal(imported.crossfadeMs, 4000)
+  assert.equal(imported.pads?.length, 1)
+  assert.equal(imported.pads?.[0].hotkey, '1')
+  // pad songId re-keyed to the importer's internal id
+  const bDoor = b.snapshot().songs.find((s) => s.videoId === 'vx')!
+  assert.equal(imported.pads?.[0].songId, bDoor.id)
+  assert.ok(!('lastPlayedAt' in imported), 'local metadata never imported')
+})
+
+test('hostile scene-document fields are capped, clamped, or dropped', () => {
+  const base = {
+    kind: 'scene',
+    version: 1,
+    name: 'Hostile',
+    songIds: ['v1'],
+    musicVolume: 0.5,
+    currentIndex: 0,
+    ambience: [],
+    songs: [{ videoId: 'v1', url: 'https://x/1' }]
+  }
+  const big = validatePack({
+    ...base,
+    note: 'n'.repeat(100_000),
+    pads: Array.from({ length: 1000 }, (_, i) => ({ songId: `v1`, hotkey: `${i}` })),
+    endOfList: '__proto__',
+    crossfadeMs: 9_999_999,
+    lastPlayedAt: 123
+  })
+  assert.equal(big.kind, 'scene')
+  if (big.kind !== 'scene') return
+  assert.equal(big.note!.length, 4096, 'note truncated at the cap')
+  assert.equal(big.pads!.length, 64, 'pads capped')
+  assert.ok(!('endOfList' in big), 'unknown endOfList value dropped')
+  assert.equal(big.crossfadeMs, 20000, 'crossfade clamped')
+  assert.ok(!('lastPlayedAt' in big), 'local metadata dropped from untrusted input')
+
+  const junkPads = validatePack({
+    ...base,
+    pads: [{ songId: 42 }, { songId: 'v1', gain: 7, hotkey: 9 }, 'garbage', null]
+  })
+  if (junkPads.kind !== 'scene') return
+  assert.equal(junkPads.pads!.length, 1, 'non-object / non-string-songId pads dropped')
+  assert.equal(junkPads.pads![0].gain, 1, 'gain clamped to [0,1]')
+  assert.equal(junkPads.pads![0].hotkey, undefined, 'non-string hotkey dropped')
+})
+
+test('legacy packs without document fields validate and import unchanged', () => {
+  const legacy = validatePack({
+    kind: 'scene',
+    version: 1,
+    name: 'Old',
+    songIds: ['v1'],
+    musicVolume: 1,
+    currentIndex: 0,
+    ambience: [],
+    songs: [{ videoId: 'v1', url: 'https://x/1' }]
+  })
+  if (legacy.kind !== 'scene') return
+  assert.ok(!('note' in legacy))
+  assert.ok(!('pads' in legacy))
+  const b = newStore()
+  importPack(b, legacy)
+  assert.ok(!('note' in b.snapshot().scenes[0]))
+})

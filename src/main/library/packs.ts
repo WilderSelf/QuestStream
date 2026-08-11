@@ -5,7 +5,15 @@
 // `videoId` so a pack re-resolves cleanly on another machine (local-source songs
 // import as placeholders the recipient re-links, since their media path is foreign).
 
-import type { AmbienceMode, ItemKind, LibrarySnapshot, SceneAmbience, SourceType } from '../../shared/types'
+import type {
+  AmbienceMode,
+  EndOfListPolicy,
+  ItemKind,
+  LibrarySnapshot,
+  SceneAmbience,
+  ScenePad,
+  SourceType
+} from '../../shared/types'
 import { clamp01 } from '../../shared/num'
 import type { LibraryStore } from './store'
 
@@ -34,6 +42,11 @@ export interface ScenePack {
   currentIndex: number
   ambience: SceneAmbience[] // songId / pool are videoIds in a pack
   songs: PackSong[]
+  // Scene-document fields (optional; lastPlayedAt is local metadata and never travels).
+  note?: string
+  pads?: ScenePad[] // songId is a videoId in a pack
+  endOfList?: EndOfListPolicy
+  crossfadeMs?: number
 }
 
 export interface PlaylistPack {
@@ -77,12 +90,16 @@ export function buildScenePack(snap: LibrarySnapshot, sceneId: string): ScenePac
   if (!scene) return null
   const referenced = [
     ...scene.songIds,
-    ...scene.ambience.flatMap((a) => [a.songId, ...(a.pool ?? [])])
+    ...scene.ambience.flatMap((a) => [a.songId, ...(a.pool ?? [])]),
+    ...(scene.pads ?? []).map((p) => p.songId)
   ]
   const meta = songMetaByVideoId(snap, referenced)
   const songById = new Map(snap.songs.map((s) => [s.id, s]))
   const toVid = (id: string): string | undefined => songById.get(id)?.videoId
   const vids = (ids: string[]): string[] => ids.map(toVid).filter((v): v is string => !!v)
+  const pads = (scene.pads ?? [])
+    .map((p) => ({ ...p, songId: toVid(p.songId) ?? '' }))
+    .filter((p) => p.songId)
   return {
     kind: 'scene',
     version: PACK_VERSION,
@@ -95,7 +112,12 @@ export function buildScenePack(snap: LibrarySnapshot, sceneId: string): ScenePac
       songId: toVid(a.songId) ?? '',
       pool: a.pool ? vids(a.pool) : undefined
     })),
-    songs: [...meta.values()]
+    songs: [...meta.values()],
+    // lastPlayedAt is deliberately absent: local metadata never travels in a pack.
+    ...(scene.note !== undefined ? { note: scene.note } : {}),
+    ...(pads.length > 0 ? { pads } : {}),
+    ...(scene.endOfList !== undefined ? { endOfList: scene.endOfList } : {}),
+    ...(scene.crossfadeMs !== undefined ? { crossfadeMs: scene.crossfadeMs } : {})
   }
 }
 
@@ -122,6 +144,10 @@ const MAX_PACK_AMBIENCE = 64 // ambience layers in a scene
 const MAX_PACK_POOL = 256 // random-pool entries per layer
 const MAX_PACK_TAGS = 32 // matches LibraryStore.normalizeTags
 const MAX_PACK_STR = 2048 // per-string field cap (titles/urls/names) — far above any real value
+const MAX_PACK_PADS = 64 // per-scene soundboard pads
+const MAX_PACK_NOTE = 4096 // GM marginalia cap
+const MAX_PACK_CROSSFADE_MS = 20000
+const MAX_PACK_HOTKEY = 32 // e.key values are short ('a', 'F5', 'ArrowUp')
 
 /** Coerce to a string and bound its length (an untrusted field could be multi-MB). */
 const clampStr = (v: unknown, fallback: string): string =>
@@ -184,6 +210,27 @@ export function validatePack(raw: unknown): Pack {
       maxIntervalSec: typeof a.maxIntervalSec === 'number' ? a.maxIntervalSec : undefined
     }))
     .filter((a) => a.songId)
+  // Scene-document fields — capped/clamped/whitelisted; lastPlayedAt is never read
+  // from untrusted input (local metadata).
+  const pads: ScenePad[] = Array.isArray(r.pads)
+    ? r.pads
+        .slice(0, MAX_PACK_PADS)
+        .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
+        .filter((p) => typeof p.songId === 'string' && p.songId !== '')
+        .map((p) => ({
+          songId: (p.songId as string).slice(0, MAX_PACK_STR),
+          ...(typeof p.hotkey === 'string' ? { hotkey: p.hotkey.slice(0, MAX_PACK_HOTKEY) } : {}),
+          gain: clampVol(p.gain ?? 1),
+          duckUnderMusic: p.duckUnderMusic === true
+        }))
+    : []
+  const eol = r.endOfList
+  const endOfList: EndOfListPolicy | undefined =
+    eol === 'stop' || eol === 'loop-list' || eol === 'loop-last' || eol === 'shuffle' ? eol : undefined
+  const crossfadeMs =
+    typeof r.crossfadeMs === 'number' && Number.isFinite(r.crossfadeMs)
+      ? Math.max(0, Math.min(MAX_PACK_CROSSFADE_MS, Math.floor(r.crossfadeMs)))
+      : undefined
   return {
     kind: 'scene',
     version: PACK_VERSION,
@@ -192,7 +239,11 @@ export function validatePack(raw: unknown): Pack {
     musicVolume: clampVol(r.musicVolume),
     currentIndex: typeof r.currentIndex === 'number' && r.currentIndex >= 0 ? Math.floor(r.currentIndex) : 0,
     ambience,
-    songs
+    songs,
+    ...(typeof r.note === 'string' && r.note ? { note: r.note.slice(0, MAX_PACK_NOTE) } : {}),
+    ...(pads.length > 0 ? { pads } : {}),
+    ...(endOfList !== undefined ? { endOfList } : {}),
+    ...(crossfadeMs !== undefined ? { crossfadeMs } : {})
   }
 }
 
@@ -232,12 +283,19 @@ export function importPack(store: LibraryStore, pack: Pack): { kind: Pack['kind'
   const ambience: SceneAmbience[] = pack.ambience
     .map((a) => ({ ...a, songId: vidToId.get(a.songId) ?? '', pool: a.pool ? ids(a.pool) : undefined }))
     .filter((a) => a.songId)
+  const pads: ScenePad[] = (pack.pads ?? [])
+    .map((p) => ({ ...p, songId: vidToId.get(p.songId) ?? '' }))
+    .filter((p) => p.songId)
   const scene = store.saveScene({
     name: pack.name,
     songIds: ids(pack.songIds),
     musicVolume: pack.musicVolume,
     currentIndex: pack.currentIndex,
-    ambience
+    ambience,
+    ...(pack.note !== undefined ? { note: pack.note } : {}),
+    ...(pads.length > 0 ? { pads } : {}),
+    ...(pack.endOfList !== undefined ? { endOfList: pack.endOfList } : {}),
+    ...(pack.crossfadeMs !== undefined ? { crossfadeMs: pack.crossfadeMs } : {})
   })
   return { kind: 'scene', id: scene.id, name: scene.name }
 }
