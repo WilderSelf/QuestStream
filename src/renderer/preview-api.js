@@ -42,7 +42,10 @@
     song('x1', 'ar3', 'al4', 'Sword Clash', 'sfx', ['category:combat'], 3),
     song('x2', 'ar3', 'al4', 'Fireball', 'sfx', ['category:magic'], 4),
     song('x3', 'ar3', 'al4', 'Wooden Door', 'sfx', ['category:door'], 2),
-    song('x4', 'ar3', 'al4', 'Dramatic Sting', 'sfx', ['category:sting'], 5)
+    song('x4', 'ar3', 'al4', 'Dramatic Sting', 'sfx', ['category:sting'], 5),
+    // Untagged arrivals so the workbench inbox + triage flows have real fodder.
+    song('u1', 'ar1', 'al1', 'March of the Iron Legion', 'track', [], 214),
+    song('u2', 'ar2', 'al3', 'Whispering Crypt', 'ambience', [], 187)
   ]
   const playlists = [
     { id: 'p1', name: 'Tavern Night', songIds: ['s1', 's5'], createdAt: now, updatedAt: now },
@@ -166,7 +169,65 @@
     },
     ambience: { play: ok, playRandom: ok, stop: ok, setVolume: ok, setPaused: ok, onStatus: noop },
     monitor: { enable: ok, onPcm: noop },
-    preview: { start: ok, stop: ok, setVolume: ok, onPcm: noop, onStatus: noop },
+    // Preview mock with synthetic audio: start() streams a decaying-sine PCM burst
+    // (so the triage waveform draws) plus advancing status heartbeats.
+    preview: (() => {
+      const pcmSubs = new Set()
+      const statusSubs = new Set()
+      let timers = []
+      let playing = null // { durationSec, positionSec }
+      const emitStatus = () => {
+        const s = playing
+          ? { playing: true, positionSec: playing.positionSec, durationSec: playing.durationSec }
+          : { playing: false, positionSec: 0, durationSec: 0 }
+        statusSubs.forEach((cb) => cb(s))
+      }
+      const stopAll = () => {
+        timers.forEach(clearTimeout)
+        timers = []
+        playing = null
+        emitStatus()
+      }
+      return {
+        start: (req) => {
+          timers.forEach(clearTimeout)
+          timers = []
+          const durationSec = req?.layers?.[0]?.song?.duration ?? 30
+          playing = { durationSec, positionSec: 0 }
+          emitStatus()
+          // ~2s of synthetic audio in 20 chunks, amplitude shaped per chunk.
+          for (let c = 0; c < 20; c++) {
+            timers.push(
+              setTimeout(() => {
+                const n = 9600 // 100ms of 48kHz stereo
+                const buf = new Int16Array(n)
+                const amp = 12000 * (0.35 + 0.65 * Math.abs(Math.sin(c * 0.7)))
+                for (let i = 0; i < n; i++) buf[i] = Math.sin(i * 0.05 + c) * amp
+                pcmSubs.forEach((cb) => cb(new Uint8Array(buf.buffer)))
+                if (playing) {
+                  playing.positionSec = Math.min(durationSec, playing.positionSec + 0.1)
+                  emitStatus()
+                }
+              }, 100 + c * 100)
+            )
+          }
+          return Promise.resolve()
+        },
+        stop: () => {
+          stopAll()
+          return Promise.resolve()
+        },
+        setVolume: ok,
+        onPcm: (cb) => {
+          pcmSubs.add(cb)
+          return () => pcmSubs.delete(cb)
+        },
+        onStatus: (cb) => {
+          statusSubs.add(cb)
+          return () => statusSubs.delete(cb)
+        }
+      }
+    })(),
     remote: {
       onCommand: noop,
       pushState: () => {},

@@ -23,6 +23,13 @@ import { resolveKey, scenePadTriggerId } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
 import { buildRecallPlan, type RecallOptions, type RecallPlan } from '@shared/scene-recall'
 import { reduceImportRows, type ImportRow } from '@shared/import-flow'
+import {
+  newTriage,
+  reduceTriage,
+  triageComplete,
+  type TriageAction,
+  type TriageState
+} from '@shared/triage'
 import { DEFAULT_CROSSFADE_MS } from '@shared/num'
 import {
   newDraft,
@@ -56,7 +63,7 @@ export type RepeatMode = 'off' | 'all' | 'one'
 /** Which section the Settings modal shows. Surfaced so the top-bar Remote button can open
  *  the modal straight to the Remote tab. */
 /** Center workspaces of the grimoire shell; the union grows as phases land. */
-export type Workspace = 'library' | 'builder' | 'scene' | 'import'
+export type Workspace = 'library' | 'builder' | 'scene' | 'import' | 'triage'
 
 export type SettingsTab = 'general' | 'display' | 'audio' | 'remote' | 'advanced'
 export interface Notice {
@@ -322,6 +329,11 @@ interface State {
   scenePageId: string | null
   // Import workbench: arriving-items rows, a pure fold of importProgress events.
   importRows: ImportRow[]
+  // Tag triage (audition-first tagging); null = not triaging.
+  triage: TriageState | null
+  // Mirrors of the triage tag input for the keymap (Enter-on-empty = save & next).
+  triageInputFocused: boolean
+  triageInputEmpty: boolean
 
   // actions
   init: () => Promise<void>
@@ -336,6 +348,11 @@ interface State {
   closeBuilder: () => void
   openScenePage: (sceneId: string) => void
   closeScenePage: () => void
+  startTriage: (songIds: string[]) => void
+  triageAct: (action: TriageAction) => void
+  triagePreviewToggle: () => void
+  exitTriage: () => void
+  setTriageInput: (focused: boolean, empty: boolean) => void
   setRemoteActive: (on: boolean) => void
   selectArtist: (id: string) => void
   selectAlbum: (id: string) => void
@@ -537,6 +554,9 @@ export const useStore = create<State>((set, get) => ({
   builderKey: null,
   scenePageId: null,
   importRows: [],
+  triage: null,
+  triageInputFocused: false,
+  triageInputEmpty: true,
 
   setRemoteActive: (on) => set({ remoteActive: on }),
   setWorkspace: (w) => set({ workspace: w }),
@@ -597,6 +617,56 @@ export const useStore = create<State>((set, get) => ({
     void get().stopPreview()
     set({ builderKey: null, workspace: 'library' })
   },
+
+  // ---- tag triage (audition-first tagging over the preview bus) ----
+  startTriage: (songIds) => {
+    if (songIds.length === 0) return
+    const first = get().library.songs.find((s) => s.id === songIds[0])
+    set({
+      triage: newTriage(songIds, { kind: first?.kind ?? 'track' }),
+      workspace: 'triage',
+      triageInputFocused: false,
+      triageInputEmpty: true
+    })
+    // Audition-first: the first item starts playing (GM-only) immediately.
+    if (first) void get().startPreview({ layers: [{ song: first, volume: 1, loop: false }] })
+  },
+  triageAct: (action) => {
+    const t = get().triage
+    if (!t) return
+    // The save side-effect fires from the state being advanced FROM.
+    if (action.type === 'save-next' && !triageComplete(t)) {
+      void window.api.library.retag(t.queue[t.index], {
+        tags: t.workingTags,
+        kind: t.workingKind
+      })
+    }
+    const next = reduceTriage(t, action)
+    set({ triage: next })
+    if (action.type === 'save-next' || action.type === 'skip') {
+      const nextSong = triageComplete(next)
+        ? undefined
+        : get().library.songs.find((s) => s.id === next.queue[next.index])
+      if (nextSong) void get().startPreview({ layers: [{ song: nextSong, volume: 1, loop: false }] })
+      else void get().stopPreview()
+    }
+  },
+  triagePreviewToggle: () => {
+    const t = get().triage
+    if (!t || triageComplete(t)) return
+    if (get().previewStatus?.playing) {
+      void get().stopPreview()
+      return
+    }
+    const song = get().library.songs.find((s) => s.id === t.queue[t.index])
+    if (song) void get().startPreview({ layers: [{ song, volume: 1, loop: false }] })
+  },
+  exitTriage: () => {
+    void get().stopPreview()
+    set({ triage: null, workspace: 'library' })
+  },
+  setTriageInput: (focused, empty) =>
+    set({ triageInputFocused: focused, triageInputEmpty: empty }),
 
   // ---- scene page: opening a scene READS it; no audio side effects ----
   openScenePage: (sceneId) => set({ scenePageId: sceneId, workspace: 'scene' }),
@@ -707,7 +777,10 @@ export const useStore = create<State>((set, get) => ({
             return (sc?.pads ?? []).flatMap((p, i) =>
               p.hotkey ? [{ key: p.hotkey, id: scenePadTriggerId(sc!.id, i) }] : []
             )
-          })()
+          })(),
+          ...(s.workspace === 'triage' && s.triage
+            ? { triage: { inputFocused: s.triageInputFocused, inputEmpty: s.triageInputEmpty } }
+            : {})
         }
       )
       if (!action) return
@@ -726,6 +799,15 @@ export const useStore = create<State>((set, get) => ({
           // Direct one-press recall, no confirm: scenes are durable documents now
           // (nothing is lost by switching), and the F-keys exist for speed.
           s.recallScene(action.sceneId)
+          break
+        case 'triage-preview-toggle':
+          s.triagePreviewToggle()
+          break
+        case 'triage-save-next':
+          s.triageAct({ type: 'save-next' })
+          break
+        case 'triage-skip':
+          s.triageAct({ type: 'skip' })
           break
       }
     }

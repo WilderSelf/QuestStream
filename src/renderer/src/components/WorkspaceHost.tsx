@@ -3,6 +3,7 @@ import { LibraryPane } from './LibraryPane'
 import { SceneBuilder } from './SceneBuilder'
 import { ScenePage } from './ScenePage'
 import { ImportWorkbench } from './ImportWorkbench'
+import { TagTriage } from './TagTriage'
 
 /**
  * The center region of the grimoire shell. Renders whichever workspace is open;
@@ -24,6 +25,8 @@ export function WorkspaceHost(): JSX.Element {
       return <LibraryPane />
     case 'import':
       return <ImportWorkbench />
+    case 'triage':
+      return <TagTriage />
     case 'library':
     default:
       return <LibraryPane />

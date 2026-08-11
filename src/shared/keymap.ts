@@ -27,12 +27,20 @@ export interface HotkeyBinding {
   id: string
 }
 
+/** Present while the tag-triage workspace is active (Phase 7). */
+export interface TriageKeys {
+  inputFocused: boolean
+  /** True when the tag type-ahead input is empty — Enter then means save-and-next. */
+  inputEmpty: boolean
+}
+
 export interface KeyContext {
   /** Scenes in rail order; F1–F8 recall the first eight. */
   sceneIds: string[]
   soundboardHotkeys: HotkeyBinding[]
   /** Pads of the on-air scene; empty until Phase 5 wires them. */
   scenePadHotkeys: HotkeyBinding[]
+  triage?: TriageKeys
 }
 
 export type KeyAction =
@@ -40,6 +48,9 @@ export type KeyAction =
   | { kind: 'sfx'; id: string }
   | { kind: 'scene-pad'; id: string }
   | { kind: 'duck'; down: boolean }
+  | { kind: 'triage-preview-toggle' }
+  | { kind: 'triage-save-next' }
+  | { kind: 'triage-skip' }
 
 const SCENE_KEY_COUNT = 8
 const DUCK_KEY = 'd'
@@ -67,7 +78,14 @@ export function parseScenePadTriggerId(id: string): { sceneId: string; index: nu
 }
 
 export function resolveKey(k: KeyDescriptor, ctx: KeyContext): KeyAction | null {
-  if (k.typing) return null
+  if (k.typing) {
+    // The one deliberate exception: in triage, Enter on an EMPTY tag input means
+    // "save & next" — an empty field has nothing else Enter could mean.
+    if (ctx.triage && k.type === 'down' && k.key === 'Enter' && ctx.triage.inputEmpty) {
+      return { kind: 'triage-save-next' }
+    }
+    return null
+  }
   if (k.meta || k.ctrl || k.alt) return null
 
   const pad = ctx.scenePadHotkeys.find((b) => b.key === k.key)
@@ -81,6 +99,13 @@ export function resolveKey(k: KeyDescriptor, ctx: KeyContext): KeyAction | null 
 
   if (pad) return { kind: 'scene-pad', id: pad.id }
   if (sfx) return { kind: 'sfx', id: sfx.id }
+
+  // Triage built-ins (after user bindings — a soundboard key on 's' wins).
+  if (ctx.triage) {
+    if (k.key === ' ') return { kind: 'triage-preview-toggle' }
+    if (k.key === 'Enter') return { kind: 'triage-save-next' }
+    if (k.key.toLowerCase() === 's') return { kind: 'triage-skip' }
+  }
 
   const fMatch = /^F([1-8])$/.exec(k.key)
   if (fMatch) {
