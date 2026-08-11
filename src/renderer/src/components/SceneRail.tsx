@@ -1,6 +1,10 @@
 import type { KeyboardEvent } from 'react'
 import { useStore } from '../store'
+import { untaggedInbox } from '@shared/import-flow'
 import { Icon } from './Icon'
+
+/** "2 tracks" / "1 layer" — the rail meta lines read as prose, so pluralize. */
+const plur = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /** Enter/Space activation for clickable non-button rows (same helper as Browser rows). */
 function rowActivation(onActivate: () => void): {
@@ -42,6 +46,9 @@ export function SceneRail(): JSX.Element {
   const builderKey = useStore((s) => s.builderKey)
   const openBuilder = useStore((s) => s.openBuilder)
   const openScenePage = useStore((s) => s.openScenePage)
+  const songs = useStore((s) => s.library.songs)
+  const startTriage = useStore((s) => s.startTriage)
+  const untagged = untaggedInbox(songs)
 
   // Unsaved new-scene drafts get their own bookmark cards; scene-keyed drafts
   // decorate the scene's card instead (a "draft" chip).
@@ -133,7 +140,7 @@ export function SceneRail(): JSX.Element {
             <div className="bookmark-name">{sc.name}</div>
             <div className="bookmark-meta">
               {loadedSceneId === sc.id ? 'playing · ' : ''}
-              {sc.songIds.length} tracks · {sc.ambience.length} layers
+              {plur(sc.songIds.length, 'track')}, {plur(sc.ambience.length, 'layer')}
               {sceneDrafts[sc.id] ? ' · unsaved edits' : ''}
             </div>
             {i < 8 && (
@@ -181,8 +188,8 @@ export function SceneRail(): JSX.Element {
           >
             <div className="bookmark-name">{sceneDrafts[key].name.trim() || 'Untitled Scene'}</div>
             <div className="bookmark-meta">
-              draft · {sceneDrafts[key].songIds.length} tracks · {sceneDrafts[key].ambience.length}{' '}
-              layers
+              draft · {plur(sceneDrafts[key].songIds.length, 'track')},{' '}
+              {plur(sceneDrafts[key].ambience.length, 'layer')}
             </div>
           </div>
         ))}
@@ -209,7 +216,7 @@ export function SceneRail(): JSX.Element {
           >
             <div className="title">
               <div className="title">{p.name}</div>
-              <div className="sub">{p.songIds.length} tracks</div>
+              <div className="sub">{plur(p.songIds.length, 'track')}</div>
             </div>
             <button
               className="remove-btn"
@@ -229,6 +236,17 @@ export function SceneRail(): JSX.Element {
             </button>
           </div>
         ))}
+
+        {untagged.length > 0 && (
+          <button
+            className="rail-untagged"
+            title="Tag with preview — audition each untagged item and tag as you listen"
+            onClick={() => startTriage(untagged.map((s) => s.id))}
+          >
+            <Icon name="warning" size={13} /> Untagged
+            <span className="rail-untagged-count">{untagged.length} to tag</span>
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1369,11 +1369,15 @@ export const useStore = create<State>((set, get) => ({
         ? { queue: items, currentUid: null, selectedUid: null, loadedPlaylistId: null }
         : {}),
       ...(ambSlots ? { ambience: ambSlots } : {}),
-      ...(plan.music ? { musicVolume: plan.music.musicVolume } : {})
+      // musicVolume null = keepVolumes: the GM's live fader position stays.
+      ...(plan.music && plan.music.musicVolume !== null
+        ? { musicVolume: plan.music.musicVolume }
+        : {})
     })
 
     // Apply to the engine (crossfades from whatever was playing)
-    if (plan.music) void window.api.player.setMusicVolume(plan.music.musicVolume)
+    if (plan.music && plan.music.musicVolume !== null)
+      void window.api.player.setMusicVolume(plan.music.musicVolume)
     if (ambSlots) for (const slot of ambSlots) applyAmbience(slot)
     if (items && plan.music) {
       const start = items[plan.music.startIndex] ?? items[0]

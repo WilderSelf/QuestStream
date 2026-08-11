@@ -37,6 +37,8 @@ export function ScenePage(): JSX.Element | null {
   const [filter, setFilter] = useState('')
   const [includeMusic, setIncludeMusic] = useState(true)
   const [includeAmbience, setIncludeAmbience] = useState(true)
+  const [keepVolumes, setKeepVolumes] = useState(false)
+  const [listenIdx, setListenIdx] = useState<number | null>(null)
 
   const songsById = useMemo(() => new Map(songs.map((s) => [s.id, s])), [songs])
   const songsRecord = useMemo(() => Object.fromEntries(songs.map((s) => [s.id, s])), [songs])
@@ -68,11 +70,27 @@ export function ScenePage(): JSX.Element | null {
   function play(startIndex?: number): void {
     if (!scene) return
     void stopPreview()
+    setListenIdx(null)
     playScene(scene.id, {
       includeMusic: startIndex !== undefined ? true : includeMusic,
       includeAmbience,
+      ...(keepVolumes ? { keepVolumes: true } : {}),
       ...(startIndex !== undefined ? { startIndex } : {})
     })
+  }
+
+  /** GM-only audition of one track (the row's circled play). */
+  function listenRow(index: number, song: { id: string } | undefined): void {
+    if (!song) return
+    if (previewing && listenIdx === index) {
+      void stopPreview()
+      setListenIdx(null)
+      return
+    }
+    const full = songsById.get(song.id)
+    if (!full) return
+    setListenIdx(index)
+    void startPreview({ layers: [{ song: full, volume: 1, loop: false }] })
   }
 
   const q = filter.trim().toLowerCase()
@@ -85,6 +103,20 @@ export function ScenePage(): JSX.Element | null {
   const filteredIndexByRaw = new Map<number, number>()
   let fi = 0
   for (const r of rows) if (r.song) filteredIndexByRaw.set(r.index, fi++)
+
+  const plurUp = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`
+  const presentSongs = rows.filter((r) => r.song)
+  const totalSec = presentSongs.reduce((sum, r) => sum + (r.song?.duration ?? 0), 0)
+  const endOfListLabel =
+    scene.endOfList === 'stop'
+      ? 'stop'
+      : scene.endOfList === 'loop-list'
+        ? 'loop the list'
+        : scene.endOfList === 'loop-last'
+          ? 'loop the last track'
+          : scene.endOfList === 'shuffle'
+            ? 'shuffle on'
+            : 'follow the player’s repeat mode'
 
   return (
     <div className="pane scene-page">
@@ -113,142 +145,169 @@ export function ScenePage(): JSX.Element | null {
         </span>
       </div>
       <div className="pane-body scene-page-body">
-        <h1 className="scene-page-name">{scene.name}</h1>
-        <div className="scene-page-meta">
-          {fmtLastPlayed(scene.lastPlayedAt)} · {scene.songIds.length} tracks ·{' '}
-          {scene.ambience.length} layers
-          {(scene.pads?.length ?? 0) > 0 && <> · {scene.pads!.length} pads</>}
-        </div>
-        {scene.note && <p className="scene-page-note">{scene.note}</p>}
+        <div className="builder-doc scene-doc">
+          <div className="doc-eyebrow">scene</div>
+          <h1 className="scene-page-name">{scene.name}</h1>
+          {scene.note && <p className="doc-note">“{scene.note}”</p>}
+          <div className="scene-page-meta">{fmtLastPlayed(scene.lastPlayedAt)}</div>
 
-        <div className="scene-page-toolbar">
-          {previewing && (
-            <span className="preview-badge">
-              <Icon name="headphones" size={13} /> Only you hear this
-            </span>
-          )}
-          <button
-            className={`btn ${previewing ? 'active' : ''}`}
-            title="Listen to this scene yourself — the table keeps hearing the live mix"
-            aria-pressed={previewing}
-            onClick={togglePreview}
-          >
-            <Icon name={previewing ? 'pause' : 'headphones'} size={14} />{' '}
-            {previewing ? 'Stop preview' : 'Preview'}
-          </button>
-          <button
-            className="btn primary"
-            title="Play this scene for the table"
-            disabled={!includeMusic && !includeAmbience}
-            onClick={() => play()}
-          >
-            <Icon name="play" size={14} /> Play scene
-          </button>
-          <label className="scene-page-toggle">
-            <input
-              type="checkbox"
-              checked={includeMusic}
-              onChange={(e) => setIncludeMusic(e.target.checked)}
-            />
-            Music
-          </label>
-          <label className="scene-page-toggle">
-            <input
-              type="checkbox"
-              checked={includeAmbience}
-              onChange={(e) => setIncludeAmbience(e.target.checked)}
-            />
-            Ambience
-          </label>
-        </div>
-        <div className="scene-page-transition">{transitionCaption}</div>
-
-        <div className="scene-page-toolbar">
           <div className="palette-search scene-page-filter">
             <Icon name="search" size={14} />
             <input
               type="search"
-              placeholder="Find in this scene…"
+              placeholder="Search this scene…"
               value={filter}
               aria-label="Find a track in this scene"
               onChange={(e) => setFilter(e.target.value)}
             />
           </div>
-        </div>
 
-        <div className="section-label">
-          <Icon name="music" size={13} /> Music · {scene.songIds.length}
-        </div>
-        {visible.length === 0 && (
-          <div className="muted small">
-            {q ? 'No tracks match.' : 'This scene has no tracks.'}
+          <div className="doc-section-label">
+            Music · {plurUp(presentSongs.length, 'track')} · {fmtTime(totalSec)}
           </div>
-        )}
-        {visible.map(({ index, song }) => (
-          <div key={`${index}`} className={`row scene-page-track ${song ? '' : 'missing'}`}>
-            <span className="draft-track-num">{index + 1}</span>
-            <div className="title">
-              <span className="song-title">{song?.title ?? 'Missing item'}</span>
+          {visible.length === 0 && (
+            <div className="muted small doc-empty">
+              {q ? 'No tracks match.' : 'This scene has no tracks.'}
             </div>
-            {index === scene.currentIndex && (
-              <span className="builder-start-mark">starts here</span>
-            )}
-            {song && (
+          )}
+          {visible.map(({ index, song }) => (
+            <div key={`${index}`} className={`row scene-page-track ${song ? '' : 'missing'}`}>
               <button
-                className="draft-start-btn scene-page-start"
-                title="Play the scene, starting on this track"
-                aria-label={`Play the scene starting on ${song.title}`}
-                onClick={() => play(filteredIndexByRaw.get(index))}
+                className={`play-btn scene-page-listen ${previewing && listenIdx === index ? 'active' : ''}`}
+                title="Listen to this track — only you hear it"
+                aria-label={`Listen to ${song?.title ?? 'missing item'} (only you hear it)`}
+                aria-pressed={previewing && listenIdx === index}
+                disabled={!song}
+                onClick={() => listenRow(index, song)}
               >
-                <Icon name="play" size={12} /> start here
+                <Icon name={previewing && listenIdx === index ? 'pause' : 'play'} size={14} />
               </button>
-            )}
-            {song && <span className="sub">{fmtTime(song.duration)}</span>}
+              <div className="title">
+                <span className="song-title">{song?.title ?? 'Missing item'}</span>
+                {index === scene.currentIndex && <div className="sub">plays first</div>}
+              </div>
+              {song && (
+                <button
+                  className="draft-start-btn scene-page-start"
+                  title="Play the scene for the table, starting on this track"
+                  aria-label={`Play the scene starting on ${song.title}`}
+                  onClick={() => play(filteredIndexByRaw.get(index))}
+                >
+                  <Icon name="play" size={12} /> start here
+                </button>
+              )}
+              {song && <span className="sub">{fmtTime(song.duration)}</span>}
+            </div>
+          ))}
+          <div className="draft-pill-row scene-doc-pills">
+            <span className="draft-pill">
+              when the list ends: <b className="scene-doc-pill-value">{endOfListLabel}</b>
+            </span>
+            <span className="draft-pill">
+              crossfade <b>{crossfadeSec}</b> s
+              {scene.crossfadeMs === undefined && <span className="sub">(default)</span>}
+            </span>
           </div>
-        ))}
 
-        {scene.ambience.length > 0 && (
-          <>
-            <div className="section-label">
-              <Icon name="layers" size={13} /> Ambience · {scene.ambience.length}
-            </div>
-            {scene.ambience.map((a, i) => {
-              const layerSongs = (a.pool ?? [a.songId])
-                .map((id) => songsById.get(id)?.title ?? 'Missing item')
-                .join(', ')
-              return (
-                <div key={i} className="row scene-page-track">
-                  <span className="draft-track-num" aria-hidden="true">
-                    ~
-                  </span>
-                  <div className="title">
-                    <span className="song-title">{layerSongs}</span>
+          {scene.ambience.length > 0 && (
+            <>
+              <div className="doc-section-label">
+                Ambience · {plurUp(scene.ambience.length, 'layer')}
+              </div>
+              {scene.ambience.map((a, i) => {
+                const layerSongs = (a.pool ?? [a.songId])
+                  .map((id) => songsById.get(id)?.title ?? 'Missing item')
+                  .join(', ')
+                const random = (a.mode ?? 'loop') === 'random'
+                return (
+                  <div key={i} className="row scene-page-track">
+                    <div className="title">
+                      <span className="song-title">{layerSongs}</span>
+                      <div className="sub">
+                        {random ? 'plays once in a while' : 'plays continuously'}
+                        {random &&
+                          ` · every ${a.minIntervalSec ?? 20}–${a.maxIntervalSec ?? 60} s`}
+                      </div>
+                    </div>
+                    <span className="sub">{Math.round(a.volume * 100)}%</span>
                   </div>
-                  <span className="sub">
-                    {(a.mode ?? 'loop') === 'random' ? 'random' : 'loop'} ·{' '}
-                    {Math.round(a.volume * 100)}%
-                  </span>
-                </div>
-              )
-            })}
-          </>
-        )}
+                )
+              })}
+            </>
+          )}
 
-        {(scene.pads?.length ?? 0) > 0 && (
-          <>
-            <div className="section-label">
-              <Icon name="sparkle" size={13} /> Sound pads · {scene.pads!.length}
-            </div>
-            <div className="scene-page-pads">
-              {scene.pads!.map((p, i) => (
-                <span key={i} className="scene-page-pad">
-                  {songsById.get(p.songId)?.title ?? 'Missing item'}
-                  {p.hotkey && <kbd>{p.hotkey}</kbd>}
-                </span>
-              ))}
-            </div>
-          </>
-        )}
+          {(scene.pads?.length ?? 0) > 0 && (
+            <>
+              <div className="doc-section-label">Soundboard</div>
+              <div className="scene-page-pads">
+                {scene.pads!.map((p, i) => (
+                  <span key={i} className="scene-page-pad">
+                    {songsById.get(p.songId)?.title ?? 'Missing item'}
+                    {p.hotkey && <kbd>{p.hotkey}</kbd>}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="doc-actions">
+            {previewing && listenIdx === null && (
+              <span className="preview-badge">
+                <Icon name="headphones" size={13} /> Only you hear this
+              </span>
+            )}
+            <button
+              className={`btn ${previewing && listenIdx === null ? 'active' : ''}`}
+              title="Listen to this scene yourself — the table keeps hearing the live mix"
+              aria-pressed={previewing && listenIdx === null}
+              onClick={() => {
+                setListenIdx(null)
+                togglePreview()
+              }}
+            >
+              <Icon name={previewing && listenIdx === null ? 'pause' : 'headphones'} size={14} />{' '}
+              {previewing && listenIdx === null ? 'Stop preview' : 'Preview — only you hear it'}
+            </button>
+            <button
+              className="btn primary"
+              title="Play this scene for the table"
+              disabled={!includeMusic && !includeAmbience}
+              onClick={() => play()}
+            >
+              <Icon name="play" size={14} /> Play scene
+            </button>
+          </div>
+          <div className="scene-doc-toggles">
+            <label className="scene-page-toggle">
+              <input
+                type="checkbox"
+                checked={includeMusic}
+                onChange={(e) => setIncludeMusic(e.target.checked)}
+              />
+              include music
+            </label>
+            <label className="scene-page-toggle">
+              <input
+                type="checkbox"
+                checked={includeAmbience}
+                onChange={(e) => setIncludeAmbience(e.target.checked)}
+              />
+              include ambience
+            </label>
+            <label
+              className="scene-page-toggle"
+              title="Keep the music fader where it is now instead of the scene's saved level"
+            >
+              <input
+                type="checkbox"
+                checked={keepVolumes}
+                onChange={(e) => setKeepVolumes(e.target.checked)}
+              />
+              keep current volume
+            </label>
+          </div>
+          <div className="doc-caption">{transitionCaption}</div>
+        </div>
       </div>
     </div>
   )

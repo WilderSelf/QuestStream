@@ -111,6 +111,14 @@ test('startIndex override wins over the scene start (same clamp rule)', () => {
   assert.equal(buildRecallPlan(scene(), SONGS, { startIndex: 9 }).music?.startIndex, 0)
 })
 
+test('keepVolumes: the queue is replaced but the live music volume is left alone', () => {
+  const plan = buildRecallPlan(scene(), SONGS, { keepVolumes: true })
+  assert.equal(plan.music?.songs.length, 3)
+  assert.equal(plan.music?.musicVolume, null) // null = caller must not touch the fader
+  // Without the flag the scene's saved volume applies (pinned above too):
+  assert.equal(buildRecallPlan(scene(), SONGS).music?.musicVolume, 0.8)
+})
+
 test('a scene crossfade passes through; an all-missing queue yields an empty music list', () => {
   assert.equal(buildRecallPlan(scene({ crossfadeMs: 4000 }), SONGS).crossfadeMs, 4000)
   const plan = buildRecallPlan(scene({ songIds: ['gone', 'lost'] }), SONGS)

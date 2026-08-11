@@ -5,7 +5,6 @@ import { useStore } from '../store'
 import type { SceneDraft } from '@shared/scene-edit'
 import type { EndOfListPolicy } from '@shared/types'
 import { Icon } from './Icon'
-import { SegmentedControl } from './SegmentedControl'
 
 /** Sortable ids are index-scoped so duplicate songs in a list can't collide with
  *  each other (or with the live queue's uids): `draft-song:<index>:<songId>`. */
@@ -23,10 +22,10 @@ export const draftSongIndex = (id: string): number | null => {
 }
 
 const END_OF_LIST_OPTIONS: { value: EndOfListPolicy; label: string }[] = [
-  { value: 'stop', label: 'Stop' },
-  { value: 'loop-list', label: 'Loop list' },
-  { value: 'loop-last', label: 'Loop last' },
-  { value: 'shuffle', label: 'Shuffle' }
+  { value: 'stop', label: 'stop' },
+  { value: 'loop-list', label: 'loop the list' },
+  { value: 'loop-last', label: 'loop the last track' },
+  { value: 'shuffle', label: 'shuffle on' }
 ]
 
 const CROSSFADE_DEFAULT_MS = 2500
@@ -71,7 +70,7 @@ function TrackRow({
         aria-pressed={isStart}
         onClick={() => editDraft(builderKey, { type: 'set-start-index', index })}
       >
-        {isStart ? 'starts here' : 'start here'}
+        {isStart ? 'plays first' : 'play first'}
       </button>
       <button
         className="remove-btn"
@@ -101,9 +100,7 @@ export function DraftMusicList({ draft }: { draft: SceneDraft }): JSX.Element {
 
   return (
     <div ref={setNodeRef} className={`draft-music ${isOver ? 'drop-target' : ''}`}>
-      {draft.songIds.length === 0 ? (
-        <div className="muted small">Drag songs here from the library, or double-click them.</div>
-      ) : (
+      {draft.songIds.length > 0 && (
         <SortableContext
           items={draft.songIds.map((sid, i) => draftSongId(i, sid))}
           strategy={verticalListSortingStrategy}
@@ -123,9 +120,53 @@ export function DraftMusicList({ draft }: { draft: SceneDraft }): JSX.Element {
         </SortableContext>
       )}
 
-      <div className="draft-list-controls">
-        <label className="draft-control">
-          <span className="builder-label">Music volume · {Math.round(draft.musicVolume * 100)}%</span>
+      {/* Pill row (mockup parity): list-end select + crossfade stepper, inline. */}
+      <div className="draft-pill-row">
+        <label className="draft-pill">
+          when the list ends:
+          <select
+            value={draft.endOfList ?? ''}
+            aria-label="What happens when the track list ends"
+            onChange={(e) =>
+              editDraft(builderKey, {
+                type: 'set-end-of-list',
+                ...(e.target.value ? { policy: e.target.value as EndOfListPolicy } : {})
+              })
+            }
+          >
+            <option value="">follow the player’s repeat mode</option>
+            {END_OF_LIST_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="draft-pill" title={draft.crossfadeMs === undefined ? 'Default crossfade' : undefined}>
+          crossfade
+          <button
+            className="icon"
+            title="Shorter crossfade"
+            aria-label="Shorter crossfade"
+            disabled={crossfade <= 0}
+            onClick={() => setCrossfade(crossfade - CROSSFADE_STEP_MS)}
+          >
+            −
+          </button>
+          <b>{(crossfade / 1000).toFixed(1)}</b>
+          <button
+            className="icon"
+            title="Longer crossfade"
+            aria-label="Longer crossfade"
+            disabled={crossfade >= CROSSFADE_MAX_MS}
+            onClick={() => setCrossfade(crossfade + CROSSFADE_STEP_MS)}
+          >
+            +
+          </button>
+          s
+        </span>
+        <label className="draft-pill draft-pill-volume">
+          volume · {Math.round(draft.musicVolume * 100)}%
           <input
             type="range"
             min={0}
@@ -138,49 +179,11 @@ export function DraftMusicList({ draft }: { draft: SceneDraft }): JSX.Element {
             }
           />
         </label>
-        <div className="draft-control">
-          <span className="builder-label">
-            When the list ends
-            {draft.endOfList === undefined && ' · not set — follows the player’s repeat mode'}
-          </span>
-          <SegmentedControl<EndOfListPolicy>
-            options={END_OF_LIST_OPTIONS}
-            value={draft.endOfList as EndOfListPolicy}
-            onChange={(policy) =>
-              editDraft(builderKey, {
-                type: 'set-end-of-list',
-                // Clicking the active segment clears back to "not set".
-                ...(draft.endOfList === policy ? {} : { policy })
-              })
-            }
-          />
-        </div>
-        <div className="draft-control">
-          <span className="builder-label">
-            Crossfade between tracks · {(crossfade / 1000).toFixed(1)} s
-            {draft.crossfadeMs === undefined && ' (default)'}
-          </span>
-          <span className="draft-stepper">
-            <button
-              className="icon"
-              title="Shorter crossfade"
-              aria-label="Shorter crossfade"
-              disabled={crossfade <= 0}
-              onClick={() => setCrossfade(crossfade - CROSSFADE_STEP_MS)}
-            >
-              −
-            </button>
-            <button
-              className="icon"
-              title="Longer crossfade"
-              aria-label="Longer crossfade"
-              disabled={crossfade >= CROSSFADE_MAX_MS}
-              onClick={() => setCrossfade(crossfade + CROSSFADE_STEP_MS)}
-            >
-              +
-            </button>
-          </span>
-        </div>
+      </div>
+
+      <div className="doc-drop-hint">
+        drop a track here — or press {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl+'}K to add
+        one without leaving this screen
       </div>
     </div>
   )

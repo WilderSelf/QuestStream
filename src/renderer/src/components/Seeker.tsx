@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useStore } from '../store'
+import { useStore, fmtTime } from '../store'
 import { rankSeeker, type SeekerHit } from '@shared/search-rank'
+import { KIND_LABELS } from '@shared/taxonomy'
 import { Icon } from './Icon'
 
 const GROUP_TITLES: Record<SeekerHit['group'], string> = {
@@ -145,25 +146,54 @@ export function Seeker(): JSX.Element | null {
           <div className="seeker-hint muted small">Nothing matches.</div>
         ) : (
           <div className="seeker-results" role="listbox">
-            {hits.map((h, i) => (
-              <div key={`${h.group}:${h.id}`}>
-                {(i === 0 || hits[i - 1].group !== h.group) && (
-                  <div className="seeker-group">{GROUP_TITLES[h.group]}</div>
-                )}
-                <button
-                  className={`seeker-hit ${i === sel ? 'selected' : ''}`}
-                  role="option"
-                  aria-selected={i === sel}
-                  onMouseEnter={() => setSel(i)}
-                  onClick={() => activate(h)}
-                >
-                  <span className="seeker-hit-label">{h.label}</span>
-                  {h.sub && <span className="seeker-hit-sub">{h.sub}</span>}
-                </button>
-              </div>
-            ))}
+            {hits.map((h, i) => {
+              const song =
+                h.group === 'scene' || h.group === 'library'
+                  ? songs.find((s) => s.id === h.id)
+                  : undefined
+              const detail = song
+                ? ` — ${KIND_LABELS[song.kind ?? 'track'].toLowerCase()}, ${fmtTime(song.duration)}`
+                : ''
+              // The right-hand hint names what Enter will DO, mockup-style.
+              const action =
+                h.group === 'scene'
+                  ? 'play from here'
+                  : h.group === 'scenes'
+                    ? 'open'
+                    : h.group === 'library'
+                      ? builderKey
+                        ? 'add to draft'
+                        : 'queue'
+                      : 'run'
+              return (
+                <div key={`${h.group}:${h.id}`}>
+                  {(i === 0 || hits[i - 1].group !== h.group) && (
+                    <div className="seeker-group">{GROUP_TITLES[h.group]}</div>
+                  )}
+                  <button
+                    className={`seeker-hit ${i === sel ? 'selected' : ''}`}
+                    role="option"
+                    aria-selected={i === sel}
+                    onMouseEnter={() => setSel(i)}
+                    onClick={() => activate(h)}
+                  >
+                    <span className="seeker-hit-label">
+                      {h.label}
+                      {detail && <span className="seeker-hit-detail">{detail}</span>}
+                    </span>
+                    <span className="seeker-hit-sub">{action}</span>
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
+        <div className="seeker-footer">
+          <span>
+            <kbd>↑↓</kbd> move · <kbd>Enter</kbd> go · <kbd>Esc</kbd> close
+          </span>
+          <span>searches track and scene titles</span>
+        </div>
       </div>
     </div>
   )

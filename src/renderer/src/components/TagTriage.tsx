@@ -10,59 +10,69 @@ import { Icon } from './Icon'
 import { SegmentedControl } from './SegmentedControl'
 import { TagPicker } from './TagPicker'
 
-/** ~600 buckets for a full track at 48kHz stereo; clamped so shorts still fill. */
-const bucketSizeFor = (durationSec: number): number =>
-  Math.max(1024, Math.floor((Math.max(1, durationSec) * 48000 * 2) / 600))
+// One waveform bar per fixed slice of audio (0.25s of 48kHz stereo), regardless of
+// track length — a 3-hour video draws as vividly as a 4-second sting. The canvas
+// shows the most recent window and scrolls once full.
+const SAMPLES_PER_BAR = 24_000
+const BAR_W = 2
+const BAR_GAP = 1
+const KEEP_BARS = 1200 // trim the fold beyond this so long auditions stay bounded
 
 /**
- * Streaming waveform: folds preview:pcm into peaks (rAF-throttled draw) with a
- * playhead from preview:status. Resets whenever the auditioned song changes.
+ * Streaming waveform: folds preview:pcm into fixed-time peak bars (rAF-throttled
+ * draw), sized to the element's real width. Resets when the auditioned song changes.
  */
-function Waveform({ songId, durationSec }: { songId: string; durationSec: number }): JSX.Element {
+function Waveform({ songId }: { songId: string }): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const peaksRef = useRef<PeakState>(newPeaks())
   const rafRef = useRef(0)
-  const position = useStore((s) => s.previewStatus?.positionSec ?? 0)
 
   useEffect(() => {
     peaksRef.current = newPeaks() // new song → fresh canvas
-    const bucket = bucketSizeFor(durationSec)
     const draw = (): void => {
       rafRef.current = 0
       const canvas = canvasRef.current
       if (!canvas) return
+      // Match the internal bitmap to the rendered size so bars are never stretched.
+      if (canvas.width !== canvas.clientWidth && canvas.clientWidth > 0) {
+        canvas.width = canvas.clientWidth
+      }
       const ctx2d = canvas.getContext('2d')
       if (!ctx2d) return
       const { width, height } = canvas
       ctx2d.clearRect(0, 0, width, height)
       const style = getComputedStyle(canvas)
-      ctx2d.fillStyle = style.getPropertyValue('--ornament') || '#c9a86a'
-      const peaks = peaksRef.current.peaks
-      const barW = 2
-      const gap = 1
-      const maxBars = Math.floor(width / (barW + gap))
-      for (let i = 0; i < Math.min(peaks.length, maxBars); i++) {
+      ctx2d.fillStyle = style.getPropertyValue('color') || '#c9a86a'
+      const maxBars = Math.max(1, Math.floor(width / (BAR_W + BAR_GAP)))
+      // The most recent window, scrolling once the canvas is full.
+      const peaks = peaksRef.current.peaks.slice(-maxBars)
+      for (let i = 0; i < peaks.length; i++) {
         const h = Math.max(2, peaks[i] * height)
-        ctx2d.fillRect(i * (barW + gap), (height - h) / 2, barW, h)
+        ctx2d.fillRect(i * (BAR_W + BAR_GAP), (height - h) / 2, BAR_W, h)
       }
     }
     const off = window.api.preview.onPcm((pcm) => {
       const view = new Int16Array(pcm.buffer, pcm.byteOffset, pcm.byteLength >> 1)
-      peaksRef.current = appendPeaks(peaksRef.current, view, bucket)
+      let next = appendPeaks(peaksRef.current, view, SAMPLES_PER_BAR, Number.MAX_SAFE_INTEGER)
+      if (next.peaks.length > KEEP_BARS) next = { ...next, peaks: next.peaks.slice(-KEEP_BARS) }
+      peaksRef.current = next
       if (!rafRef.current) rafRef.current = requestAnimationFrame(draw)
     })
+    const onResize = (): void => {
+      if (!rafRef.current) rafRef.current = requestAnimationFrame(draw)
+    }
+    window.addEventListener('resize', onResize)
     draw()
     return () => {
       off()
+      window.removeEventListener('resize', onResize)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [songId, durationSec])
+  }, [songId])
 
-  const playedFrac = durationSec > 0 ? Math.min(1, position / durationSec) : 0
   return (
     <div className="triage-wave">
-      <canvas ref={canvasRef} width={640} height={96} aria-hidden="true" />
-      <div className="triage-playhead" style={{ left: `${playedFrac * 100}%` }} />
+      <canvas ref={canvasRef} height={96} aria-hidden="true" />
     </div>
   )
 }
@@ -80,6 +90,7 @@ export function TagTriage(): JSX.Element | null {
   const exitTriage = useStore((s) => s.exitTriage)
   const setTriageInput = useStore((s) => s.setTriageInput)
   const previewing = useStore((s) => s.previewStatus?.playing ?? false)
+  const position = useStore((s) => s.previewStatus?.positionSec ?? 0)
   const [query, setQuery] = useState('')
 
   const customTags = useMemo(() => {
@@ -166,16 +177,23 @@ export function TagTriage(): JSX.Element | null {
                 {song?.sourceType === 'local' ? 'Local file' : song?.sourceType ?? ''}
                 {song ? ` · ${fmtTime(song.duration)}` : ''}
               </div>
-              {song && <Waveform songId={song.id} durationSec={song.duration} />}
-              <button
-                className={`btn ${previewing ? 'active' : ''}`}
-                title="Toggle listening (Space)"
-                aria-pressed={previewing}
-                onClick={triagePreviewToggle}
-              >
-                <Icon name={previewing ? 'pause' : 'play'} size={14} />{' '}
-                {previewing ? 'Pause' : 'Listen'} <kbd>Space</kbd>
-              </button>
+              {song && <Waveform songId={song.id} />}
+              <div className="triage-listen-row">
+                <button
+                  className={`btn ${previewing ? 'active' : ''}`}
+                  title="Toggle listening (Space)"
+                  aria-pressed={previewing}
+                  onClick={triagePreviewToggle}
+                >
+                  <Icon name={previewing ? 'pause' : 'play'} size={14} />{' '}
+                  {previewing ? 'Pause' : 'Listen'} <kbd>Space</kbd>
+                </button>
+                {song && (
+                  <span className="triage-elapsed">
+                    {fmtTime(position)} / {fmtTime(song.duration)}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="draft-control">
