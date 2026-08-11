@@ -19,6 +19,8 @@ export interface KeyDescriptor {
   repeat: boolean
   /** True when focus is in an input/textarea/select or a capture flow (hotkey binding). */
   typing: boolean
+  /** True mid-IME-composition (KeyboardEvent.isComposing) — global keys must not fire. */
+  composing?: boolean
 }
 
 export interface HotkeyBinding {
@@ -41,6 +43,8 @@ export interface KeyContext {
   /** Pads of the on-air scene; empty until Phase 5 wires them. */
   scenePadHotkeys: HotkeyBinding[]
   triage?: TriageKeys
+  /** True while the ⌘K seeker overlay is open (Escape then closes it). */
+  seekerOpen?: boolean
 }
 
 export type KeyAction =
@@ -51,6 +55,8 @@ export type KeyAction =
   | { kind: 'triage-preview-toggle' }
   | { kind: 'triage-save-next' }
   | { kind: 'triage-skip' }
+  | { kind: 'seeker-open' }
+  | { kind: 'seeker-close' }
 
 const SCENE_KEY_COUNT = 8
 const DUCK_KEY = 'd'
@@ -78,6 +84,14 @@ export function parseScenePadTriggerId(id: string): { sceneId: string; index: nu
 }
 
 export function resolveKey(k: KeyDescriptor, ctx: KeyContext): KeyAction | null {
+  // The seeker keys outrank everything — reachable from any field — but never
+  // mid-IME-composition (the keystroke belongs to the composer).
+  if (k.type === 'down' && !k.composing) {
+    if (k.key.toLowerCase() === 'k' && (k.meta || k.ctrl) && !k.alt) {
+      return { kind: 'seeker-open' }
+    }
+    if (k.key === 'Escape' && ctx.seekerOpen) return { kind: 'seeker-close' }
+  }
   if (k.typing) {
     // The one deliberate exception: in triage, Enter on an EMPTY tag input means
     // "save & next" — an empty field has nothing else Enter could mean.

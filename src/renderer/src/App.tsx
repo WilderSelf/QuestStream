@@ -21,7 +21,6 @@ import { TransportBar } from './components/TransportBar'
 import {
   SettingsModal,
   SavePlaylistModal,
-  SaveSceneModal,
   SongEditModal,
   DisclaimerModal
 } from './components/Modals'
@@ -29,6 +28,7 @@ import { AlertBanner } from './components/AlertBanner'
 import { DesktopPrompt } from './components/DesktopPrompt'
 import { UpdateBanner } from './components/UpdateBanner'
 import { Toast } from './components/Toast'
+import { Seeker } from './components/Seeker'
 
 export function App(): JSX.Element {
   const init = useStore((s) => s.init)
@@ -188,9 +188,9 @@ export function App(): JSX.Element {
       </div>
       <SettingsModal />
       <SavePlaylistModal />
-      <SaveSceneModal />
       <SongEditModal />
       <DisclaimerModal />
+      <Seeker />
       <Toast />
     </DndContext>
   )
