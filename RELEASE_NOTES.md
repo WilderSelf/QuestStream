@@ -1,4 +1,4 @@
-# Unreleased — the grimoire redesign
+# QuestStream v0.5.1 — the grimoire redesign
 
 The whole UI was rebuilt around three regions: a **scene bookmark rail**, a center
 **workspace**, and a live-mix **margin** with the sigil soundboard and the wax-seal
