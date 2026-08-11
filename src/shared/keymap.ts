@@ -44,6 +44,28 @@ export type KeyAction =
 const SCENE_KEY_COUNT = 8
 const DUCK_KEY = 'd'
 
+/**
+ * Scene pads have no ids of their own (they live as an array on the scene), so a
+ * pad trigger travels as `scenepad:<sceneId>:<index>` through the same
+ * soundboard:trigger channel. The main handler parses it back with the twin below.
+ */
+const SCENE_PAD_PREFIX = 'scenepad:'
+
+export function scenePadTriggerId(sceneId: string, index: number): string {
+  return `${SCENE_PAD_PREFIX}${sceneId}:${index}`
+}
+
+export function parseScenePadTriggerId(id: string): { sceneId: string; index: number } | null {
+  if (!id.startsWith(SCENE_PAD_PREFIX)) return null
+  const rest = id.slice(SCENE_PAD_PREFIX.length)
+  const sep = rest.lastIndexOf(':')
+  if (sep <= 0) return null
+  const sceneId = rest.slice(0, sep)
+  const rawIndex = rest.slice(sep + 1)
+  if (!/^\d+$/.test(rawIndex)) return null
+  return { sceneId, index: Number(rawIndex) }
+}
+
 export function resolveKey(k: KeyDescriptor, ctx: KeyContext): KeyAction | null {
   if (k.typing) return null
   if (k.meta || k.ctrl || k.alt) return null

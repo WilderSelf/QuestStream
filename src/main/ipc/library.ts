@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { IPC, type SceneInput, type ImportOpts } from '../../shared/ipc'
+import { parseScenePadTriggerId } from '../../shared/keymap'
 import type {
   RetagPayload,
   Song,
@@ -252,6 +253,16 @@ export function registerLibraryIpc(ctx: IpcContext): void {
     broadcastLibrary()
   })
   handle(IPC.soundboardTrigger, (_e, id: string) => {
+    // A scenepad:<sceneId>:<index> id triggers a pad of that scene; anything else
+    // is a global soundboard item id (same channel, one lookup fork).
+    const padRef = parseScenePadTriggerId(id)
+    if (padRef) {
+      const scene = store.view().scenes.find((s) => s.id === padRef.sceneId)
+      const pad = scene?.pads?.[padRef.index]
+      const song = pad && store.getSong(pad.songId)
+      if (pad && song) bot.playOneShot(song, pad.gain ?? 1, pad.duckUnderMusic ?? false)
+      return
+    }
     const item = store.getSoundboardItem(id)
     if (!item) return
     const song = store.getSong(item.songId)

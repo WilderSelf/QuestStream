@@ -94,3 +94,14 @@ test('keyup of non-duck keys resolves to nothing', () => {
   assert.equal(resolveKey(down('1', { type: 'up' }), ctx()), null)
   assert.equal(resolveKey(down('F1', { type: 'up' }), ctx()), null)
 })
+
+test('scene-pad trigger ids round-trip and reject malformed input', async () => {
+  const { scenePadTriggerId, parseScenePadTriggerId } = await import('../src/shared/keymap.ts')
+  const id = scenePadTriggerId('scene-1', 3)
+  assert.deepEqual(parseScenePadTriggerId(id), { sceneId: 'scene-1', index: 3 })
+  // Ordinary soundboard ids and garbage never parse as pads:
+  assert.equal(parseScenePadTriggerId('sb_abc123'), null)
+  assert.equal(parseScenePadTriggerId('scenepad:x'), null)
+  assert.equal(parseScenePadTriggerId('scenepad:x:-1'), null)
+  assert.equal(parseScenePadTriggerId('scenepad:x:1.5'), null)
+})

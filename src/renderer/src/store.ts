@@ -19,7 +19,7 @@ import type {
   PreviewStatus
 } from '@shared/types'
 import { defaultGroupBy, normalizeTag, KIND_ORDER } from '@shared/taxonomy'
-import { resolveKey } from '@shared/keymap'
+import { resolveKey, scenePadTriggerId } from '@shared/keymap'
 import { nextQueueIndex } from '@shared/queue-policy'
 import { buildRecallPlan, type RecallOptions, type RecallPlan } from '@shared/scene-recall'
 import { DEFAULT_CROSSFADE_MS } from '@shared/num'
@@ -704,7 +704,14 @@ export const useStore = create<State>((set, get) => ({
           soundboardHotkeys: s.library.soundboard
             .filter((sb) => sb.hotkey)
             .map((sb) => ({ key: sb.hotkey!, id: sb.id })),
-          scenePadHotkeys: [] // pads of the on-air scene join in Phase 5
+          scenePadHotkeys: (() => {
+            const sc = s.loadedSceneId
+              ? s.library.scenes.find((x) => x.id === s.loadedSceneId)
+              : undefined
+            return (sc?.pads ?? []).flatMap((p, i) =>
+              p.hotkey ? [{ key: p.hotkey, id: scenePadTriggerId(sc!.id, i) }] : []
+            )
+          })()
         }
       )
       if (!action) return
@@ -714,7 +721,8 @@ export const useStore = create<State>((set, get) => ({
           s.triggerSfx(action.id)
           break
         case 'scene-pad':
-          break // unreachable until scenePadHotkeys is populated (Phase 5)
+          s.triggerSfx(action.id) // same channel; main parses the scenepad: id
+          break
         case 'duck':
           s.setDuck(action.down)
           break

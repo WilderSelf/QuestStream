@@ -56,6 +56,9 @@
       musicVolume: 0.8,
       currentIndex: 0,
       ambience: [{ songId: 'a2', volume: 0.5, playing: true }],
+      note: 'Bandits spring from the treeline — hit the sting when the leader appears.',
+      pads: [{ songId: 'x4', hotkey: '3', gain: 0.9, duckUnderMusic: true }],
+      crossfadeMs: 4000,
       createdAt: now,
       updatedAt: now
     },

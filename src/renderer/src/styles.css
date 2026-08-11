@@ -2630,6 +2630,17 @@ textarea {
   opacity: 1;
 }
 
+/* Scene pads in the margin: same sigil chrome, marked as belonging to the scene. */
+.scene-pad-sigil {
+  border-color: var(--ornament);
+}
+.scene-pad-sigil .sfx-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ornament);
+}
+
 /* ---- Open scene page ---- */
 .scene-page {
   display: flex;
