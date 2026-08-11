@@ -2213,8 +2213,9 @@ textarea {
 }
 .bookmark {
   position: relative;
-  /* Inset from BOTH edges (mockup parity) — the right 12px is reclaimed by the notch. */
-  margin: 0 12px var(--space-3) 12px;
+  /* Inset from BOTH edges — the notch reclaims 12px of the right margin, so its tip
+     still sits 12px clear of the pane divider like every other rail element. */
+  margin: 0 24px var(--space-3) 12px;
   padding: 9px 30px 9px 12px;
   background: var(--surface-raised);
   border: 1px solid var(--border);
@@ -2348,18 +2349,21 @@ textarea {
   font-size: var(--text-xs);
 }
 
-/* Unsaved drafts: dashed, un-notched-looking versions of the bookmark card. */
-.bookmark-draft,
-.bookmark-draft::after {
+/* Unsaved drafts: plain dashed cards — no notch (a dashed border on the clipped
+   pseudo-element renders as a ragged strip, so the notch is dropped entirely). */
+.bookmark-draft {
+  margin-right: 12px;
   background: var(--surface);
-  border-style: dashed;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
 }
-.bookmark-draft:hover,
-.bookmark-draft:hover::after {
+.bookmark-draft::after {
+  display: none;
+}
+.bookmark-draft:hover {
   background: var(--surface-over);
 }
-.bookmark-draft.editing,
-.bookmark-draft.editing::after {
+.bookmark-draft.editing {
   border-color: var(--ornament);
 }
 
