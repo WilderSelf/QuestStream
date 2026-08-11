@@ -41,6 +41,8 @@ export const IPC = {
   libraryGet: 'library:get',
   libraryAddUrl: 'library:addUrl',
   libraryAddFiles: 'library:addFiles', // opens a file picker, imports local audio
+  libraryAddFilePaths: 'library:addFilePaths', // dialog-less twin (workbench drag-drop)
+  libraryRetagMany: 'library:retagMany', // batch retag: one write, one changed event
   librarySetEffect: 'library:setEffect', // set a song's DSP effect preset
   libraryRetag: 'library:retag',
   libraryDeleteSong: 'library:deleteSong',
@@ -177,8 +179,12 @@ export interface RendererApi {
     get(): Promise<LibrarySnapshot>
     addUrl(url: string, opts?: ImportOpts): Promise<{ ok: boolean; error?: string }>
     addFiles(opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }>
+    addFilePaths(paths: string[], opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }>
+    /** Preload-side sugar: resolves dropped File objects to OS paths (webUtils) → addFilePaths. */
+    addDroppedFiles(files: File[], opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }>
     setEffect(songId: string, effect: string | null): Promise<void>
     retag(songId: string, payload: RetagPayload): Promise<void>
+    retagMany(songIds: string[], payload: RetagPayload): Promise<void>
     deleteSong(songId: string): Promise<void>
     onChanged(cb: (snap: LibrarySnapshot) => void): () => void
     onImportProgress(cb: (p: ImportProgress) => void): () => void

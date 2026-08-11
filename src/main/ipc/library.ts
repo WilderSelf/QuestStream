@@ -19,7 +19,7 @@ import { buildCookieArgs, cookiesFilePath, isCookieBrowser } from '../bot/cookie
 import { desktopStatus, installDesktopEntry } from '../desktop'
 import { checkForUpdates, quitAndInstall } from '../appUpdater'
 import { ensureThemesDir, listThemes, readTheme } from '../themes'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import type { IpcContext } from './context'
 
 const MAX_PACK_BYTES = 8 * 1024 * 1024 // a metadata-only pack is KBs; reject anything absurd
@@ -188,21 +188,18 @@ export function registerLibraryIpc(ctx: IpcContext): void {
     queueImport(() => doImport(url, opts))
   )
 
-  // Import local files. The dialog routes through the XDG Document portal under Flatpak,
-  // so only the picked files are granted; we copy each into the media dir immediately.
-  handle(IPC.libraryAddFiles, async (_e, opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }> => {
-    const result = await openDialog({
-      title: 'Add local audio files',
-      properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Audio', extensions: AUDIO_EXTS }]
-    })
-    if (result.canceled || result.filePaths.length === 0) return { ok: true, added: 0 }
-    return queueImport(async () => {
+  // Import local files by path. Shared by the dialog flow and the workbench's
+  // drag-drop (library:addFilePaths); we copy each into the media dir immediately.
+  const importFilePaths = (
+    filePaths: string[],
+    opts?: ImportOpts
+  ): Promise<{ ok: boolean; added: number; error?: string }> =>
+    queueImport(async () => {
       let added = 0
-      const total = result.filePaths.length
+      const total = filePaths.length
       const addedSongIds: string[] = []
       sendProgress({ url: 'Local files', status: 'importing', total, completed: 0 })
-      for (const [i, path] of result.filePaths.entries()) {
+      for (const [i, path] of filePaths.entries()) {
         try {
           const m = await copyIntoMedia(mediaDir, path)
           const isNew = !store.hasSong(`local:${m.sha1}`)
@@ -217,7 +214,7 @@ export function registerLibraryIpc(ctx: IpcContext): void {
             kind: opts?.kind,
             tags: opts?.tags
           })
-          if (isNew) addedSongIds.push(song.id) // only new songs get tagged by the wizard
+          if (isNew) addedSongIds.push(song.id) // only new songs get tagged afterwards
           added++
         } catch (err) {
           console.error('[import] local file failed for', path, (err as Error).message)
@@ -228,7 +225,35 @@ export function registerLibraryIpc(ctx: IpcContext): void {
       sendProgress({ url: 'Local files', status: 'done', total, completed: total, addedSongIds })
       return { ok: true, added }
     })
+
+  // The dialog flow routes through the XDG Document portal under Flatpak, so only
+  // the picked files are granted.
+  handle(IPC.libraryAddFiles, async (_e, opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }> => {
+    const result = await openDialog({
+      title: 'Add local audio files',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Audio', extensions: AUDIO_EXTS }]
+    })
+    if (result.canceled || result.filePaths.length === 0) return { ok: true, added: 0 }
+    return importFilePaths(result.filePaths, opts)
   })
+
+  // Dialog-less twin for drag-drop: paths come from the preload's webUtils
+  // resolution. SECURITY: absolute paths only, audio extensions only — the
+  // renderer can't feed traversal fragments or arbitrary files into the importer.
+  handle(
+    IPC.libraryAddFilePaths,
+    (_e, paths: string[], opts?: ImportOpts): Promise<{ ok: boolean; added: number; error?: string }> => {
+      const allowed = (Array.isArray(paths) ? paths : []).filter((p) => {
+        if (typeof p !== 'string' || !isAbsolute(p)) return false
+        const ext = p.slice(p.lastIndexOf('.') + 1).toLowerCase()
+        return AUDIO_EXTS.includes(ext)
+      })
+      if (allowed.length === 0)
+        return Promise.resolve({ ok: false, added: 0, error: 'No audio files in that drop' })
+      return importFilePaths(allowed, opts)
+    }
+  )
 
   handle(IPC.librarySetEffect, (_e, songId: string, effect: string | null) => {
     store.setEffect(songId, effect)
@@ -236,6 +261,12 @@ export function registerLibraryIpc(ctx: IpcContext): void {
   })
   handle(IPC.libraryRetag, (_e, songId: string, payload: RetagPayload) => {
     store.retag(songId, payload)
+    broadcastLibrary()
+  })
+  // Batch retag: funnels each id through the same normalization, then ONE
+  // changed event (the store's debounced persist makes it one disk write too).
+  handle(IPC.libraryRetagMany, (_e, songIds: string[], payload: RetagPayload) => {
+    for (const id of Array.isArray(songIds) ? songIds : []) store.retag(id, payload)
     broadcastLibrary()
   })
   handle(IPC.libraryDeleteSong, (_e, songId: string) => {

@@ -88,6 +88,9 @@
     library: {
       get: () => Promise.resolve(library),
       addUrl: ok,
+      addFilePaths: () => Promise.resolve({ ok: true, added: 0 }),
+      addDroppedFiles: () => Promise.resolve({ ok: true, added: 0 }),
+      retagMany: ok,
       addFiles: () => Promise.resolve({ ok: true, added: 0 }),
       setEffect: ok,
       retag: ok,
