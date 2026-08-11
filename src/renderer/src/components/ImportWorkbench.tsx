@@ -124,7 +124,7 @@ export function ImportWorkbench(): JSX.Element {
   const showNotice = useStore((s) => s.showNotice)
 
   const songs = useStore((s) => s.library.songs)
-  const setEditSong = useStore((s) => s.setEditSong)
+  const startTriage = useStore((s) => s.startTriage)
   const previewing = useStore((s) => s.previewStatus?.playing ?? false)
 
   const [url, setUrl] = useState('')
@@ -280,6 +280,23 @@ export function ImportWorkbench(): JSX.Element {
           </div>
         </div>
 
+        {(() => {
+          const lastDone = importRows.find((r) => r.status === 'done' && r.addedSongIds.length > 0)
+          const ids = lastDone?.addedSongIds.filter((id) => songs.some((s) => s.id === id)) ?? []
+          if (ids.length === 0) return null
+          return (
+            <div className="triage-banner">
+              <Icon name="sparkle" size={14} />
+              <span>
+                {ids.length} new item{ids.length === 1 ? '' : 's'} just landed.
+              </span>
+              <button className="btn" onClick={() => startTriage(ids)}>
+                Tag with preview →
+              </button>
+            </div>
+          )
+        })()}
+
         <div className="section-label">
           <Icon name="download" size={13} /> Arriving · {importRows.length}
         </div>
@@ -316,10 +333,13 @@ export function ImportWorkbench(): JSX.Element {
                 <ListenButton song={s} listeningId={listeningId} setListeningId={setListeningId} />
                 <button
                   className="btn"
-                  title="Tag this item (audition-first triage arrives in the next phase)"
-                  onClick={() => setEditSong(s.id)}
+                  title="Tag with preview — audition each item and tag as you listen"
+                  onClick={() => {
+                    const at = inbox.findIndex((x) => x.id === s.id)
+                    startTriage(inbox.slice(Math.max(0, at)).map((x) => x.id))
+                  }}
                 >
-                  Tag →
+                  Tag with preview →
                 </button>
               </div>
             ))}
