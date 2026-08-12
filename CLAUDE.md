@@ -25,7 +25,8 @@ verification — not hand-drawn mockups. **When you add a `window.api` method to
 Uses the shared **workflow kit** (user-scope `/ship` `/advance` `/wrap` `/reflect` `/curate` +
 `planner`/`reviewer` agents). This repo's profile is `.claude/workflow.json` (kept local per the
 `.claude/` gitignore): `validate` = `npm run typecheck` + `npm test` + `npm run build`,
-`merge_model: pr-gated`, `plan_path` → `~/.claude/plans/queststream.md`.
+`merge_model: pr-gated`, and a `plan_path` pointing at the approved plan under `~/.claude/plans/`.
+Read the path from `workflow.json` — do not retype it here, because a second copy drifts.
 - **`pr-gated`**: `/ship` (and `/advance`) run the validate gate + reviewer, then push a `feat/*`
   branch and open a PR that squash-auto-merges on green CI — the flow in **Version control** above.
   Releases still cut directly to `main` via `npm run release -- 0.X.Y`. Same guardrails: no
