@@ -22,17 +22,7 @@ verification — not hand-drawn mockups. **When you add a `window.api` method to
 (`src/preload/index.ts`), add it to `preview-api.js` too**, or the preview crashes on the missing mock.
 
 ## Automation & learning (Claude Code)
-Uses the shared **workflow kit** (user-scope `/ship` `/advance` `/wrap` `/reflect` `/curate` +
-`planner`/`reviewer` agents). This repo's profile is `.claude/workflow.json` (kept local per the
-`.claude/` gitignore): `validate` = `npm run typecheck` + `npm test` + `npm run build`,
-`merge_model: pr-gated`, and a `plan_path` pointing at the approved plan under `~/.claude/plans/`.
-Read the path from `workflow.json` — do not retype it here, because a second copy drifts.
-- **`pr-gated`**: `/ship` (and `/advance`) run the validate gate + reviewer, then push a `feat/*`
-  branch and open a PR that squash-auto-merges on green CI — the flow in **Version control** above.
-  Releases still cut directly to `main` via `npm run release -- 0.X.Y`. Same guardrails: no
-  force-push; validate must be green before commit.
-- **Planning is memory-driven, not spec-driven.** The knowledge base + session bridge is the
-  project memory (`MEMORY.md` + `memory/*.md`), not `specs/` or `HANDOFF.md`. `/advance` selects
-  the next increment from the approved plan (`plan_path`) — which must enumerate the active
-  milestone. When the roadmap is fully shipped and the phase is "hold major changes," there is no
-  active milestone: `/advance` correctly stops rather than inventing feature work.
+The overnight loop `/home/dfoster/.claude/harness/loop.sh` drives this repo through the
+user-scope `/advance`. The profile is `.claude/workflow.json`, kept local by the `.claude/` gitignore.
+The merge gate is branch protection plus auto-merge: see **Version control** above. Releases still
+cut directly to `main` via `npm run release -- 0.X.Y`.
