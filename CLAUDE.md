@@ -1,7 +1,7 @@
 # QuestStream — project guidance
 
 ## Version control (pr-gated for feature work; releases still direct to `main`)
-**Feature work is pr-gated** (converted from solo-main 2026-07-07 to match quill). `main` is
+**Feature work is pr-gated** (converted from solo-main 2026-07-07). `main` is
 branch-protected: the required check `typecheck + test + build` (`.github/workflows/ci.yml`,
 hosted `ubuntu-latest`) must pass, `strict` on, `enforce_admins: false`, no required reviews,
 force-push/deletion blocked, `allow_auto_merge` + squash + delete-branch enabled. So changes go
@@ -22,7 +22,7 @@ verification — not hand-drawn mockups. **When you add a `window.api` method to
 (`src/preload/index.ts`), add it to `preview-api.js` too**, or the preview crashes on the missing mock.
 
 ## Automation & learning (Claude Code)
-The overnight loop `/home/dfoster/.claude/harness/loop.sh` drives this repo through the
+`/home/dfoster/.claude/harness/run.sh` drives this repo through the
 user-scope `/advance`. The profile is `.claude/workflow.json`, kept local by the `.claude/` gitignore.
 The merge gate is branch protection plus auto-merge: see **Version control** above. Releases still
 cut directly to `main` via `npm run release -- 0.X.Y`.
