@@ -22,7 +22,7 @@ verification — not hand-drawn mockups. **When you add a `window.api` method to
 (`src/preload/index.ts`), add it to `preview-api.js` too**, or the preview crashes on the missing mock.
 
 ## Automation & learning (Claude Code)
-The overnight loop `/home/dfoster/.claude/harness/loop.sh` drives this repo through the
+The overnight loop `~/.claude/harness/run.sh` drives this repo through the
 user-scope `/advance`. The profile is `.claude/workflow.json`, kept local by the `.claude/` gitignore.
 The merge gate is branch protection plus auto-merge: see **Version control** above. Releases still
 cut directly to `main` via `npm run release -- 0.X.Y`.
